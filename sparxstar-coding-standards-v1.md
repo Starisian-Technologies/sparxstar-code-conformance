@@ -67,7 +67,7 @@ This section is intentionally reserved to preserve numbering stability for cross
 
 ## **0.7  Infrastructure Provider Selection**
 
-| PRINCIPLE | This document does not name infrastructure providers. Provider selection is an operational decision that changes as the business grows and better options emerge. The standard governs how code is written, not where it runs. |
+| PRINCIPLE | This document does not prescribe infrastructure providers as normative dependencies. Provider selection is an operational decision that changes as the business grows and better options emerge. The standard governs how code is written, not where it runs. Any provider names used elsewhere in this document are illustrative examples of deployment patterns, not required vendor choices. |
 | :---- | :---- |
 
 | Criterion | Standard |
