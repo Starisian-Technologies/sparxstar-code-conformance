@@ -199,7 +199,7 @@ $text  \= sanitize\_text\_field($\_POST\['text'\] ?? '');
 
 $key   \= sanitize\_key($\_GET\['key'\] ?? '');
 
-$email \= filter\_var($\_POST\['email'\], FILTER\_VALIDATE\_EMAIL);
+$email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
 
 // Forbidden
 
