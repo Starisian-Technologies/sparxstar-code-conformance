@@ -175,7 +175,7 @@ Before any governed action:
 
 // Required at top of every PHP file
 
-declare(strict\_types=1);
+declare(strict_types=1);
 
 // All functions must have typed parameters and return types
 
