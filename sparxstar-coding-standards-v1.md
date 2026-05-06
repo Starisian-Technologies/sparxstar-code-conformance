@@ -233,7 +233,7 @@ $id   = (int)$_GET['id']; // implicit cast without validation
 
 | FAIL | direct SQL string interpolation |
 | :---- | :---- |
-| **FAIL** | SELECT \* in production queries |
+| **FAIL** | SELECT \* in any query |
 | **FAIL** | unbounded query without LIMIT |
 
 ## **2.5  Object Caching — Distributed Cache Layer**
@@ -269,34 +269,29 @@ opcache.max_accelerated_files = 10000
 
 * No implicit field access — no dynamic schema mutation at runtime
 
-  // Required pattern
+```php
+// Required pattern
+if (!is_page('media-record')) return;
+wp_enqueue_script('my-plugin-handle', ...);
 
-  if (\!is\_page('media-record')) return;
-
-  wp\_enqueue\_script('my-component', ...);
-
-
-  // Forbidden
-
-  wp\_enqueue\_script('my-component', ...); // global, no guard
+// Forbidden
+wp_enqueue_script('my-plugin-handle', ...); // global, no guard
+```
 
 ## **2.8  Abilities and Consent API**
 
 Every action must check ability and verify consent before execution. Bypassing ability checks is forbidden. Assuming consent is forbidden.
 
+```php
 // Required
-
-if (\!current\_user\_can('sparxstar\_record')) {
-
-    return new WP\_Error('forbidden', 'Insufficient ability');
-
+if (!current_user_can('app_record')) {
+    return new WP_Error('forbidden', 'Insufficient ability');
 }
 
-if (\!sparxstar\_has\_consent($user\_id, 'audio\_record')) {
-
-    return new WP\_Error('consent\_required', 'Consent not given');
-
+if (!has_consent($user_id, 'recording')) {
+    return new WP_Error('consent_required', 'Consent not given');
 }
+```
 
 | FAIL | governed action without ability check |
 | :---- | :---- |
@@ -414,7 +409,7 @@ if (\!navigator.onLine) {
 | :---- | :---- | :---- |
 | Sample rate | 16,000 Hz maximum | Sufficient for voice. Higher rates waste bandwidth. |
 | Channels | 1 (mono) | Stereo doubles the data for no voice quality gain. |
-| Bitrate | 24 kbps maximum | Hard cap 32 kbps. Opus/AAC-LC only. |
+| Bitrate | 24 kbps target | Hard cap: 32 kbps. Opus/AAC-LC only. |
 | Format | Opus or AAC-LC | No raw PCM. No WAV. Compressed only. |
 
 | Mode | Max Duration |
@@ -435,7 +430,7 @@ if (\!navigator.onLine) {
 | :---- | :---- | :---- |
 | Resolution | 640x480 maximum (VGA) | No HD. No 720p. No 1080p. |
 | Frame rate | 15 fps maximum | Sufficient for documentation. Higher wastes bandwidth. |
-| Bitrate | 500 kbps maximum | Hard cap 800 kbps. |
+| Bitrate | 500 kbps target | Hard cap: 800 kbps. |
 | Codec | H.264 Baseline only | HEVC and AV1 forbidden unless fallback exists. |
 
 | Mode | Max Duration |
