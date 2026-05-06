@@ -185,7 +185,7 @@ function process\_audio(string $path, int $duration): array { ... }
 
 function process($path, $duration) { ... }  // no types
 
-| FAIL | PHP file missing declare(strict\_types=1) |
+| **FAIL** | PHP file missing declare(strict_types=1) |
 | :---- | :---- |
 | **FAIL** | function missing typed parameters or return type |
 
