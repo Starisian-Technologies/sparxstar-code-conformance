@@ -57,6 +57,10 @@ Every failure must return a defined error, log internally with full context, and
 
 All endpoints must be safe to retry without duplication. Especially TUS uploads, REST writes, and GraphQL mutations. All writes require an idempotency key. Duplicate requests return the same result and produce no additional DB write.
 
+## **0.6  Reserved**
+
+This section is intentionally reserved to preserve numbering stability for cross-references and future revisions.
+
 ## **0.7  Infrastructure Provider Selection**
 
 | PRINCIPLE | This document does not name infrastructure providers. Provider selection is an operational decision that changes as the business grows and better options emerge. The standard governs how code is written, not where it runs. |
