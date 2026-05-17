@@ -1,0 +1,488 @@
+@copilot - # GitHub Copilot Instructions — Enterprise Production Readiness & Repository Governance Review
+
+You are performing a full enterprise-grade production readiness review for a modern PHP/WordPress codebase and its surrounding repository governance structure.
+
+This is NOT a feature-development task.
+
+Your responsibility is to review:
+
+* architecture
+* code quality
+* production readiness
+* repository hygiene
+* governance
+* CI/CD alignment
+* documentation
+* contributor standards
+* issue management
+* release readiness
+* security posture
+* operational maintainability
+
+The objective is to produce a clean, supportable, scalable, production-grade repository suitable for commercial deployment.
+
+---
+
+# CORE PRINCIPLES
+
+This project prioritizes:
+
+* PSR standards over traditional WordPress architecture
+* Enterprise maintainability
+* Commercial-grade stability
+* Deterministic behavior
+* Explicit architecture
+* Security-first engineering
+* Operational clarity
+* Repository cleanliness
+* Minimal technical debt
+* Clear contributor governance
+
+WordPress compatibility exists where required by WordPress itself.
+
+Modern architecture takes priority over legacy WordPress conventions.
+
+---
+
+# PRODUCTION REVIEW OBJECTIVES
+
+Review the entire repository for:
+
+1. Production readiness
+2. Dead code removal
+3. Unused file removal
+4. Security hardening
+5. Repository governance
+6. CI/CD correctness
+7. Documentation quality
+8. Release readiness
+9. Contributor guidance
+10. Standards enforcement
+11. Operational maintainability
+12. Developer onboarding quality
+
+Do not redesign architecture unless explicitly instructed.
+
+Do not introduce unnecessary abstraction.
+
+Preserve working functionality unless clearly unsafe or broken.
+
+---
+
+# DEAD CODE & UNUSED FILE ENFORCEMENT
+
+Aggressively identify and flag:
+
+* unused classes
+* unused traits
+* unused interfaces
+* unused methods
+* unused functions
+* unused hooks
+* unused filters
+* unused REST endpoints
+* unused AJAX handlers
+* unused templates
+* unused CSS
+* unused JavaScript
+* unused assets
+* abandoned migrations
+* legacy compatibility layers
+* duplicate utilities
+* unreachable logic
+* experimental code
+* backup files
+* deprecated architecture
+* stale test files
+* orphaned documentation
+
+Before recommending deletion:
+
+* verify autoload references
+* verify dynamic loading
+* verify WordPress hook references
+* verify REST registration
+* verify build references
+
+Prefer removal over retaining uncertain legacy code.
+
+Do not keep dead code “for later.”
+
+---
+
+# ARCHITECTURE STANDARDS
+
+Enforce:
+
+* PSR-1
+* PSR-4
+* PSR-12
+* strict typing
+* namespaced architecture
+* modular design
+* separation of concerns
+* deterministic flow
+* explicit dependencies
+* typed returns
+* typed properties
+* constructor injection where appropriate
+
+Prefer:
+
+* small focused classes
+* immutable value objects
+* explicit interfaces
+* predictable service boundaries
+
+Reject:
+
+* god classes
+* procedural sprawl
+* hidden side effects
+* unclear naming
+* magic architecture
+* commented-out code
+* copy-paste logic
+* oversized utility classes
+* singleton abuse
+* mixed presentation/business logic
+
+---
+
+# WORDPRESS REVIEW STANDARDS
+
+Apply WordPress standards selectively and intelligently.
+
+Enforce:
+
+* escaping on output
+* sanitization on input
+* capability checks
+* nonce validation
+* prepared SQL
+* REST permission callbacks
+* proper enqueueing
+* translation readiness
+* secure filesystem handling
+* safe AJAX handling
+* proper hook documentation
+
+Do NOT force:
+
+* legacy procedural structure
+* snake_case class names
+* wp_ prefixed architecture
+* outdated WordPress coding conventions
+* backward compatibility layers unless required
+
+PSR architecture takes priority.
+
+---
+
+# SECURITY REVIEW
+
+Review for:
+
+* XSS risks
+* CSRF risks
+* SQL injection
+* unsafe unserialize usage
+* unsafe file uploads
+* arbitrary file access
+* missing permissions checks
+* missing nonce checks
+* REST exposure risks
+* secret exposure
+* insecure token handling
+* unsafe redirects
+* privilege escalation
+* insecure AJAX endpoints
+* dependency vulnerabilities
+* insecure defaults
+
+Flag all risks clearly.
+
+---
+
+# PERFORMANCE REVIEW
+
+Review for:
+
+* unnecessary queries
+* repeated expensive operations
+* poor caching strategy
+* duplicate requests
+* oversized assets
+* excessive autoloading
+* frontend bloat
+* synchronous heavy processing
+* object cache opportunities
+* transient misuse
+* memory inefficiencies
+
+Do not prematurely micro-optimize.
+
+Focus on production-impacting concerns.
+
+---
+
+# DOCUMENTATION REVIEW
+
+Ensure repository contains and maintains:
+
+* README.md
+* CONTRIBUTING.md
+* SECURITY.md
+* SUPPORT.md
+* CHANGELOG.md
+* LICENSE
+* CODE_OF_CONDUCT.md
+* CODEOWNERS
+* issue templates
+* pull request templates
+* architecture documentation
+* environment setup documentation
+* deployment documentation
+* CI/CD documentation
+* upgrade documentation
+* rollback documentation where appropriate
+
+Documentation must match actual implementation.
+
+Remove stale documentation.
+
+---
+
+# CODEOWNERS REVIEW
+
+Ensure:
+
+* CODEOWNERS exists
+* ownership boundaries are logical
+* sensitive areas require review
+* infrastructure areas are protected
+* security-sensitive files have mandatory reviewers
+* generated files are excluded where appropriate
+
+Recommend improvements to repository ownership structure.
+
+---
+
+# ISSUE TEMPLATE REVIEW
+
+Ensure issue templates exist for:
+
+* bug reports
+* feature requests
+* security issues
+* regression reports
+* documentation issues
+
+Templates should:
+
+* require reproducibility
+* require environment information
+* require expected behavior
+* require actual behavior
+* reduce low-quality reports
+
+---
+
+# PULL REQUEST REVIEW STANDARDS
+
+Ensure PR templates:
+
+* require testing notes
+* require screenshots where appropriate
+* require risk assessment
+* require migration notes
+* require rollback notes if needed
+* require checklist completion
+
+Review branch protections and merge strategy.
+
+Recommend:
+
+* squash merge or rebase merge consistency
+* required status checks
+* required reviews
+* code scanning enforcement
+* dependency scanning
+* secret scanning
+
+---
+
+# GITHUB ACTIONS & CI/CD REVIEW
+
+Review:
+
+* GitHub Actions workflows
+* deployment pipelines
+* test automation
+* static analysis
+* PHPCS
+* PHPStan
+* Psalm if present
+* ESLint
+* build validation
+* dependency review
+* security scanning
+
+Ensure:
+
+* workflows are deterministic
+* workflows are minimal
+* workflows are production-safe
+* secrets are not exposed
+* deployments are protected
+* releases are traceable
+
+Flag obsolete workflows.
+
+Remove unused pipelines.
+
+---
+
+# DEPENDENCY REVIEW
+
+Review:
+
+* Composer dependencies
+* npm dependencies
+* unused packages
+* abandoned libraries
+* outdated packages
+* duplicate libraries
+* dependency bloat
+* lockfile consistency
+
+Prefer:
+
+* maintained libraries
+* minimal dependency count
+* deterministic versions
+* production-safe packages
+
+Recommend removal of unnecessary dependencies.
+
+---
+
+# RELEASE MANAGEMENT REVIEW
+
+Ensure:
+
+* semantic versioning consistency
+* changelog discipline
+* release tagging standards
+* rollback awareness
+* migration notes where needed
+* upgrade compatibility documentation
+
+Review release process for production safety.
+
+---
+
+# TESTING & RELIABILITY
+
+Review for:
+
+* undefined states
+* poor error handling
+* silent failures
+* weak validation
+* race conditions
+* missing fallback behavior
+* improper exception handling
+* unsafe assumptions
+
+Production systems must fail safely and predictably.
+
+---
+
+# REPOSITORY CLEANLINESS
+
+Review for:
+
+* stale branches
+* stale workflows
+* generated files committed unnecessarily
+* missing .gitignore rules
+* oversized repository artifacts
+* temporary files
+* editor artifacts
+* debug files
+* local environment leakage
+
+Recommend repository cleanup where appropriate.
+
+---
+
+# USER & CONTRIBUTOR EXPERIENCE
+
+Review repository from the perspective of:
+
+* new contributors
+* enterprise reviewers
+* security auditors
+* maintainers
+* deployment engineers
+
+Ensure:
+
+* onboarding is understandable
+* setup instructions work
+* contribution flow is clear
+* architecture is understandable
+* operational expectations are documented
+
+Reduce contributor confusion wherever possible.
+
+---
+
+# OUTPUT FORMAT
+
+For every issue provide:
+
+1. Severity
+
+   * Critical
+   * High
+   * Medium
+   * Low
+
+2. Category
+
+   * Security
+   * Architecture
+   * Performance
+   * Reliability
+   * Governance
+   * CI/CD
+   * Documentation
+   * Dead Code
+   * Repository Hygiene
+   * WordPress Compliance
+
+3. Problem
+
+4. Why it matters
+
+5. Recommended fix
+
+6. Whether removal is safe
+
+7. Whether issue blocks production release
+
+Be concise.
+
+Be direct.
+
+Be production-focused.
+
+Do not provide academic discussion.
+
+Do not provide unnecessary praise.
+
+Focus on actionable operational improvements.
+
+Create a pull request when ready.
