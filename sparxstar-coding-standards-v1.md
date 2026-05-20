@@ -427,27 +427,19 @@ if (!navigator.onLine) {
 
 ## **4.3  JavaScript Capture Constraints**
 
-const constraints \= {
-
+```js
+const constraints = {
   audio: {
-
     sampleRate: 16000,
-
     channelCount: 1
-
   },
-
   video: {
-
-    width:     { ideal: 640,  max: 640 },
-
-    height:    { ideal: 480,  max: 480 },
-
-    frameRate: { ideal: 15,   max: 15  }
-
+    width: { ideal: 640, max: 640 },
+    height: { ideal: 480, max: 480 },
+    frameRate: { ideal: 15, max: 15 }
   }
-
 };
+```
 
 // Never start recording automatically
 
@@ -765,17 +757,15 @@ Jobs that exhaust their retry budget must not be silently dropped. They move to 
 
 Schema changes must be versioned. Clients must tolerate the previous schema version during the transition window. No destructive schema change without a defined migration path.
 
+```text
 // Required — additive first, destructive second
-
 // Phase 1: add new field, keep old field
-
 // Phase 2: migrate data to new field
-
 // Phase 3: remove old field (separate deploy, after client update confirmed)
 
 // Forbidden
-
 // single deploy that removes a field clients still depend on
+```
 
 ## **12.6  Client-Side Storage Limits**
 
