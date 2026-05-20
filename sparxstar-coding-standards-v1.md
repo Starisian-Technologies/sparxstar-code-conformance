@@ -311,25 +311,20 @@ if (!has_consent($user_id, 'recording')) {
 
 All event listeners must be throttled or debounced. Continuous loops are forbidden.
 
+```js
 // Required — throttle pattern
-
-let lastRun \= 0;
+let lastRun = 0;
 
 function handleSensorEvent(data) {
-
-  if (Date.now() \- lastRun \< 100\) return; // 10 Hz max
-
-  lastRun \= Date.now();
-
+  if (Date.now() - lastRun < 100) return; // 10 Hz max
+  lastRun = Date.now();
   processData(data);
-
 }
 
 // Forbidden
-
-setInterval(() \=\> doWork(), 10); // unbounded loop
-
+setInterval(() => doWork(), 10); // unbounded loop
 sensor.addEventListener('data', handler); // no throttle
+```
 
 | FAIL | event listener without throttle or debounce |
 | :---- | :---- |
@@ -337,29 +332,22 @@ sensor.addEventListener('data', handler); // no throttle
 
 ## **3.3  API Call Discipline**
 
+```js
 // Required
-
-const response \= await fetch(url, {
-
+const response = await fetch(url, {
   signal: AbortSignal.timeout(5000), // 5s max
-
 });
 
 // Retry with exponential backoff — max 3 attempts
-
-async function fetchWithRetry(url, maxRetries=3) {
-
-  for (let i \= 0; i \< maxRetries; i++) {
-
+async function fetchWithRetry(url, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
     try { return await fetch(url, { signal: AbortSignal.timeout(5000) }); }
-
-    catch { await new Promise(r \=\> setTimeout(r, 1000 \* Math.pow(2, i))); }
-
+    catch { await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i))); }
   }
 
   throw new Error('Max retries exceeded');
-
 }
+```
 
 | FAIL | API call without timeout |
 | :---- | :---- |
@@ -368,31 +356,27 @@ async function fetchWithRetry(url, maxRetries=3) {
 
 ## **3.4  Memory Management**
 
+```js
 // Release media references when done
-
-video.srcObject \= null;
-
-stream.getTracks().forEach(track \=\> track.stop());
+video.srcObject = null;
+stream.getTracks().forEach(track => track.stop());
 
 // Stream blobs — never buffer full media in memory
-
-// Wrong: blob \= await response.blob(); // full file in memory
-
+// Wrong: blob = await response.blob(); // full file in memory
 // Right: stream progressively via ReadableStream
+```
 
 ## **3.5  Network Awareness**
 
+```js
 // Check before attempting upload
-
-if (\!navigator.onLine) {
-
+if (!navigator.onLine) {
   queueUpload(file); // IndexedDB queue
-
   return;
-
 }
 
 // Queue uploads locally — never assume stable connection
+```
 
 # **4\.  Audio and Video — Hard Limits**
 
