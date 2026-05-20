@@ -1,55 +1,13 @@
 # Questions for Clarification — Coding Standards Review
 
-These questions are raised before making changes to `sparxstar-coding-standards-v1.md`.
-The PR description asks for a more product-agnostic and language-agnostic document.
-Before editing, answers to the following would ensure the intent is captured correctly.
+This file was reviewed and previously raised questions that no longer match the current
+`sparxstar-coding-standards-v1.md` have been removed.
 
----
+At present, there are no open clarification questions tracked here.
 
-## 1. Section 2 — "PHP and WordPress Standards"
-
-The entire section is titled and scoped to PHP and WordPress. The PR description mentions the target languages are PHP/WordPress, React, JS, C#, TypeScript, and eventually Node.js.
-
-**Questions:**
-- Should Section 2 remain as a PHP/WordPress-specific section and be renamed (e.g., "Server-Side Language Standards" or "Application Framework Standards"), with subsections added later for other languages?
-- Or should the WordPress-specific rules (plugin loading guards, `wp_enqueue_script`, `WP_Error`, `current_user_can`) be moved to a separate WordPress-specific appendix and the core rules abstracted to pseudocode?
-- Is WordPress-specific language (e.g., `sanitize_text_field`, `$wpdb->prepare()`, `WP_Error`) acceptable in code examples as the canonical reference implementation, or should examples use language-neutral pseudocode?
-
----
-
-## 2. Infrastructure Names in Scope Block (Line 16)
-
-The SCOPE block names: `WordPress`, `PHP-FPM`, `MariaDB or equivalent`, `Redis (Predis)`, `OPcache`, `Apache or equivalent`.
-
-**Questions:**
-- Should the SCOPE block describe roles rather than products — e.g., "application framework", "server-side language runtime", "relational database", "distributed object cache", "bytecode cache", "reverse proxy"?
-- Or is naming the primary current implementations acceptable, with the "or equivalent" qualifier making it clear they are not locked-in choices?
-- Should `Redis (Predis)` become `Redis (or equivalent distributed cache)` since Predis is a PHP-specific client library?
-
----
-
-## 3. Section 2.5 — "Object Caching — Redis / Predis"
-
-The section header names both Redis (the server) and Predis (a PHP client library for Redis).
-
-**Questions:**
-- Should this become "Object Caching — Distributed Cache Layer" to be client-library agnostic?
-- The rules themselves are already generic (TTL, namespacing, no source-of-truth use). Should only the title change, or also the body rule `Redis is a cache only`?
-
----
-
-## 4. Section 2.6 — "OPcache — Production Configuration"
-
-OPcache is a PHP-specific bytecode cache. The configuration values (`opcache.validate_timestamps`, etc.) are PHP INI directives.
-
-**Questions:**
-- Since this section is inherently PHP-specific, should it be titled "Bytecode Cache — Production Configuration" with a note that OPcache is the reference implementation for PHP?
-- Or should this section remain as-is, given that Section 2 is explicitly the PHP section?
-
----
-
-## 5. Section 7 — "Edge Layer — Cloudflare, Nginx, Varnish"
-
+If new questions arise, add only items that reference the current section titles,
+terminology, and scope of `sparxstar-coding-standards-v1.md` so reviewers are not
+misled by obsolete review notes.
 The section title names three specific products. The content is already written in product-agnostic terms.
 
 **Questions:**
