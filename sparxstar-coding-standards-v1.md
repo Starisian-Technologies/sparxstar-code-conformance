@@ -129,7 +129,7 @@ if context is null OR authority is null:
   return error
   do NOT execute action
   do NOT guess
-  do NOT fallback
+  do NOT fall back
 ```
 
 ## **1.3  Hard Rules**
