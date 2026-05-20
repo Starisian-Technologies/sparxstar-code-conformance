@@ -398,10 +398,10 @@ if (!navigator.onLine) {
 | development | 180 seconds |
 | production | 120 seconds |
 
-| FAIL | sampleRate \> 16000 |
+| FAIL | `sampleRate > 16000` |
 | :---- | :---- |
-| **FAIL** | channels \> 1 |
-| **FAIL** | bitrate \> 32000 |
+| **FAIL** | `channels > 1` |
+| **FAIL** | `bitrate > 32000` |
 | **FAIL** | format is WAV or uncompressed PCM |
 
 ## **4.2  Video Capture Limits**
@@ -605,7 +605,7 @@ EdgeCache::purge($route);
 
 When the system is saturated, reject early rather than queue unbounded.
 
-```php
+```text
 // Priority order when under load
 if (system_load > THRESHOLD) {
   // 1. Protect active authenticated sessions
@@ -632,7 +632,8 @@ try {
 } catch (Exception $e) {
   $db->rollback();
   if ($upload_result !== null) { delete_file($path); }
-  throw new RuntimeException('Operation failed. Rolled back.');
+  error_log(sprintf('Operation failed for %s: %s', $path, $e->getMessage()));
+  throw new RuntimeException('Operation failed. Rolled back.', 0, $e);
 }
 ```
 
@@ -799,12 +800,12 @@ These conditions must cause CI to fail in development and production modes. In d
 
 ## **13.1  PHP**
 
-| FAIL | PHP file missing declare(strict\_types=1) |
+| FAIL | PHP file missing `declare(strict_types=1)` |
 | :---- | :---- |
 | **FAIL** | function missing typed parameters or return type |
 | **FAIL** | raw superglobal access without sanitization |
 | **FAIL** | direct SQL string interpolation |
-| **FAIL** | SELECT \* in any query |
+| **FAIL** | `SELECT *` in any query |
 | **FAIL** | governed action without Sirus call |
 | **FAIL** | governed action without ability check |
 | **FAIL** | governed action without consent verification |

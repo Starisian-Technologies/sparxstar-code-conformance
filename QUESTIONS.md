@@ -1,6 +1,6 @@
 # Questions for Clarification — Coding Standards Review
 
-This file was reviewed and previously raised questions that no longer match the current
+This file was reviewed. Previously raised questions that no longer match the current
 `sparxstar-coding-standards-v1.md` document have been removed.
 
 At present, there are no open clarification questions tracked here.
