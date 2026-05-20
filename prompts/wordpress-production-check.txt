@@ -1,0 +1,435 @@
+@copilot - Below is a strong Copilot instruction set you can paste directly.
+
+---
+
+## GitHub Copilot Instructions: Final Production-Ready WordPress Plugin Review
+
+You are performing a **final production-readiness review** of this WordPress plugin.
+
+This plugin must support both:
+
+1. **Regular single-site WordPress installations**
+2. **WordPress Multisite / Network Activated environments**
+
+Follow WordPress recommended plugin practices, but prioritize this project’s engineering standard:
+
+> **Use modern PHP, PSR-style architecture, namespaces, typed code, and enterprise-grade structure over older procedural WordPress patterns where they do not conflict with WordPress runtime requirements.**
+
+Reference WordPress plugin best practices for naming collisions, file organization, conditional loading, direct access protection, and uninstall handling. WordPress recommends unique prefixes/namespaces, organized plugin folders, admin/public separation, and direct-access protection using `ABSPATH`. 
+
+---
+
+# Primary Goal
+
+Perform a complete production-ready audit and make only safe, necessary corrections.
+
+Do **not** redesign the plugin unless a change is required for security, correctness, WordPress compatibility, multisite safety, or production reliability.
+
+---
+
+# Required Review Areas
+
+## 1. Security Review
+
+Check every PHP, JS, template, admin, REST, AJAX, shortcode, settings, and output file.
+
+Ensure:
+
+* Every output is escaped using the correct WordPress escaping function:
+
+  * `esc_html()`
+  * `esc_attr()`
+  * `esc_url()`
+  * `esc_textarea()`
+  * `wp_kses_post()`
+  * `wp_json_encode()` where appropriate
+* Every user input is sanitized before use.
+* Every database value is validated before persistence.
+* Every nonce is verified before mutation.
+* Every admin action has capability checks.
+* Every REST endpoint has a real `permission_callback`.
+* No REST endpoint uses `__return_true` unless the endpoint is intentionally public and read-only.
+* No direct access to plugin files is possible.
+* Files with executable code must include:
+
+```php
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+```
+
+---
+
+## 2. Multisite Compatibility
+
+Review the plugin for multisite and network activation behavior.
+
+Ensure:
+
+* The plugin works correctly when activated on a single site.
+* The plugin works correctly when network activated.
+* Site-specific options use `get_option()`, `update_option()`, and `delete_option()`.
+* Network-wide settings use `get_site_option()`, `update_site_option()`, and `delete_site_option()`.
+* Do not mix site options and network options.
+* Do not assume one blog/site.
+* Do not loop through every site unless absolutely required.
+* If looping through sites is necessary, document why and make it safe for large networks.
+* Use `switch_to_blog()` and `restore_current_blog()` correctly if needed.
+* Never leave the blog context switched.
+* Activation, deactivation, uninstall, cron, custom tables, and rewrite rules must be multisite-safe.
+
+---
+
+## 3. Activation, Deactivation, and Uninstall
+
+Follow WordPress uninstall guidance carefully.
+
+Deactivation is **not uninstall**.
+
+Use deactivation only for temporary cleanup such as:
+
+* flushing rewrite rules
+* clearing temporary cache
+* stopping scheduled events if appropriate
+
+Use uninstall only for permanent cleanup such as:
+
+* deleting plugin options
+* deleting plugin transients
+* deleting custom database tables
+* removing plugin-created data when intended
+
+Use either:
+
+```php
+register_uninstall_hook()
+```
+
+or a root-level:
+
+```text
+uninstall.php
+```
+
+If using `uninstall.php`, it must check:
+
+```php
+if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
+	exit;
+}
+```
+
+Do not remove user data unless the plugin clearly intends to do so.
+
+For multisite uninstall, avoid expensive all-site loops unless clearly justified and safe.
+
+---
+
+## 4. Database and Schema Rules
+
+Do **not** use `dbDelta()` unless there is a rare, clearly justified reason.
+
+Preferred approach:
+
+* Use explicit SQL migrations.
+* Use versioned schema updates.
+* Use safe `$wpdb->prepare()` usage.
+* Use `maybe_create_table()` only if appropriate.
+* Use clear migration classes or upgrade routines.
+* Track schema version in options.
+* Make migrations idempotent.
+* Never run schema changes on every request.
+
+Check all database calls:
+
+* No raw unsanitized SQL.
+* No unprepared dynamic values.
+* No direct interpolation of user input.
+* Table names must be controlled internally.
+* Dynamic identifiers must be whitelisted.
+
+---
+
+## 5. File and Folder Structure
+
+Audit the full plugin directory.
+
+Ensure:
+
+* Every folder contains an `index.php` file to prevent directory browsing.
+* The root plugin file is clean and only bootstraps the plugin.
+* Code is organized into logical folders.
+* Admin-only code loads only in admin context.
+* Public/frontend code loads only when needed.
+* REST/AJAX/CLI/cron code is conditionally loaded.
+* No dead files remain.
+* No unused legacy files remain.
+* No duplicate files remain.
+* No temporary test files remain.
+* No debug dumps remain.
+* No `.bak`, `.old`, `.tmp`, `.orig`, or unused scaffold files remain.
+
+Every folder must include:
+
+```php
+<?php
+// Silence is golden.
+```
+
+or another minimal direct-access-safe `index.php`.
+
+---
+
+## 6. Naming, Prefixes, and Namespaces
+
+Follow project naming standards.
+
+Ensure:
+
+* Classes use the project namespace.
+* Global functions are avoided unless absolutely required.
+* If global functions exist, they must use the approved project prefix.
+* Constants must use the approved project prefix.
+* Options, transients, cron hooks, actions, filters, AJAX actions, REST namespaces, and script handles must use the approved project prefix.
+* Do not use `wp_`, `WordPress`, `_`, or `__` as custom prefixes.
+* Do not introduce generic global names.
+* Do not use collision-prone names.
+
+WordPress recommends unique prefixes or namespaces to avoid collisions with core, themes, and other plugins. 
+
+---
+
+## 7. PSR and Modern PHP Standards
+
+This project follows PSR-style modern PHP over older WordPress procedural style where possible.
+
+Ensure:
+
+* Namespaces are correct.
+* Autoloading is correct.
+* Classes are single-purpose.
+* Constructor side effects are minimized.
+* Hooks are registered intentionally.
+* Dependency flow is clear.
+* Type declarations are used where safe.
+* Return types are used where safe.
+* Visibility is explicit.
+* No unnecessary static methods.
+* No hidden global state unless required by WordPress.
+* No mixed procedural/OOP spaghetti.
+* No `isset()` should be introduced. Use explicit checks such as:
+
+  * `array_key_exists()`
+  * `is_array()`
+  * `is_object()`
+  * `instanceof`
+  * strict `null` checks
+  * explicit empty-string checks where needed
+
+---
+
+## 8. WordPress Coding Compatibility
+
+Align with WordPress runtime expectations without downgrading the architecture.
+
+Check:
+
+* Hooks are registered at the correct lifecycle point.
+* Text domain is loaded correctly.
+* Translation functions use the correct text domain.
+* Scripts and styles are enqueued properly.
+* No hardcoded plugin URLs or paths.
+* Use `plugin_dir_path()`, `plugin_dir_url()`, `plugins_url()`, or equivalent constants.
+* No direct access to `$_POST`, `$_GET`, `$_REQUEST`, `$_SERVER`, or `$_FILES` without sanitization and validation.
+* No direct echo of dynamic values.
+* No admin notices without proper escaping.
+* No frontend output without escaping.
+* No unsafe redirects.
+* Redirects must use `wp_safe_redirect()` where appropriate.
+* Exits after redirects are required.
+
+---
+
+## 9. REST, AJAX, Cron, and CLI
+
+Review all integration points.
+
+REST:
+
+* Every route has a permission callback.
+* Every input has schema validation or manual validation.
+* Every response uses `WP_REST_Response`, `WP_Error`, or valid REST return data.
+* Public routes must be intentional and documented.
+
+AJAX:
+
+* Use nonces.
+* Use capability checks.
+* Use `wp_send_json_success()` / `wp_send_json_error()`.
+* Exit behavior must be correct.
+
+Cron:
+
+* No duplicate scheduled events.
+* Events are cleared on deactivation where appropriate.
+* Cron hooks are prefixed.
+* Recurring schedules are registered safely.
+
+WP-CLI:
+
+* CLI commands must only load in CLI context.
+* Commands must validate arguments.
+* Commands must not expose unsafe destructive operations without confirmation flags.
+
+---
+
+## 10. Assets and Build Files
+
+Review JavaScript, CSS, images, and build output.
+
+Ensure:
+
+* No unused assets remain.
+* No source maps are shipped unless intentional.
+* No dev-only console logs.
+* No test/demo assets in production.
+* No hardcoded local URLs.
+* No hardcoded staging URLs.
+* No exposed secrets.
+* Script handles are unique and prefixed.
+* Localized script data is escaped/sanitized before output.
+* Frontend JavaScript validates assumptions before acting.
+
+---
+
+## 11. Privacy, Data, and User Consent
+
+Review all stored data and user-facing collection points.
+
+Ensure:
+
+* The plugin does not collect unnecessary data.
+* Any collected data has a clear purpose.
+* Personal data handling is documented.
+* Export/erase support is added if the plugin stores personal data.
+* Data retention behavior is clear.
+* Uninstall behavior does not unexpectedly destroy user-owned data.
+* Admin settings clearly explain destructive cleanup options.
+
+---
+
+## 12. Dead Code and Production Cleanup
+
+Remove dead code.
+
+Specifically check for:
+
+* Unused classes
+* Unused functions
+* Unused hooks
+* Unused constants
+* Unused assets
+* Unused templates
+* Unused admin pages
+* Unused REST routes
+* Unused AJAX actions
+* Old migration files no longer referenced
+* Duplicate helper functions
+* Commented-out blocks of old code
+* Debug statements
+* Temporary Copilot/AI-generated notes
+* Placeholder TODOs that block production
+
+Do not remove files unless you confirm they are not loaded, referenced, autoloaded, routed, required by Composer, used by WordPress, or needed for future migrations.
+
+If uncertain, flag the file in the final report instead of deleting it.
+
+---
+
+# Required Final Report
+
+After completing the review, provide a final production-readiness report with these sections:
+
+## 1. Summary
+
+State whether the plugin is:
+
+* Production ready
+* Production ready after minor fixes
+* Not production ready
+
+## 2. Changes Made
+
+List all files changed and why.
+
+## 3. Security Fixes
+
+List escaping, sanitization, nonce, capability, REST, AJAX, or SQL fixes.
+
+## 4. Multisite Fixes
+
+List all multisite or network-activation corrections.
+
+## 5. Uninstall / Deactivation Fixes
+
+Explain what happens on activation, deactivation, and uninstall.
+
+## 6. Database / Migration Fixes
+
+Confirm whether `dbDelta()` exists.
+
+If it exists, explain why it remains or replace it.
+
+## 7. Dead Code Removed
+
+List deleted files, unused assets, unused hooks, or unused functions.
+
+## 8. Files Flagged for Human Review
+
+List anything uncertain.
+
+## 9. Remaining Risks
+
+List anything still requiring manual testing.
+
+## 10. Test Checklist
+
+Include a checklist for:
+
+* Single-site activation
+* Single-site deactivation
+* Single-site uninstall
+* Multisite per-site activation
+* Network activation
+* Network deactivation
+* Network uninstall
+* Admin screen load
+* Frontend screen load
+* REST requests
+* AJAX requests
+* Cron events
+* Database migration
+* Escaping/security scan
+* PHPStan or equivalent static analysis
+* PHPCS where applicable
+* Manual browser test
+
+---
+
+# Non-Negotiable Rules
+
+* Do not introduce `dbDelta()` unless explicitly justified.
+* Do not introduce `isset()`.
+* Do not remove user data on deactivation.
+* Do not silently remove user data on uninstall.
+* Do not leave unescaped output.
+* Do not leave unprepared SQL.
+* Do not leave folders without `index.php`.
+* Do not leave dead production files.
+* Do not weaken PSR architecture to satisfy older WordPress examples.
+* Do not make broad redesigns during production hardening.
+* Do not change public behavior unless required for security, correctness, or compatibility.
+
+Final output should be a pull request with clear commits and a production-readiness report.
+
+Create a pull request when ready.
