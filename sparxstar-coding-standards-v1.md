@@ -120,21 +120,17 @@ Every governed action must call Sirus before execution. No exceptions.
 
 Before any governed action:
 
-  context   \= Sirus::resolveContext(request)
+```text
+context   = Sirus::resolveContext(request)
+authority = Sirus::resolveAuthority(caller)
 
-  authority \= Sirus::resolveAuthority(caller)
-
-  if context is null OR authority is null:
-
-    FAIL CLOSED
-
-    return error
-
-    do NOT execute action
-
-    do NOT guess
-
-    do NOT fallback
+if context is null OR authority is null:
+  FAIL CLOSED
+  return error
+  do NOT execute action
+  do NOT guess
+  do NOT fallback
+```
 
 ## **1.3  Hard Rules**
 
