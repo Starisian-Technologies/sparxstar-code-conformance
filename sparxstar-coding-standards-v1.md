@@ -59,7 +59,7 @@ Every failure must return a defined error, log internally with full context, and
 | Max request CPU time | 2 seconds | All PHP requests, GraphQL resolvers |
 | Max request size | 5 MB | All inbound requests |
 | Max API response | 100 KB | All REST and GraphQL responses |
-| Max concurrent ops | Per user: max 1 active mutation and max 1 active upload | Mutations, uploads, governed actions |
+| Max concurrent ops (per user, per type) | Max 1 active mutation; max 1 active upload. Enforced independently per operation type. | Mutations, uploads, governed actions |
 | Max JS bundle | 150 KB gzipped | All JavaScript bundles |
 | Max CSS size | 50 KB | All stylesheet bundles |
 
@@ -406,17 +406,17 @@ async function fetchWithRetry(url, maxRetries = 3) {
 
 ## **3.4  Memory Management**
 
+```js
 // Release media references when done
-
-video.srcObject \= null;
-
-stream.getTracks().forEach(track \=\> track.stop());
+video.srcObject = null;
+stream.getTracks().forEach(track => track.stop());
 
 // Stream blobs — never buffer full media in memory
 
-// Wrong: blob \= await response.blob(); // full file in memory
+// Wrong: blob = await response.blob(); // full file in memory
 
 // Right: stream progressively via ReadableStream
+```
 
 ## **3.5  Network Awareness**
 
@@ -479,31 +479,22 @@ if (!navigator.onLine) {
 
 ## **4.3  JavaScript Capture Constraints**
 
-const constraints \= {
-
+```js
+const constraints = {
   audio: {
-
     sampleRate: 16000,
-
     channelCount: 1
-
   },
-
   video: {
-
-    width:     { ideal: 640,  max: 640 },
-
-    height:    { ideal: 480,  max: 480 },
-
-    frameRate: { ideal: 15,   max: 15  }
-
+    width:     { ideal: 640, max: 640 },
+    height:    { ideal: 480, max: 480 },
+    frameRate: { ideal: 15,  max: 15  }
   }
-
 };
 
 // Never start recording automatically
-
 // Never assume camera or microphone availability
+```
 
 # **5\.  TUS Upload Server Standards**
 
