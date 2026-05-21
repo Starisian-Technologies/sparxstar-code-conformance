@@ -50,7 +50,7 @@ Allowed nondeterminism is limited to trusted server-generated values required fo
 
 ## **0.3  No Silent Failure**
 
-Every failure must return a defined error, log internally with full context, and never fallback silently. The client receives a generic error. The server logs the full context. Stack traces never reach the client.
+Every failure must return a defined error, log internally with full context, and never fall back silently. The client receives a generic error. The server logs the full context. Stack traces never reach the client.
 
 ## **0.4  Bounded Execution — Hard Caps**
 
@@ -59,7 +59,7 @@ Every failure must return a defined error, log internally with full context, and
 | Max request CPU time | 2 seconds | All PHP requests, GraphQL resolvers |
 | Max request size | 5 MB | All inbound requests |
 | Max API response | 100 KB | All REST and GraphQL responses |
-| Max concurrent ops | 1 per user | Mutations, uploads, governed actions |
+| Max concurrent ops | Per user: max 1 active mutation and max 1 active upload | Mutations, uploads, governed actions |
 | Max JS bundle | 150 KB gzipped | All JavaScript bundles |
 | Max CSS size | 50 KB | All stylesheet bundles |
 
@@ -120,21 +120,17 @@ Every governed action must call Sirus before execution. No exceptions.
 
 Before any governed action:
 
-  context   \= Sirus::resolveContext(request)
+```text
+context   = Sirus::resolveContext(request)
+authority = Sirus::resolveAuthority(caller)
 
-  authority \= Sirus::resolveAuthority(caller)
-
-  if context is null OR authority is null:
-
-    FAIL CLOSED
-
-    return error
-
-    do NOT execute action
-
-    do NOT guess
-
-    do NOT fallback
+if context is null OR authority is null:
+  FAIL CLOSED
+  return error
+  do NOT execute action
+  do NOT guess
+  do NOT fall back
+```
 
 ## **1.3  Hard Rules**
 
@@ -361,25 +357,21 @@ if (!has_consent($user_id, 'recording')) {
 
 All event listeners must be throttled or debounced. Continuous loops are forbidden.
 
+```js
 // Required — throttle pattern
-
-let lastRun \= 0;
+let lastRun = 0;
 
 function handleSensorEvent(data) {
+  if (Date.now() - lastRun < 100) return; // 10 Hz max
 
-  if (Date.now() \- lastRun \< 100\) return; // 10 Hz max
-
-  lastRun \= Date.now();
-
+  lastRun = Date.now();
   processData(data);
-
 }
 
 // Forbidden
-
-setInterval(() \=\> doWork(), 10); // unbounded loop
-
+setInterval(() => doWork(), 10); // unbounded loop
 sensor.addEventListener('data', handler); // no throttle
+```
 
 | FAIL | event listener without throttle or debounce |
 | :---- | :---- |
@@ -387,29 +379,25 @@ sensor.addEventListener('data', handler); // no throttle
 
 ## **3.3  API Call Discipline**
 
+```js
 // Required
-
-const response \= await fetch(url, {
-
+const response = await fetch(url, {
   signal: AbortSignal.timeout(5000), // 5s max
-
 });
 
 // Retry with exponential backoff — max 3 attempts
-
-async function fetchWithRetry(url, maxRetries=3) {
-
-  for (let i \= 0; i \< maxRetries; i++) {
-
-    try { return await fetch(url, { signal: AbortSignal.timeout(5000) }); }
-
-    catch { await new Promise(r \=\> setTimeout(r, 1000 \* Math.pow(2, i))); }
-
+async function fetchWithRetry(url, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      return await fetch(url, { signal: AbortSignal.timeout(5000) });
+    } catch {
+      await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, i)));
+    }
   }
 
   throw new Error('Max retries exceeded');
-
 }
+```
 
 | FAIL | API call without timeout |
 | :---- | :---- |
@@ -432,17 +420,15 @@ stream.getTracks().forEach(track \=\> track.stop());
 
 ## **3.5  Network Awareness**
 
+```js
 // Check before attempting upload
-
-if (\!navigator.onLine) {
-
+if (!navigator.onLine) {
   queueUpload(file); // IndexedDB queue
-
   return;
-
 }
 
 // Queue uploads locally — never assume stable connection
+```
 
 # **4\.  Audio and Video — Hard Limits**
 
@@ -706,7 +692,8 @@ try {
 } catch (Exception $e) {
   $db->rollback();
   if ($upload_result !== null) { delete_file($path); }
-  throw new RuntimeException('Operation failed. Rolled back.');
+  error_log('Operation failed and was rolled back: ' . $e->getMessage());
+  throw new RuntimeException('Operation failed. Rolled back.', 0, $e);
 }
 ```
 
@@ -831,17 +818,15 @@ Jobs that exhaust their retry budget must not be silently dropped. They move to 
 
 Schema changes must be versioned. Clients must tolerate the previous schema version during the transition window. No destructive schema change without a defined migration path.
 
+```text
 // Required — additive first, destructive second
-
 // Phase 1: add new field, keep old field
-
 // Phase 2: migrate data to new field
-
 // Phase 3: remove old field (separate deploy, after client update confirmed)
 
 // Forbidden
-
 // single deploy that removes a field clients still depend on
+```
 
 ## **12.6  Client-Side Storage Limits**
 
