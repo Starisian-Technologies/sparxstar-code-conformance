@@ -1,0 +1,94 @@
+@copilot Please review this unfinished repository as a salvage and opportunity assessment.
+
+First, write one clear paragraph explaining what this repo appears to be trying to build. Include the likely purpose, target user, runtime environment, major components, and current level of completeness.
+
+Then evaluate whether there is genuinely useful code worth saving.
+
+Do not rewrite the code yet. Do not clean up the repo yet. Your job is to inspect, judge, and report.
+
+Review for:
+
+1. Salvage value
+- Identify any code that is well-structured, reusable, or technically valuable.
+- Identify files that contain business logic, architectural ideas, unique implementation patterns, integrations, schemas, tests, UI work, or documentation worth keeping.
+- Identify code that could be extracted into another project.
+- Identify code that should be archived only for reference.
+- Identify code that should likely be deleted.
+
+2. Fastest useful outcome
+Explain what this repo could quickly become with the least amount of work, such as:
+- a production plugin,
+- a prototype,
+- a library,
+- a developer tool,
+- a proof of concept,
+- documentation/specification only,
+- a test fixture repo,
+- or nothing worth continuing.
+
+Be honest if the repo is not worth saving.
+
+3. Current state
+Assess:
+- what appears finished,
+- what appears unfinished,
+- what appears broken,
+- what appears duplicated,
+- what appears abandoned,
+- what appears experimental,
+- and what is missing before the repo could be useful.
+
+4. File-by-file keep/archive/delete recommendation
+Create a table with:
+
+| File or directory | Recommendation | Reason |
+|---|---|---|
+| path/to/file.php | Keep / Rewrite / Archive / Delete / Review | Explain why |
+
+Use “Keep” only when the file has real value.
+Use “Rewrite” when the idea is good but the code is not good enough.
+Use “Archive” when it is useful as reference but should not be part of active production code.
+Use “Delete” when it has no clear value.
+Use “Review” when you need owner context.
+
+5. Best path forward
+Give one of these final recommendations:
+
+- Continue this repo
+- Salvage selected files into another repo
+- Convert this repo into documentation/specification only
+- Archive the repo
+- Delete the repo after confirming nothing private or legally important is inside
+
+Then explain the recommendation in plain business terms.
+
+For every valuable item, report:
+
+### Valuable Code: [short title]
+File(s): [exact paths]
+What it does: [plain explanation]
+Why it is worth keeping: [specific value]
+Risk or limitation: [what is incomplete, unsafe, or outdated]
+Best use: [keep in this repo / move to another repo / use as reference / rewrite from scratch]
+
+Also include:
+
+## Quick Turnaround Possibility
+Could this repo become something useful in 1–3 work sessions?
+Answer: Yes / No / Maybe
+
+If yes, explain the smallest useful product it could become.
+
+## Owner Decision Needed
+List anything that requires my decision before you can recommend keeping or deleting it.
+
+Important instructions:
+- Do not flatter the repo.
+- Do not assume unfinished code is valuable.
+- Do not recommend keeping files just because they exist.
+- Do not suggest large rewrites unless the underlying idea is strong.
+- Base all findings on actual files in the repository.
+- Cite exact file paths and line numbers where possible.
+- If the repo contains WordPress code, judge it against WordPress 6.8+, PHP 8.2+, multisite safety, WordPress VIP expectations where relevant, and modern PSR-style architecture where it does not conflict with WordPress.
+- If the repo contains JavaScript or front-end code, judge whether it is reusable, maintainable, and connected to a real workflow.
+- Do not make code changes until I approve the assessment.
