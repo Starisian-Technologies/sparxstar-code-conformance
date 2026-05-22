@@ -1197,7 +1197,7 @@ All server-specific credentials (API keys, database connection strings, storage 
 
 ## **15.1  Required Documentation Files**
 
-Every repository must include the following in the repository (at the root and in `.github/` where specified):
+Every repository must include the following files in the repository (each file's path indicates its location):
 
 | File | Purpose |
 | :---- | :---- |
