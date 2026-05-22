@@ -1,0 +1,78 @@
+@copilot Please perform a detailed repository-wide code analysis.
+
+Before suggesting fixes, first write one clear paragraph explaining what this repository appears to be building, including:
+- the purpose of the project,
+- the main architectural layers or modules,
+- the expected runtime environment,
+- the major data flow,
+- and what the code is trying to protect, produce, or enforce.
+
+Then analyze the code in detail and produce a structured report. Do not rewrite the code yet unless I ask. Your job is to identify problems clearly.
+
+Review for:
+
+1. Architecture and repo purpose
+- Does the code match the apparent purpose of the repository?
+- Are files placed in the correct directories?
+- Are namespaces, class names, interfaces, services, and responsibilities clear?
+- Are there duplicate, obsolete, unused, or dead files that should be removed?
+- Are there signs of unfinished scaffolding, placeholder logic, or abandoned approaches?
+
+2. Production readiness
+- Identify anything that would block production use.
+- Look for fragile logic, missing error handling, unsafe assumptions, incomplete validation, missing tests, or unclear failure modes.
+- Identify any code that appears to work only in development or mock conditions.
+
+3. WordPress compatibility, if applicable
+- Confirm compatibility with WordPress 6.8+ and PHP 8.2+.
+- Follow WordPress VIP expectations where relevant.
+- Prefer PSR-style modern PHP architecture where it does not conflict with WordPress.
+- Confirm proper escaping, sanitization, nonce checks, capability checks, REST permission callbacks, multisite safety, uninstall behavior, activation/deactivation behavior, and index.php protection in directories.
+- Do not recommend dbDelta unless there is a strong reason.
+
+4. Security
+- Check for unsafe input handling, path traversal, unsafe file operations, SQL risks, XSS risks, CSRF risks, privilege escalation, insecure REST routes, leaked secrets, insecure headers, and unsafe assumptions about trusted users.
+- Call out exact files and methods where the issue exists.
+
+5. Standards and naming
+- Check whether naming is professional, consistent, and suitable for senior-engineer review.
+- Confirm class names, method names, constants, file names, namespaces, hooks, filters, database names, and configuration names are consistent.
+- Identify anything that sounds casual, vague, misleading, or unprofessional.
+
+6. Tests and CI
+- Identify missing tests for important behavior.
+- Identify weak tests that pass without proving the intended behavior.
+- Identify untested edge cases.
+- Review GitHub Actions, Composer scripts, linting, static analysis, security checks, and test coverage.
+- Recommend specific tests that should be added.
+
+7. Documentation
+- Identify missing or misleading README content, setup instructions, architecture notes, configuration docs, security notes, and developer documentation.
+- Confirm whether docblocks and inline comments explain intent rather than restating obvious code.
+
+For every issue, report it in this format:
+
+### Issue: [short title]
+Severity: Critical / High / Medium / Low  
+File(s): [exact paths]  
+Problem: [clear explanation]  
+Why it matters: [production, security, maintenance, legal, user, or business impact]  
+Recommended fix: [specific action]  
+Do not change yet: [state whether this should be fixed now, deferred, or requires owner decision]
+
+After the issue list, provide:
+
+## Overall Assessment
+- Is this repo production-ready: Yes / No / Almost
+- Top 5 fixes required before production
+- Files that may be dead code or should be reviewed for removal
+- Areas where the repo is strong
+- Areas where the repo is unclear or needs owner clarification
+
+Important instructions:
+- Do not make broad assumptions.
+- Do not give generic advice.
+- Base every finding on actual code in the repository.
+- Cite exact files, classes, methods, and line numbers where possible.
+- If you are unsure, say what evidence is missing.
+- Do not rewrite, refactor, or delete anything until I approve the findings.
