@@ -1,6 +1,6 @@
 @copilot - # GitHub Copilot Instructions — Enterprise Production Readiness & Repository Governance Review
 
-You are performing a full enterprise-grade production readiness review for a modern PHP/WordPress codebase and its surrounding repository governance structure.
+You are performing a full enterprise-grade production readiness review for a modern codebase and its surrounding repository governance structure.
 
 This is NOT a feature-development task.
 
