@@ -59,7 +59,7 @@ Every failure must return a defined error, log internally with full context, and
 | Max request CPU time | 2 seconds | All PHP requests, GraphQL resolvers |
 | Max request size | 5 MB | All inbound requests |
 | Max API response | 100 KB | All REST and GraphQL responses |
-| Max concurrent ops (per user, per type) | Max 1 active mutation; max 1 active upload. Enforced independently per operation type. | Mutations, uploads, governed actions |
+| Max concurrent ops (per user, per type) | Max 1 active mutation; max 1 active upload. Enforced independently per operation type. | Mutations, uploads |
 | Max JS bundle | 150 KB gzipped | All JavaScript bundles |
 | Max CSS size | 50 KB | All stylesheet bundles |
 
@@ -683,7 +683,7 @@ try {
 } catch (Exception $e) {
   $db->rollback();
   if ($upload_result !== null) { delete_file($path); }
-  error_log('Operation failed and was rolled back: ' . $e->getMessage());
+  error_log('Operation failed and was rolled back for path ' . $path . ': ' . $e->getMessage());
   throw new RuntimeException('Operation failed. Rolled back.', 0, $e);
 }
 ```
@@ -1074,14 +1074,14 @@ Rules:
 
 ## **14.5  Request Envelope**
 
-Every tool call must include context:
+Every tool call must include a top-level request ID and context:
 
 ```json
 {
+  "request_id": "uuid-v4 — client-generated, for idempotency",
   "tool": "tool_name",
   "params": {},
   "context": {
-    "request_id": "uuid-v4 — client-generated, for idempotency",
     "user_id": "uuid — required for write operations"
   }
 }
@@ -1123,7 +1123,7 @@ Every tool call must include context:
 }
 ```
 
-Job status values: `queued`, `processing`, `complete`, `failed`. Job state retained minimum 24 hours after completion. Maximum poll interval: 5 seconds.
+Job status values: `queued`, `processing`, `complete`, `failed`. Job state retained minimum 24 hours after completion. Minimum poll interval: 5 seconds (do not poll more often than every 5 seconds).
 
 ## **14.7  Error Handling**
 
@@ -1197,16 +1197,16 @@ All server-specific credentials (API keys, database connection strings, storage 
 
 ## **15.1  Required Documentation Files**
 
-Every repository must include the following at the root level:
+Every repository must include the following in the repository (at the root and in `.github/` where specified):
 
 | File | Purpose |
 | :---- | :---- |
 | `README.md` | Entry point. What the repository does, how to set it up, and what it depends on. |
 | `CONTRIBUTING.md` | How to contribute: branch naming, commit format, and review process. |
 | `.github/copilot-instructions.md` | AI coding assistant context — stack, patterns, what to avoid, relevant standards. |
-| `AGENTS.md` | Autonomous agent instructions — equivalent to `copilot-instructions.md` for agent frameworks that read this file. |
+| `AGENTS.md` | Autonomous agent instructions — equivalent to `.github/copilot-instructions.md` for agent frameworks that read this file. |
 
-## **15.2  copilot-instructions.md and AGENTS.md Requirements**
+## **15.2  .github/copilot-instructions.md and AGENTS.md Requirements**
 
 These files provide context to AI coding assistants and autonomous agents. They must include:
 
@@ -1219,7 +1219,7 @@ These files provide context to AI coding assistants and autonomous agents. They 
 
 These files must be kept current with the codebase. Stale instructions are worse than no instructions — they actively mislead the assistant.
 
-| FAIL | `copilot-instructions.md` or `AGENTS.md` absent from repository |
+| FAIL | `.github/copilot-instructions.md` or `AGENTS.md` absent from repository |
 | :---- | :---- |
 | **FAIL** | Instructions describe architecture or APIs that no longer exist in the codebase |
 
@@ -1363,7 +1363,7 @@ These conditions must cause CI to fail in development and production modes. In d
 | FAIL | `README.md` absent from repository |
 | :---- | :---- |
 | **FAIL** | `CONTRIBUTING.md` absent from repository |
-| **FAIL** | `copilot-instructions.md` or `AGENTS.md` absent from repository |
+| **FAIL** | `.github/copilot-instructions.md` or `AGENTS.md` absent from repository |
 | **FAIL** | Instructions describe architecture or APIs that no longer exist in the codebase |
 | **FAIL** | Commit message without type prefix |
 | **FAIL** | Non-obvious change with no explanation of why in commit body |
