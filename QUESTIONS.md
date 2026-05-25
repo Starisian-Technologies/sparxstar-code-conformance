@@ -1,6 +1,6 @@
 # Questions for Clarification — Coding Standards Review
 
-This file tracks current clarification questions against `sparxstar-coding-standards-v1.md`.
+This file tracks current clarification questions, review notes, and platform implications against `sparxstar-coding-standards-v1.md`.
 
 ## What It Gets Right
 
@@ -25,7 +25,7 @@ This file tracks current clarification questions against `sparxstar-coding-stand
 ## Where It Has Gaps or Tensions
 
 1. **Audio limits vs. preservation of non-digitized, oral languages**
-   Section 4.1 caps production audio at 120 seconds. This is efficient for everyday capture, but can truncate culturally important long-form recordings. Clarification is needed on whether this cap applies only to intake/capture while longer recordings use a governed async flow.
+   §4.1 caps production audio at 120 seconds. This is efficient for everyday capture, but can truncate culturally important long-form recordings. Clarification is needed on whether this cap applies only to intake/capture while longer recordings use a governed async flow.
 
 2. **Concurrency model may be aggressive for low-end Android on 2G**
    §0.4 appears to impose a one-operation-per-user rule, while §8.1 separately caps active mutations and active uploads and rejects concurrent requests with 429. The standard should explicitly connect this with client queueing/retry behavior under high latency when responses may be delayed or dropped.
