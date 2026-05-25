@@ -39,13 +39,10 @@ This file tracks current clarification questions against `sparxstar-coding-stand
 5. **CSS blur/shadow rule in §13.6 needs rationale**
    The rule is appropriate for constrained devices, but adding one line of rationale would improve enforceability and reduce workaround behavior.
 
-6. **Section 0.6 reserved gap needs explicit wording**
-   Although reserved for numbering stability, a clear “intentionally vacant—do not assign content” note prevents onboarding confusion.
-
-7. **Dead-letter queue rule (§12.3) has no retention policy**
+6. **Dead-letter queue rule (§12.3) has no retention policy**
    Alerting and manual retry are defined, but retention and deletion policy for dead-letter entries is not. Governance-sensitive failures need explicit retention and audit handling.
 
-8. **No code standard for access-tier propagation**
+7. **No code standard for access-tier propagation**
    Access tiers are referenced at edge level (§7.5), but there is no coding standard for how access tier is represented and propagated through the request lifecycle.
 
 ## What This Implies for the Platform
