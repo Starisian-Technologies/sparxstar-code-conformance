@@ -47,7 +47,7 @@ This file tracks current clarification questions against `sparxstar-coding-stand
 
 ## What This Implies for the Platform
 
-- This document should be published to `sparxstar-platform-standards` so rules can be consumed and automated consistently.
+- This document should be published to a central standards repository so rules can be consumed and automated consistently.
 - CI enforcement in §13 is the key part of the developer loop. Mechanical violations should be blocked in CI so review focuses on architecture and correctness.
 - The audio-duration policy should be resolved before publication to avoid hard-coding the wrong default behavior across downstream repositories.
 - If version 1.0 is intended as normative law, a clear versioning and propagation policy should be defined for dependent repositories.
