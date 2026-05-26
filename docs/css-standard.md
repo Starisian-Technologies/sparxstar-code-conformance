@@ -114,13 +114,13 @@ All visual values (colors, spacing, radii, type scale) must be expressed as CSS 
 # 4. Responsive Design
 
 - (M) Mobile-first — base styles target smallest screen, media queries expand upward
-- (M) Breakpoints expressed as named CSS custom properties — never hard-coded magic numbers in media queries
+- (M) Breakpoints expressed as named media-query tokens (for example via `@custom-media` or an equivalent design-token build step) — never hard-coded magic numbers in media queries
 - (M) Touch targets minimum 44 × 44 CSS pixels (WCAG 2.5.5)
 - (X) Fixed pixel layouts that do not adapt to viewport
 - (X) `vh` units for critical layout heights without fallback (iOS Safari viewport quirk)
 
 ```css
-/* Breakpoint token defined once — e.g., via PostCSS @custom-media plugin */
+/* Breakpoint token defined once in the build pipeline — e.g., via PostCSS @custom-media plugin */
 /* @custom-media --spx-bp-md (min-width: 768px); */
 
 /* Required — mobile-first, breakpoint via named token */
