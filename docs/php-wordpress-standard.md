@@ -122,14 +122,15 @@ The order is non-negotiable:
 2. **Validate** domain logic (type checks, range checks, business rules)
 3. **Escape** output on the way out (`esc_html()`, `esc_attr()`, `esc_url()`, `esc_*()`)
 
-| Function | Use |
+| Function / Pattern | Use |
 | :---- | :---- |
-| `sanitize_text_field()` | Plain text input |
+| `sanitize_text_field()` | Single-line plain text user input (e.g., form text fields) — not for structured data |
 | `wp_kses_post()` | Human-authored HTML content |
 | `esc_html()` | HTML output context |
 | `esc_attr()` | HTML attribute context |
 | `esc_url()` | URL output context |
 | `esc_js()` | Inline JavaScript context |
+| `json_decode()` + schema validation | JSON and other structured payloads — never use `sanitize_text_field()` on structured data |
 
 ---
 
