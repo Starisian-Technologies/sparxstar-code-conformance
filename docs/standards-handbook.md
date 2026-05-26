@@ -76,7 +76,7 @@ Every failure must return a defined error, log internally with full context, and
 | Max request CPU time | 2 seconds | All PHP requests, GraphQL resolvers |
 | Max request size | 5 MB | All inbound requests |
 | Max API response | 100 KB | All REST and GraphQL responses |
-| Max concurrent ops | 1 per user | Total active governed operations per user across mutations, uploads, and governed actions combined |
+| Max concurrent ops | 1 active mutation and 1 active upload per user | Per user, enforced separately by operation type; governed actions count toward the mutation cap unless explicitly assigned a different cap in a later section |
 | Max JS bundle | 150 KB gzipped | All JavaScript bundles |
 | Max CSS size | 50 KB | All stylesheet bundles |
 
