@@ -83,13 +83,28 @@ const response = await fetch(url, {
 
 // Required — retry with exponential backoff, max 3 attempts
 async function fetchWithRetry(url, maxRetries = 3) {
+  const retryableStatuses = new Set([408, 425, 429, 500, 502, 503, 504]);
+
   for (let i = 0; i < maxRetries; i++) {
     try {
-      return await fetch(url, { signal: AbortSignal.timeout(5000) });
+      const response = await fetch(url, { signal: AbortSignal.timeout(5000) });
+
+      if (response.ok) {
+        return response;
+      }
+
+      if (!retryableStatuses.has(response.status)) {
+        return response;
+      }
     } catch {
+      // Network and abort errors are retryable within the bounded retry budget.
+    }
+
+    if (i < maxRetries - 1) {
       await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
     }
   }
+
   throw new Error('Max retries exceeded');
 }
 ```
