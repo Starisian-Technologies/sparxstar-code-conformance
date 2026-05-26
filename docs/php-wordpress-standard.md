@@ -118,13 +118,13 @@ $id   = (int)$_GET['id']; // implicit cast without validation
 
 The order is non-negotiable:
 
-1. **Sanitize** input on the way in (`sanitize_text_field()`, `sanitize_key()`, `wp_kses_post()`)
+1. **Sanitize** plain-text input on the way in as appropriate (`sanitize_text_field()`, `sanitize_key()`, `wp_kses_post()`); parse and validate structured payloads with format-appropriate handling instead of `sanitize_text_field()`
 2. **Validate** domain logic (type checks, range checks, business rules)
 3. **Escape** output on the way out (`esc_html()`, `esc_attr()`, `esc_url()`, `esc_*()`)
 
 | Function | Use |
 | :---- | :---- |
-| `sanitize_text_field()` | Machine/structured data |
+| `sanitize_text_field()` | Plain text input |
 | `wp_kses_post()` | Human-authored HTML content |
 | `esc_html()` | HTML output context |
 | `esc_attr()` | HTML attribute context |
