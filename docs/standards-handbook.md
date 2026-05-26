@@ -102,8 +102,9 @@ This section is intentionally reserved to preserve numbering stability for cross
 
 *The abstraction layer requirement is the enforceable consequence of this policy. If a direct provider SDK call appears in application code without an abstraction layer, it is a violation — not a preference.*
 
-| **FAIL** | direct provider-specific API call without abstraction layer in application code |
+| Status | Condition |
 | :---- | :---- |
+| **FAIL** | direct provider-specific API call without abstraction layer in application code |
 
 | Layer | Trust Level | Rule |
 | :---- | :---- | :---- |
