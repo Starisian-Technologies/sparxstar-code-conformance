@@ -60,19 +60,42 @@ async function processJob(jobId: any, payload: any): Promise<any> { ... }  // an
 
 ```ts
 // Required — validate at startup
+type EnvType = 'string' | 'number' | 'url';
+
+function requiredEnv(key: string, type: 'string'): string;
+function requiredEnv(key: string, type: 'number'): number;
+function requiredEnv(key: string, type: 'url'): string;
+function requiredEnv(key: string, type: EnvType): string | number {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable: ${key}`);
+  }
+
+  switch (type) {
+    case 'string':
+      return value;
+    case 'number': {
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) {
+        throw new Error(`Environment variable ${key} must be a valid number`);
+      }
+      return parsed;
+    }
+    case 'url':
+      try {
+        new URL(value);
+        return value;
+      } catch {
+        throw new Error(`Environment variable ${key} must be a valid URL`);
+      }
+  }
+}
+
 const config = {
   port: requiredEnv('PORT', 'number'),
   sirusEndpoint: requiredEnv('SIRUS_ENDPOINT', 'url'),
   dbUrl: requiredEnv('DATABASE_URL', 'string'),
 };
-
-function requiredEnv(key: string, type: string): string {
-  const value = process.env[key];
-  if (!value) {
-    throw new Error(`Missing required environment variable: ${key}`);
-  }
-  return value;
-}
 ```
 
 | **FAIL** | service that starts without validating required environment variables |
