@@ -36,7 +36,7 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | OBS-001 | standards-handbook §7 | Required metrics must be emitted | Services | SPECIFIED | Metrics conformance checks |
 | DIST-001 | standards-handbook §8.1 | DB commit must precede cache invalidation/event emission | Backend | SPECIFIED | Integration tests |
 | DIST-002 | standards-handbook §8.2 | Server is authority for ordering timestamps | Backend | SPECIFIED | Static analysis + tests |
-| DIST-003 | standards-handbook §8.4 | Blue/green or canary deployment with rollback path | Release engineering | REFERENCE | Deployment runbook |
+| DIST-003 | standards-handbook §8.4 | Deployment changes must be rollback-safe; breaking changes require feature flags | Release engineering | SPECIFIED | Deployment policy checks / migration tests |
 | DIST-004 | standards-handbook §8.5 | Schema version compatibility during rollout | Backend / Clients | SPECIFIED | Migration tests |
 | DIST-005 | standards-handbook §8.6 | Critical offline data in IndexedDB, not localStorage | Frontend | ENFORCED | ESLint custom rule |
 | PHP-001 | php-wordpress-standard §2 | PHP files require `declare(strict_types=1)` | PHP | ENFORCED | PHPCS + PHPStan |
