@@ -26,6 +26,7 @@ The standards are split into a language-agnostic handbook and per-language imple
 | :---- | :---- |
 | [sparxstar-coding-standards-v1.md](sparxstar-coding-standards-v1.md) | v1.0 monolithic standards (reference — superseded by `docs/`) |
 | [SPARXSTAR-ENGINEERING-STANDARDS.md](SPARXSTAR-ENGINEERING-STANDARDS.md) | Engineering standards v2 summary |
+| [SPARXSTAR-CI-Enforcement-Matrix.md](SPARXSTAR-CI-Enforcement-Matrix.md) | Companion CI rule-status matrix (`ENFORCED`, `WARN`, `SPECIFIED`, `REFERENCE`, `RESERVED`) |
 | [THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md](THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md) | Organizational constitution |
 | [QUESTIONS.md](QUESTIONS.md) | Open clarification questions and review notes |
 | [SECURITY.md](SECURITY.md) | Security policy |
