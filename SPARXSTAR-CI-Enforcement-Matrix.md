@@ -22,7 +22,7 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | SYS-004 | standards-handbook §0.4 | Max API response 100 KB | API | ENFORCED | API tests / response size checks |
 | SYS-005 | standards-handbook §0.5 | Idempotency key required for write operations | API / Mutations / Uploads | SPECIFIED | Contract tests / runtime middleware |
 | SYS-006 | standards-handbook §0.6 | Reserved section | All | RESERVED | N/A |
-| SYS-007 | standards-handbook §0.7 | No direct provider SDK usage without abstraction layer | App code | SPECIFIED | Static analysis custom rules |
+| SYS-007 | standards-handbook §0.7 | No direct provider SDK usage without abstraction layer | App code | ENFORCED | Code review + PHPStan custom rule |
 | SIRUS-001 | standards-handbook §1.2 | Governed actions must call Sirus before execution | Backend / Frontend governed flows | SPECIFIED | Static analysis custom rules |
 | SIRUS-002 | standards-handbook §1.3 | Fail closed when Sirus context/authority is unavailable | All governed repos | SPECIFIED | Integration tests |
 | GQL-001 | standards-handbook §2.1 | GraphQL max query depth 5 | GraphQL | ENFORCED | graphql-depth-limit |
