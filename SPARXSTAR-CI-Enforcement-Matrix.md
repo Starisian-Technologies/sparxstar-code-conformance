@@ -57,7 +57,7 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | MEDIA-003 | media-upload-standard §4 | Starmus required (no raw `MediaRecorder`) | JS/TS | ENFORCED | ESLint custom rule |
 | MEDIA-004 | media-upload-standard §5.1 | Upload chunk size <= 512 KB | Upload services | ENFORCED | Upload API tests |
 | MEDIA-005 | media-upload-standard §7.1 | Controlled FFmpeg pipeline only | Backend media processing | SPECIFIED | Processing service policy checks |
-| DOC-001 | README.md §Documentation Structure | README required and standards docs linked | All repos | ENFORCED | GitHub Action / file presence check |
+| DOC-001 | README.md §Documentation Structure | Repository documentation structure reference | This repository | REFERENCE | Documentation reference |
 | REF-001 | docs/enforcement-matrix.md | Existing CI/CD matrix remains reference mapping for stage execution | All | REFERENCE | Documentation cross-reference |
 
 ## Notes for CI Implementers
