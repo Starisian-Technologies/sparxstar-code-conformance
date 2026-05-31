@@ -50,7 +50,7 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | NODE-001 | node-standard §2 | TypeScript strict mode required | Node.js | ENFORCED | `tsc --noEmit` |
 | NODE-002 | node-standard §4.3 | HTTP server timeout configuration required | Node.js | ENFORCED | Integration tests |
 | NODE-003 | node-standard §5 | Parameterized queries only | Node.js / SQL | ENFORCED | ESLint / query lint rules |
-| CSS-001 | css-standard §1 | CSS bundle must stay within hard size limit | Frontend CSS | ENFORCED | Build size check |
+| CSS-001 | css-standard §1 | CSS bundle must stay within 50 KB gzipped total per page | Frontend CSS | ENFORCED | Build size check |
 | CSS-002 | css-standard §2 | Prohibited high-cost CSS properties blocked | Frontend CSS | ENFORCED | Stylelint custom rule |
 | MEDIA-001 | media-upload-standard §1 | Audio sample rate <= 16000 | JS/PHP | SPECIFIED | Runtime validation |
 | MEDIA-002 | media-upload-standard §2 | Video constraints (max resolution/FPS/bitrate) enforced | JS/PHP | SPECIFIED | Runtime validation |
