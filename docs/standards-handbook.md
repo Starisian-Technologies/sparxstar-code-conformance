@@ -121,7 +121,7 @@ This standards system must remain explicit for core stacks and data formats used
 
 Rules:
 
-- SQL, PostgreSQL, and Cypher (Neo4j) access must be parameterized and bounded; string interpolation in queries is forbidden.
+- SQL, PostgreSQL, and Cypher (Neo4j) access must be parameterized and explicitly bounded (e.g., `LIMIT` / max rows); string interpolation in queries is forbidden.
 - XML and JSON payloads must be parsed with safe defaults and validated against explicit schema or structural contracts before business logic execution.
 - Laravel implementations must preserve the same platform laws as other runtimes (sanitize/validate/escape discipline, explicit authorization, idempotent writes, bounded execution, no silent failure).
 - Vite build pipelines must enforce bundle budgets and deterministic production output equivalent to platform build limits.
