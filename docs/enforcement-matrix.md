@@ -168,7 +168,21 @@ This document maps every enforceable rule in the SPARXSTAR standards to the tool
 
 ---
 
-# 9. CI Pipeline Stages and Order
+# 9. Cross-Stack Data and Framework Enforcement
+
+| Rule | Tool | Stage | draft | dev | prod |
+| :---- | :---- | :---- | :---- | :---- | :---- |
+| SQL query interpolation without parameters | Static analysis + query lint | Lint / Static analysis | (W) | (B) | (B) |
+| PostgreSQL-specific feature used without abstraction guard | Code review + static analysis | Review gate / Static analysis | (W) | (B) | (B) |
+| Cypher query interpolation in Neo4j operations | Static analysis + integration tests | Lint / Test | (W) | (B) | (B) |
+| XML parser allows unsafe entity expansion or external entities | Security tests + parser policy checks | Test | (W) | (B) | (B) |
+| JSON payload accepted without schema or contract validation | Contract tests | Test | (W) | (B) | (B) |
+| Laravel request handling without explicit validation/authorization boundaries | PHPUnit + static analysis | Test / Static analysis | (W) | (B) | (B) |
+| Vite build without enforced asset budgets | Build tooling checks | Build | (W) | (B) | (B) |
+
+---
+
+# 10. CI Pipeline Stages and Order
 
 All repositories governed by SPARXSTAR standards run CI in the following stage order. Later stages do not run if earlier stages fail.
 

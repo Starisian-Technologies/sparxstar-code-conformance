@@ -50,6 +50,13 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | NODE-001 | node-standard §2 | TypeScript strict mode required | Node.js | ENFORCED | `tsc --noEmit` + `tsconfig` strict-mode validation |
 | NODE-002 | node-standard §4.3 | HTTP server timeout configuration required | Node.js | ENFORCED | Integration tests |
 | NODE-003 | node-standard §5 | Parameterized queries only | Node.js / SQL | ENFORCED | ESLint / query lint rules |
+| SQL-001 | standards-handbook §0.8 | SQL queries must be parameterized and bounded | SQL | SPECIFIED | Static analysis + query lint |
+| PG-001 | standards-handbook §0.8 | PostgreSQL queries must be parameterized; extension use behind abstraction | PostgreSQL | SPECIFIED | Static analysis + architecture checks |
+| NEO4J-001 | standards-handbook §0.8 | Cypher queries must use parameters; no string interpolation | Neo4j | SPECIFIED | Driver lint + integration tests |
+| DATA-XML-001 | standards-handbook §0.8 | XML parsing must disable unsafe parser features and validate structure | XML | SPECIFIED | Security tests + parser config checks |
+| DATA-JSON-001 | standards-handbook §0.8 | JSON payloads require schema/contract validation before use | JSON | ENFORCED | Contract tests + runtime validation |
+| LARAVEL-001 | standards-handbook §0.8 | Laravel code must enforce explicit authorization and validation boundaries | Laravel | SPECIFIED | PHPUnit + static analysis |
+| VITE-001 | standards-handbook §0.8 | Vite production builds must enforce asset budgets and deterministic output | Vite | ENFORCED | Build checks |
 | CSS-001 | css-standard §1 | CSS bundle must stay within 50 KB gzipped total per page | Frontend CSS | ENFORCED | Build size check |
 | CSS-002 | css-standard §2 | Prohibited high-cost CSS properties blocked | Frontend CSS | ENFORCED | Stylelint custom rule |
 | MEDIA-001 | media-upload-standard §1 | Audio sample rate <= 16000 | JS/PHP | SPECIFIED | Runtime validation |
