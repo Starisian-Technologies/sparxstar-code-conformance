@@ -36,6 +36,48 @@ The standards are split into a language-agnostic handbook and per-language imple
 
 ---
 
+## Installable Packages
+
+| Package | Ecosystem | Backs |
+| :--- | :--- | :--- |
+| `starisian-technologies/coding-standards` | Composer (`/composer.json`, `/phpcs.xml.dist`, `/phpstan.neon`) | PHP-001, PHP-003, PHP-004 (with prefix override), PHP-005 |
+| `@starisian-technologies/eslint-config` | npm (`packages/eslint-config/`) | baseline JS/TS quality + JSX a11y + flagged `localStorage` (DIST-005 / JS-002) |
+| `@starisian-technologies/tsconfig` | npm (`packages/tsconfig/`) | NODE-001 (TypeScript strict mode) |
+
+### Consume PHP standards
+
+```bash
+composer config repositories.starisian-standards vcs https://github.com/starisian-technologies/starisian-technologies-coding-standards
+composer require --dev starisian-technologies/coding-standards
+```
+
+Then in the consumer's `phpcs.xml.dist`:
+
+```xml
+<?xml version="1.0"?>
+<ruleset>
+    <rule ref="vendor/starisian-technologies/coding-standards/phpcs.xml.dist"/>
+    <config name="prefixes" value="myproduct"/>
+</ruleset>
+```
+
+And in `phpstan.neon`:
+
+```yaml
+includes:
+    - vendor/starisian-technologies/coding-standards/phpstan.neon
+```
+
+### Consume JS/TS standards
+
+```bash
+pnpm add -D @starisian-technologies/eslint-config @starisian-technologies/tsconfig
+```
+
+See [`packages/eslint-config/README.md`](packages/eslint-config/README.md) and [`packages/tsconfig/README.md`](packages/tsconfig/README.md) for the three entrypoints (base / node / react).
+
+---
+
 ## Architecture Decisions Cross-Reference
 
 This repository is the **HOW** for the organization. The **WHY / WHAT** — architecture decisions (ADR-NNN), invariants (INV-NNN), open questions (OQ-NNN), cross-repo specs, role-boundary statements — lives in each product's own decision registry, never here.

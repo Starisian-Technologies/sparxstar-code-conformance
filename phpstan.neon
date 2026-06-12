@@ -1,0 +1,33 @@
+# Starisian Technologies — organization-wide PHPStan configuration.
+# Enforces docs/php-wordpress-standard.md PHP-005 (level 5 minimum).
+#
+# Consumer extension:
+#   includes:
+#       - vendor/starisian-technologies/coding-standards/phpstan.neon
+#
+# Consumers MAY override `level` upward and add their own scanPaths;
+# they MUST NOT lower the level below 5.
+
+includes:
+    - vendor/szepeviktor/phpstan-wordpress/extension.neon
+
+parameters:
+    # PHP-005 — PHPStan level 5 minimum.
+    level: 5
+
+    paths:
+        - .
+
+    excludePaths:
+        analyseAndScan:
+            - vendor/*
+            - node_modules/*
+            - build/*
+            - dist/*
+            - tests/fixtures/*
+
+    # Treat any phpDoc tag we do not know as a real type, not as an error.
+    treatPhpDocTypesAsCertain: false
+
+    # Surface implicit nullables explicitly.
+    reportUnmatchedIgnoredErrors: true
