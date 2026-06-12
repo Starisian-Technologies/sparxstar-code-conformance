@@ -67,7 +67,7 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | CSS-002 | css-standard §2 | Prohibited high-cost CSS properties blocked | Frontend CSS | SPECIFIED | Stylelint custom rule (no shared `stylelint` config ships yet — Catalog #4) |
 | MEDIA-001 | media-upload-standard §1 | Audio sample rate <= 16000 | JS/PHP | SPECIFIED | Runtime validation |
 | MEDIA-002 | media-upload-standard §2 | Video constraints (max resolution/FPS/bitrate) enforced | JS/PHP | SPECIFIED | Runtime validation |
-| MEDIA-003 | media-upload-standard §4 | Starmus required (no raw `MediaRecorder`) | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped); platform-coupled (Starmus) — candidate to move to `sparxstar-platform-standards` |
+| MEDIA-003 | media-upload-standard §4 | Starmus required (no raw `MediaRecorder`) | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped — Catalog #5) |
 | MEDIA-004 | media-upload-standard §5.1 | Upload chunk size <= 512 KB | Upload services | SPECIFIED | Upload API tests (per-repo) |
 | MEDIA-005 | media-upload-standard §7.1 | Controlled FFmpeg pipeline only | Backend media processing | SPECIFIED | Processing service policy checks |
 | DOC-001 | README.md §Documentation Structure | Repository documentation structure reference | This repository | REFERENCE | Documentation reference |
