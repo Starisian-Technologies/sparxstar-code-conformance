@@ -1,88 +1,75 @@
-# Starisian Technologies Coding Standards — Master Catalog
+# Starisian Technologies — Coding Standards Master Catalog
 
-**Version:** 0.1
-**Scope:** Organization-wide. Governs how Starisian writes code on every product, every client, forever.
-**Out of scope:** Platform-specific material (SPARXSTAR seams, PAM, Sirus rules, design identity) — that lives in `sparxstar-platform-standards` and the `sparxstar-platform-decisions` ADR registry. It never lives here.
+**Version:** 0.2
 
-**Admission rule:** a standard earns its place by being enforceable — if no tool can check it, it is guidance inside an existing document, not a new standard. This is what keeps the catalog a working system instead of a wiki.
+**Scope:** Organization-wide. Governs how Starisian Technologies writes code on every product, every client, forever. Product-specific material (platform architecture, seam contracts, governance decisions) lives in that product's own standards and decision repos — never here.
 
----
+**Admission rule:** a standard earns its place by being enforceable — if no tool can check it, it's guidance inside an existing document, not a new standard.
 
-## Part I — Foundational Principles
-
-Constraints every domain standard must satisfy. These are not documents; they are cross-cutting laws.
-
-1. **Low-resource first.** Built for the lowest bandwidth, weakest device, least infrastructure. Performance budgets are law, not goals: bundle/request/response size caps, CPU budgets, no unbounded work. *(Today: scattered in `standards-handbook.md` §0.4 and `css-standard.md` — to be consolidated as its own standard, see Part II #10.)*
-2. **Mobile-first.** 360px is the first viewport, not a breakpoint. Touch targets ≥ 48px, readable type floors, one-column-first layout. *(Today: lives in Sky §14 as platform material — promotes to org standard.)*
-3. **Offline-first.** Network is an enhancement. Critical data in IndexedDB with eviction policy; resumable uploads only; visible sync state. *(Today: matrix rows DIST-005, JS-002.)*
-4. **Accessible by default.** WCAG 2.1 AA floor, axe-core in E2E, keyboard-completeness, contrast minimums. For this org accessibility is mission-load-bearing, not compliance.
-5. **No silent failure.** Defined error + internal logging, everywhere (`standards-handbook.md` §0.3).
-6. **Secure by default.** Parameterized everything, fail closed, no secrets in code, prefixed globals. *(Today: `SECURITY.md` + scattered sniffs.)*
+**Trademark rule:** zero product names, repo names, concept names, or anything trademarkable in this repository. If a rule only makes sense with a product name attached, the rule belongs in that product's repo, not here.
 
 ---
 
-## Part II — Domain Standards
+## Foundational Principles (org DNA, cross-cutting all domains)
 
-| # | Standard | Doc today | Config today | Enforcing tool(s) |
-|---|---|---|---|---|
-| 1 | PHP / WordPress | ✅ exists | ❌ | `phpcs.xml.dist` (+phpcbf), `phpstan.neon` L5, custom sniffs |
-| 2 | JavaScript / TypeScript / React | ✅ exists | ❌ | `eslint-config` pkg, `tsconfig` base (strict), custom rules |
-| 3 | Node / server-side JS | ✅ exists | ❌ | shares #2 configs + node-specific rules |
-| 4 | CSS / styling (code) | ✅ exists | ❌ | `stylelint` config, build-size checks |
-| 5 | Audio / media / upload | ✅ exists (media-upload) | ❌ | ESLint custom (no raw `MediaRecorder`), runtime validation, upload API tests. Expand doc to full audio standard: capture, sample rates, formats, chunking, processing pipeline |
-| 6 | Markdown / documentation | ❌ **missing** | ❌ | `markdownlint` config. Docs are infrastructure here — agents parse them as law |
-| 7 | Accessibility | ❌ **missing** | ❌ | axe-core/Playwright config, `eslint-plugin-jsx-a11y` |
-| 8 | Code formatting | ⚠️ scattered | ❌ | Prettier config, phpcbf (free — reads `phpcs.xml.dist`). Mechanical, auto-fixable, zero-debate |
-| 9 | Mobile-first / responsive | ⚠️ platform-scattered | ❌ | stylelint/eslint rules where checkable; E2E viewport tests |
-| 10 | Low-resource / performance budgets | ⚠️ scattered | ❌ | build-size plugins, Lighthouse CI budgets, response-size tests |
-| 11 | Offline-first / data & sync | ⚠️ matrix rows only | ❌ | ESLint custom rules (IndexedDB / eviction / TTL) |
-| 12 | Security | ⚠️ `SECURITY.md` + sniffs | ❌ | the custom sniffs/rules in #1–#3; dependency audit (`pnpm audit`) in CI |
-| 13 | Testing | ❌ **missing** | ❌ | coverage thresholds in CI; what must be unit vs integration vs E2E; WP function stubbing pattern |
-| 14 | Git / repo & workflow hygiene | ❌ **missing** | partially (pnpm wf) | The work-unit contract becomes law here: every session ends in pushed branch + draft PR; PR size ceiling; ADRs cite never restate; branch naming; conventional commits if desired. Enforced by Actions on PR metadata |
-| 15 | Package management | ✅ ADR-017 + workflow | ✅ (first one!) | `pnpm-enforcement.yml` — the template the rest follow |
-| 16 | Internationalization basics | ❌ **missing** | ❌ | No hardcoded user-facing strings; UTF-8 everywhere; BCP-47 for language codes; ICU message format. (Language *models* and registries stay platform-side) |
+These are not documents; they are constraints every domain standard must satisfy.
+
+1. **Low-resource first.** Built for the lowest bandwidth, weakest device, least infrastructure. Performance budgets are law, not goals.
+2. **Mobile-first.** 360px is the first viewport, not a breakpoint. Touch targets ≥ 48px, readable type floors, single-column-first layout.
+3. **Offline-first.** Network is an enhancement. Critical data in IndexedDB with eviction policy; resumable uploads only; visible sync state.
+4. **Accessible by default.** WCAG 2.1 AA floor, automated a11y testing in E2E, keyboard-completeness, contrast minimums.
+5. **No silent failure.** Defined error + internal logging, everywhere.
+6. **Secure by default.** Parameterized everything, fail closed, no secrets in code, prefixed globals.
 
 ---
 
-## Part III — The Four Delivery Layers
+## Domain Standards
 
-Build order within each domain.
-
-1. **Configs** — the standard as machine-readable files, shipped as installable packages (Composer pkg for PHP ruleset + PHPStan; npm pkgs for `eslint-config` / `tsconfig` / Prettier / Stylelint / markdownlint). Repos extend, never copy — copying is drift.
-2. **Custom rules** — the sniffs/rules the matrices already promise (~15 cited, 0 built today). Live inside the Layer-1 packages. Built incrementally; each one flips a matrix row from `SPECIFIED` to `ENFORCED` honestly.
-3. **Reusable workflows** — one per domain family, mode-aware (`draft` warn / `dev`+`prod` block), each a thin "install package, run tool" wrapper. Six-line caller per repo.
-4. **Repo scaffold** — template repository born conformant: configs extended, workflows called, `ROLE.md` stub, `docs/adr/` ready, `.editorconfig`, `.gitattributes`, PR template.
-
----
-
-## Part IV — Build Sequence
-
-Ordered by attention saved, not technical ease.
-
-1. **Hygiene & honesty** (one PR): dedupe `.github/instructions/`; relocate platform docs to `sparxstar-platform-standards`; relabel matrix rows `ENFORCED` → `SPECIFIED` where no enforcement exists yet.
-2. **Layer 1 for the biggest estates:** `phpcs.xml.dist` + `phpstan.neon` (PHP), then `eslint-config` + `tsconfig` (JS/TS). The moment the standard stops being prose.
-3. **The two missing docs that protect the system itself:** Markdown standard (the law must be parseable) and Git/workflow hygiene (the standard that ends the babysitting).
-4. **Workflows** for #1–#4 + formatting — cheap once configs exist.
-5. **Accessibility + testing standards** — docs then configs then workflows.
-6. **Custom rules**, hardest last (Sirus-class static analysis lives platform-side anyway).
-7. **Scaffold repo** — once Layers 1–3 stabilize, conformance becomes a birthright.
+| # | Standard | Status | Enforcing tool(s) |
+|---|---|---|---|
+| 1 | PHP / WordPress | doc exists, config missing | `phpcs.xml.dist`, `phpstan.neon`, custom sniffs |
+| 2 | JavaScript / TypeScript / React | doc exists, config missing | `eslint` config package, `tsconfig` base, custom rules |
+| 3 | Node / server-side JS | doc exists, config missing | shares #2 + node-specific rules |
+| 4 | CSS / styling (code) | doc exists, config missing | `stylelint` config, build-size checks |
+| 5 | Audio / media / upload | doc exists, config missing | ESLint custom rules, runtime validation, upload tests |
+| 6 | Markdown / documentation | missing | `markdownlint` config |
+| 7 | Accessibility | missing | axe-core / Playwright config, `jsx-a11y` plugin |
+| 8 | Code formatting | scattered | Prettier config, `phpcbf` (reads `phpcs.xml.dist`) |
+| 9 | Mobile-first / responsive | scattered | stylelint/eslint rules, E2E viewport tests |
+| 10 | Low-resource / performance budgets | scattered | build-size plugins, Lighthouse CI, response-size tests |
+| 11 | Offline-first / data & sync | matrix rows only | ESLint custom rules |
+| 12 | Security | `SECURITY.md` + sniffs | custom sniffs/rules, dependency audit in CI |
+| 13 | Testing | missing | coverage thresholds, test-tier definitions |
+| 14 | Git / repo & workflow hygiene | missing | Actions on PR metadata |
+| 15 | Package management | active (first complete) | pnpm enforcement workflow |
+| 16 | Internationalization basics | missing | No hardcoded strings, UTF-8, BCP-47, ICU format |
 
 ---
 
-## Open Items (owner call — do not pre-decide)
+## Delivery Layers (build order within each domain)
 
-- **Matrix housing:** split org-generic matrix (here) from platform supplement (`sparxstar-platform-standards`), or one matrix with a `Scope` column. **Owner call, pending.**
-- **Audio standard expansion scope** (capture / processing / codecs). Draft for owner review.
-- **Whether org repo goes public.** Reusable workflows across the org need either a public repo or the org-level "allow private reuse" setting enabled.
+1. **Configs** — the standard as installable packages repos extend, never copy.
+2. **Custom rules** — sniffs/lint rules the matrix promises. Built incrementally; each one honestly promotes a matrix row from `SPECIFIED` to `ENFORCED`.
+3. **Reusable workflows** — one per domain, mode-aware, thin wrappers around the configs. Six-line caller per consuming repo.
+4. **Repo scaffold** — template repo born conformant.
 
 ---
 
-## Companion Repositories
+## Build Sequence (by attention saved)
 
-| Repo | Role | Citation pattern |
-|---|---|---|
-| this repo | The **HOW** for the **org** | Cite ADRs and invariants by number |
-| `sparxstar-platform-standards` | The **HOW** for the **SPARXSTAR platform** (Sirus rules, PAM, design identity) | This repo defers to it for platform-coupled rules |
-| `sparxstar-platform-decisions` (a.k.a. `sparxstar-architecture-decision-record`) | The **WHY / WHAT** (ADRs, invariants, OQs, specs, role-boundary) | Cite ADR-NNN / INV-NNN / OQ-NNN; never restate |
+1. **Hygiene:** dedupe instructions folder; relocate product-specific docs to that product's repo; relabel matrix rows honestly.
+2. **Product name scrub:** apply the translation table.
+3. **Layer 1 configs** for the two biggest estates: PHP, then JS/TS.
+4. **Missing docs that protect the system itself:** Markdown standard, Git/workflow hygiene standard.
+5. **Workflows** for domains 1–4 + formatting.
+6. **Accessibility + testing standards** — docs then configs then workflows.
+7. **Custom rules** (hardest last).
+8. **Scaffold repo.**
 
-This file is the master catalog. The truth-in-status for each row is enforced by Part IV Step 1 (honest relabel) and by Part III Layer 1–3 deliverables.
+---
+
+## Open Items
+
+- Matrix housing: one matrix here (org-generic rows only) vs split with a product supplement in the product's repo.
+- Audio standard expansion scope.
+- Whether this repo goes public (required for cross-repo reusable workflows, or the org enables "allow private reuse").

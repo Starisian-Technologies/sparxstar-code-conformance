@@ -1,12 +1,10 @@
 # JavaScript + React Implementation Standard
 
-**SPARXSTAR Platform Engineering — JavaScript/React Reference Implementation**
-
-Starisian Technologies
+**Starisian Technologies — JavaScript/React Reference Implementation**
 
 ---
 
-This document is the JavaScript and React implementation standard for the SPARXSTAR platform. It is a concrete, enforceable rulebook for all client-side JavaScript code written under SPARXSTAR governance.
+This document is the JavaScript and React implementation standard for Starisian Technologies. It is a concrete, enforceable rulebook for all client-side JavaScript code.
 
 All rules in the [Standards Handbook](standards-handbook.md) apply in full. This document adds JavaScript- and React-specific requirements on top of them.
 
@@ -239,7 +237,7 @@ Offline is a required state, not an error condition.
 
 - (M) All async operations wrapped in try/catch with typed error handling
 - (M) User-facing error messages are generic — never expose stack traces or internal state
-- (M) All errors logged to Sirus error reporting
+- (M) All errors logged to the centralized error-reporting layer
 - (X) Empty catch blocks
 - (X) Swallowed errors without log
 
@@ -249,7 +247,7 @@ try {
   const result = await uploadChunk(chunk);
   return result;
 } catch (error) {
-  Sirus.reportError(error, { context: 'uploadChunk', chunkIndex });
+  errorReporting.report(error, { context: 'uploadChunk', chunkIndex });
   throw new Error('Upload failed. Please try again.');
 }
 
@@ -261,23 +259,23 @@ try {
 
 ---
 
-# 11. First-Party Platform Services
+# 11. First-Party SDKs
 
-## 11.1 Sirus (Context Engine)
+## 11.1 Governance SDK
 
-- (M) All device, network, and environment context resolved through Sirus SDK
-- (X) Custom device fingerprinting or capability detection bypassing Sirus
-- (M) All frontend errors reported through Sirus
+- (M) All device, network, and environment context resolved through the governance SDK
+- (X) Custom device fingerprinting or capability detection bypassing the governance SDK
+- (M) All frontend errors reported through the governance SDK
 
-## 11.2 Helios (Authentication)
+## 11.2 Authentication SDK
 
-- (M) Authentication state consumed from Helios SDK
+- (M) Authentication state consumed from the auth SDK
 - (X) Building custom auth flows in frontend code
-- (X) Storing auth tokens in `localStorage` — use Helios-managed secure storage
+- (X) Storing auth tokens in `localStorage` — use the auth SDK's managed secure storage
 
-## 11.3 Starmus (Audio)
+## 11.3 Audio Capture SDK
 
-- (M) All audio recording via Starmus SDK
+- (M) All audio recording via the approved audio capture SDK
 - (X) Raw `MediaRecorder` implementations in product code
 
 ---
@@ -304,4 +302,4 @@ try {
 
 Version: 2.0 | Starisian Technologies | May 2026
 
-Applies to: All JavaScript and React code governed by SPARXSTAR standards.
+Applies to: All JavaScript and React code governed by Starisian Technologies standards.

@@ -1,4 +1,4 @@
-# SPARXSTAR Copilot Instructions
+# Starisian Technologies — Copilot Instructions
 
 This repository defines coding standards. Treat this repo as the source of policy, not product implementation.
 
@@ -12,16 +12,22 @@ This repository defines coding standards. Treat this repo as the source of polic
 
 1. `docs/standards-handbook.md` (global law — the HOW)
 2. `docs/*-standard.md` (implementation standards)
-3. `docs/enforcement-matrix.md` and `SPARXSTAR-CI-Enforcement-Matrix.md` (enforcement mapping)
-4. Companion repo `sparxstar-platform-decisions` (the WHY / WHAT — ADRs, invariants, open questions, cross-repo specs)
+3. `docs/enforcement-matrix.md` and `CI-Enforcement-Matrix.md` (enforcement mapping)
+4. Each product's own decision registry (the WHY / WHAT — ADRs, invariants, open questions, cross-repo specs)
 
-Legacy and draft materials under `.github/instructions/` are input references; they are not final authority unless merged into the files above.
+Legacy materials at the root (`coding-standards-v1.md`, `ENGINEERING-STANDARDS.md`) are input references; they are not final authority unless merged into the files above.
 
 ## Decisions Cross-Reference Discipline
 
 - Cite ADR-NNN, INV-NNN, OQ-NNN by number in standards text and commit messages. Never paraphrase or restate decision/invariant text.
 - Do not write rules that contradict an invariant or assume an `OPEN` open question is resolved.
-- If you cannot read `sparxstar-platform-decisions`, do not fabricate numbers from memory — request access.
+- If you cannot read the relevant product's decision registry, do not fabricate numbers from memory — request access.
+
+## Trademark Discipline
+
+- This is the **organization-wide** standards repo. No product names, repo names, service names, or trademarks appear here.
+- If a rule only makes sense with a product name attached, the rule belongs in that product's repo, not here.
+- Refer to capabilities by their generic role: "the authority layer", "the auth SDK", "the audio capture SDK", "the runtime layer".
 
 ## Non-Negotiable Engineering Rules
 

@@ -1,12 +1,12 @@
 # Enforcement Matrix
 
-**SPARXSTAR Platform Engineering — CI/CD Enforcement Reference**
+**Starisian Technologies — CI/CD Enforcement Reference**
 
 Starisian Technologies
 
 ---
 
-This document maps every enforceable rule in the SPARXSTAR standards to the tool that enforces it, the CI stage where it runs, and the mode in which it blocks merge.
+This document maps every enforceable rule in the Starisian Technologies standards to the tool that enforces it, the CI stage where it runs, and the mode in which it blocks merge.
 
 **Legend:**
 
@@ -44,10 +44,10 @@ This document maps every enforceable rule in the SPARXSTAR standards to the tool
 | `SELECT *` in any query | PHPCS (custom sniff) | Lint | (W) | (B) | (B) |
 | Unbounded query without `LIMIT` | PHPCS (custom sniff) | Lint | (W) | (B) | (B) |
 | Hardcoded `wp_` table prefix | PHPCS VIP sniff | Lint | (W) | (B) | (B) |
-| Governed action without Sirus call | PHPStan (custom rule) | Static analysis | (W) | (B) | (B) |
+| Governed action without authority-layer call | PHPStan (custom rule) | Static analysis | (W) | (B) | (B) |
 | Governed action without ability check | PHPStan (custom rule) | Static analysis | (W) | (B) | (B) |
 | Governed action without consent verification | PHPStan (custom rule) | Static analysis | (W) | (B) | (B) |
-| Sirus output modified or overridden downstream | PHPStan (custom rule) | Static analysis | (W) | (B) | (B) |
+| Authority-layer output modified or overridden downstream | PHPStan (custom rule) | Static analysis | (W) | (B) | (B) |
 | Unprefixed global function, hook, CPT, taxonomy | PHPCS (custom sniff) | Lint | (W) | (B) | (B) |
 | PHPStan level < 5 violations | PHPStan | Static analysis | (W) | (B) | (B) |
 | Plugin activation not handling network-wide activation | PHPUnit (test) | Test | (W) | (B) | (B) |
@@ -154,7 +154,7 @@ This document maps every enforceable rule in the SPARXSTAR standards to the tool
 | Query depth > 5 | graphql-depth-limit | Runtime / Test | (W) | (B) | (B) |
 | N+1 query pattern in resolver | PHPStan / DataLoader audit | Static analysis + Review | (W) | (B) | (B) |
 | Unbounded list query without limit | graphql-query-complexity | Runtime / Test | (W) | (B) | (B) |
-| Governed resolver without Sirus authority check | PHPStan (custom rule) | Static analysis | (W) | (B) | (B) |
+| Governed resolver without authority-layer check | PHPStan (custom rule) | Static analysis | (W) | (B) | (B) |
 
 ---
 
@@ -187,7 +187,7 @@ This document maps every enforceable rule in the SPARXSTAR standards to the tool
 
 # 10. CI Pipeline Stages and Order
 
-All repositories governed by SPARXSTAR standards run CI in the following stage order. Later stages do not run if earlier stages fail.
+All repositories governed by Starisian Technologies standards run CI in the following stage order. Later stages do not run if earlier stages fail.
 
 | Order | Stage | What Runs |
 | :---- | :---- | :---- |
@@ -213,4 +213,4 @@ All repositories governed by SPARXSTAR standards run CI in the following stage o
 
 Version: 2.0 | Starisian Technologies | May 2026
 
-Applies to: All repositories governed by SPARXSTAR standards.
+Applies to: All repositories governed by Starisian Technologies standards.

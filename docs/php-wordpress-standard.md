@@ -1,12 +1,10 @@
 # PHP + WordPress Implementation Standard
 
-**SPARXSTAR Platform Engineering — PHP/WordPress Reference Implementation**
-
-Starisian Technologies
+**Starisian Technologies — PHP/WordPress Reference Implementation**
 
 ---
 
-This document is the PHP and WordPress implementation standard for the SPARXSTAR platform. It is a concrete, enforceable rulebook for all PHP and WordPress code written under SPARXSTAR governance.
+This document is the PHP and WordPress implementation standard for Starisian Technologies. It is a concrete, enforceable rulebook for all PHP and WordPress code.
 
 All rules in the [Standards Handbook](standards-handbook.md) apply in full. This document adds PHP- and WordPress-specific requirements on top of them.
 
@@ -69,7 +67,7 @@ function process($path, $duration) { ... }  // no types
 
 ## 3.1 PHP Namespaces
 
-- (M) `Starisian\Sparxstar\{Product}`
+- (M) `Starisian\{Product}\{Component}` — replace `{Product}` with the product-specific namespace defined in that product's standards
 - (X) Abbreviations or deviations from this pattern
 
 ## 3.2 WordPress Global Scope
@@ -86,13 +84,7 @@ This applies to:
 - options
 - database tables
 
-Example prefixes:
-
-```text
-spx_
-aiwa_
-sirus_
-```
+Each product defines its own prefix in that product's standards (e.g. `myproduct_action`, `myproduct_post_type`). Every global identifier MUST carry the product prefix; unprefixed identifiers are forbidden regardless of name choice.
 
 | **FAIL** | unprefixed global function, hook, CPT, taxonomy, meta key, option, or DB table |
 | :---- | :---- |
@@ -309,25 +301,25 @@ function spx_activate(bool $network_wide): void {
 
 ---
 
-# 12. First-Party Platform Services
+# 12. First-Party SDKs
 
-These are platform primitives, not optional plugins.
+These are organization-wide primitives, not optional plugins.
 
-## 12.1 Sirus (Context Engine)
+## 12.1 Governance SDK
 
 - (M) Used for device, network, and environment context
 - (X) Custom device fingerprinting
-- (M) Frontend error reporting through Sirus
+- (M) Frontend error reporting through the governance SDK
 
-## 12.2 Helios (Authentication)
+## 12.2 Authentication SDK
 
-- (M) Trust Helios-issued identity
+- (M) Trust identity issued by the auth SDK
 - (X) Custom frontend auth systems
 - (X) Direct use of `wp_set_auth_cookie()` for frontend users
 
-## 12.3 Starmus (Audio)
+## 12.3 Audio Capture SDK
 
-- (M) All recording via Starmus
+- (M) All recording via the approved audio capture SDK
 - (X) Raw `MediaRecorder` implementations
 
 ---
@@ -343,7 +335,7 @@ These are platform primitives, not optional plugins.
 # 14. Testing
 
 - (M) PHPUnit for all backend logic
-- (M) Tests must cover: sanitization paths, permission checks, DB write/rollback, Sirus integration points
+- (M) Tests must cover: sanitization paths, permission checks, DB write/rollback, authority-layer integration points
 - (M) axe-core for rendered admin UI accessibility
 
 ---
@@ -387,4 +379,4 @@ On tag (`v*`):
 
 Version: 2.0 | Starisian Technologies | May 2026
 
-Applies to: All PHP and WordPress code governed by SPARXSTAR standards.
+Applies to: All PHP and WordPress code governed by Starisian Technologies standards.

@@ -1,6 +1,6 @@
-**SPARXSTAR**
+**Starisian Technologies**
 
-**Coding Standards Handbook**
+**Coding Standards Handbook (Legacy v1.0 — reference only; superseded by `docs/`)**
 
 Underserved Communities Edition
 
@@ -13,10 +13,10 @@ This is an engineering document. It defines measurable, testable, enforceable st
 | WHY THIS IS NOT JUST CODING STANDARDS | Traditional coding standards govern naming, formatting, and basic implementation rules. This document governs more than that — and deliberately so. In systems serving constrained environments, you cannot separate code correctness from runtime behavior, system interaction, and failure handling. Bad code does not just fail — it consumes bandwidth that costs money, drains batteries, and degrades service for real users who have no alternative. Code, runtime limits, concurrency rules, cache behavior, failure handling, governance, and infrastructure boundaries are inseparable. This document enforces all of them together because separating them produces an incomplete standard that breaks in production. |
 | :---- | :---- |
 
-| SCOPE | Stack: WordPress (latest stable), PHP (latest stable with active support), JavaScript, GraphQL, TUS, Edge layer (provider-agnostic), Apache or equivalent, PHP-FPM, MariaDB or equivalent, Redis (Predis), OPcache. Provider selection follows Section 0.7. Sirus is the cross-repo authority layer referenced throughout. |
+| SCOPE | Stack roles: CMS/framework runtime, server language runtime, JavaScript, GraphQL, TUS, Edge layer (provider-agnostic), web server or equivalent, application runtime, relational database or equivalent, distributed object cache, bytecode cache. Reference implementation targets WordPress (latest stable) and PHP (latest stable with active support). Provider selection follows Section 0.7. The authority layer is the cross-repo control plane referenced throughout. |
 | :---- | :---- |
 
-| SIRUS | Sirus is not a helper library. It is not an optional service. It is a required dependency — a control plane that every governed repository must integrate. No repo may independently determine authority, context, or applicable rules. All such resolution is delegated to Sirus. If Sirus is unavailable: fail closed. No fallback. No guessing. |
+| AUTHORITY LAYER | The authority layer is not a helper library. It is not an optional service. It is a required dependency — a control plane that every governed repository must integrate. No repo may independently determine authority, context, or applicable rules. All such resolution is delegated to the authority layer. If the authority layer is unavailable: fail closed. No fallback. No guessing. |
 | :---- | :---- |
 
 # **0\.  Global System Rules — Non-Negotiable**
@@ -36,11 +36,21 @@ Every system MUST declare its operating mode. Mode governs limits, logging verbo
 
 ## **0.2  Determinism Rule**
 
-Same input produces the same output with no hidden side effects. Applies to PHP functions, REST handlers, GraphQL resolvers, and all Sirus-governed actions.
+Same input produces the same output with no hidden side effects. Applies to pure functions, derived computations, validation, serialization, and read-only request paths including REST reads and GraphQL query resolvers.
+
+## **0.2.1  Mutation Rule**
+
+Mutations, REST writes, GraphQL mutation resolvers, and governed actions are not required to be deterministic in the strict sense. They MUST:
+
+* Declare side-effect boundaries explicitly.
+* Perform only the minimum intended state change.
+* Be idempotent where retries, replays, or network duplication are possible.
+
+Allowed nondeterminism is limited to trusted server-generated values required for correctness (server time, UUIDs, database-assigned identifiers). Such values MUST be explicit in code, never inferred from hidden global state, and MUST NOT introduce undeclared side effects.
 
 ## **0.3  No Silent Failure**
 
-Every failure must return a defined error, log internally with full context, and never fallback silently. The client receives a generic error. The server logs the full context. Stack traces never reach the client.
+Every failure must return a defined error, log internally with full context, and never fall back silently. The client receives a generic error. The server logs the full context. Stack traces never reach the client.
 
 ## **0.4  Bounded Execution — Hard Caps**
 
@@ -49,7 +59,7 @@ Every failure must return a defined error, log internally with full context, and
 | Max request CPU time | 2 seconds | All PHP requests, GraphQL resolvers |
 | Max request size | 5 MB | All inbound requests |
 | Max API response | 100 KB | All REST and GraphQL responses |
-| Max concurrent ops | 1 per user | Mutations, uploads, governed actions |
+| Max concurrent ops | 1 per user | Total active governed operations per user across mutations, uploads, and governed actions combined |
 | Max JS bundle | 150 KB gzipped | All JavaScript bundles |
 | Max CSS size | 50 KB | All stylesheet bundles |
 
@@ -57,9 +67,13 @@ Every failure must return a defined error, log internally with full context, and
 
 All endpoints must be safe to retry without duplication. Especially TUS uploads, REST writes, and GraphQL mutations. All writes require an idempotency key. Duplicate requests return the same result and produce no additional DB write.
 
+## **0.6  Reserved**
+
+This section is intentionally reserved to preserve numbering stability for cross-references and future revisions.
+
 ## **0.7  Infrastructure Provider Selection**
 
-| PRINCIPLE | This document does not name infrastructure providers. Provider selection is an operational decision that changes as the business grows and better options emerge. The standard governs how code is written, not where it runs. |
+| PRINCIPLE | This document does not prescribe infrastructure providers as normative dependencies. Provider selection is an operational decision that changes as the business grows and better options emerge. The standard governs how code is written, not where it runs. Any provider names used elsewhere in this document are illustrative examples of deployment patterns, not required vendor choices. |
 | :---- | :---- |
 
 | Criterion | Standard |
@@ -79,81 +93,77 @@ All endpoints must be safe to retry without duplication. Especially TUS uploads,
 | :---- | :---- | :---- |
 | Client | Untrusted | Validate everything. Assume nothing. |
 | API layer | Validated | Validates all upstream input before acting. |
-| Sirus output | Authoritative | Must not be modified, merged, or overridden downstream. |
-| Cache (Redis) | Disposable | Never treat as source of truth. Always verify. |
-| DB (MariaDB) | Authoritative | Single source of truth. Never trusts upstream. |
+| Authority-layer output | Authoritative | Must not be modified, merged, or overridden downstream. |
+| Distributed Cache | Disposable | Never treat as source of truth. Always verify. |
+| Primary Database | Authoritative | Single source of truth. Never trusts upstream. |
 | Edge cache | Disposable | TTL-bounded. Invalidated on write. |
 
-# **1\.  Sirus — Cross-Repo Authority Layer**
+# **1\.  Authority Layer — Cross-Repo Governance**
 
-| STATUS | Sirus is the only repository named specifically in this document. It is named because it is a required dependency, not because it is the most complex. It is the control plane. Everything else defers to it. |
+| STATUS | The authority layer is the only dependency named specifically in this document. It is named because it is a required dependency, not because it is the most complex. It is the control plane. Everything else defers to it. |
 | :---- | :---- |
 
-## **1.1  What Sirus Resolves**
+## **1.1  What the Authority Layer Resolves**
 
-No repository may independently determine authority, context, or applicable rules. Sirus is the only system permitted to answer the question: what rules apply right now to this action for this caller?
+No repository may independently determine authority, context, or applicable rules. The authority layer is the only system permitted to answer the question: what rules apply right now to this action for this caller?
 
 | Question | Who Answers |
 | :---- | :---- |
-| What authority does this caller have? | Sirus — resolveAuthority() |
-| What rules apply to this action? | Sirus — resolveContext() |
-| Is this action permitted? | Sirus — governed action check |
-| What consent has been given? | Sirus — consent resolution |
+| What authority does this caller have? | The authority layer — `resolveAuthority()` |
+| What rules apply to this action? | The authority layer — `resolveContext()` |
+| Is this action permitted? | The authority layer — governed action check |
+| What consent has been given? | The authority layer — consent resolution |
 
 ## **1.2  Mandatory Integration Pattern**
 
-Every governed action must call Sirus before execution. No exceptions.
+Every governed action must call the authority layer before execution. No exceptions.
 
 Before any governed action:
 
-  context   \= Sirus::resolveContext(request)
+```text
+context   = AuthorityLayer::resolveContext(request)
+authority = AuthorityLayer::resolveAuthority(caller)
 
-  authority \= Sirus::resolveAuthority(caller)
-
-  if context is null OR authority is null:
-
-    FAIL CLOSED
-
-    return error
-
-    do NOT execute action
-
-    do NOT guess
-
-    do NOT fallback
+if context is null OR authority is null:
+  FAIL CLOSED
+  return error
+  do NOT execute action
+  do NOT guess
+  do NOT fall back
+```
 
 ## **1.3  Hard Rules**
 
-* Sirus MUST be called before any governed action in every repo
+* The authority layer MUST be called before any governed action in every repo
 
-* Sirus output is authoritative and must not be modified downstream
+* Authority-layer output is authoritative and must not be modified downstream
 
-* If Sirus is unavailable: fail closed. No fallback. No default permissive state
+* If the authority layer is unavailable: fail closed. No fallback. No default permissive state
 
-* Absence of Sirus metadata means most restrictive state applies
+* Absence of authority-layer metadata means most restrictive state applies
 
 * No repo may hardcode roles, infer permissions locally, or assume context from request shape
 
-* Sirus decisions must not be merged with local assumptions
+* Authority-layer decisions must not be merged with local assumptions
 
 ## **1.4  Performance Constraint**
 
 | Metric | Limit |
 | :---- | :---- |
-| Sirus calls per request | 1 preferred / 2 hard cap |
-| Sirus response cache TTL | 30 seconds maximum |
+| authority-layer calls per request | 1 preferred / 2 hard cap |
+| Authority-layer response cache TTL | 30 seconds maximum |
 | Cross-user context reuse | Forbidden |
 | Long-lived authority caching | Forbidden — authority is dynamic and revocable |
 
 ## **1.5  CI Enforcement**
 
-| FAIL | governed action exists without preceding Sirus call |
+| FAIL | governed action exists without preceding authority-layer call |
 | :---- | :---- |
 
-| FAIL | Sirus output modified or overridden downstream |
+| FAIL | Authority-layer output modified or overridden downstream |
 | :---- | :---- |
 
-| FAIL | local permission check without Sirus delegation |
+| FAIL | local permission check without authority-layer delegation |
 | :---- | :---- |
 
 # **2\.  PHP and WordPress Standards**
@@ -167,25 +177,24 @@ Before any governed action:
 | :---- | :---- | :---- |
 | WordPress | Latest stable release | No deprecated WP APIs. The community's backwards compatibility culture is a feature for adoption, not a target for development. |
 | PHP | Latest stable with active support | Not security-only. Not end-of-life. Strict types required. No dynamic properties. |
-| MariaDB | Latest stable — provider-agnostic | No direct SQL interpolation. All queries parameterized. No provider-specific extensions without abstraction layer. |
+| Relational Database | Latest stable — provider-agnostic | No direct SQL interpolation. All queries parameterized. No provider-specific extensions without abstraction layer. |
 
 *The WordPress community supports environments going back years. We respect that users run older environments. We do not write older code to match them. A plugin can support WordPress 6.x while being written in modern PHP with strict types. These are separable concerns.*
 
 ## **2.2  Strict Typing — Mandatory**
 
+```php
 // Required at top of every PHP file
-
-declare(strict\_types=1);
+declare(strict_types=1);
 
 // All functions must have typed parameters and return types
-
-function process\_audio(string $path, int $duration): array { ... }
+function process_audio(string $path, int $duration): array { ... }
 
 // Forbidden
-
 function process($path, $duration) { ... }  // no types
+```
 
-| FAIL | PHP file missing declare(strict\_types=1) |
+| **FAIL** | PHP file missing declare(strict_types=1) |
 | :---- | :---- |
 | **FAIL** | function missing typed parameters or return type |
 
@@ -193,19 +202,16 @@ function process($path, $duration) { ... }  // no types
 
 All input must be sanitized before use. No raw superglobals. No implicit casting.
 
+```php
 // Required
-
-$text  \= sanitize\_text\_field($\_POST\['text'\] ?? '');
-
-$key   \= sanitize\_key($\_GET\['key'\] ?? '');
-
-$email \= filter\_var($\_POST\['email'\], FILTER\_VALIDATE\_EMAIL);
+$text  = sanitize_text_field($_POST['text'] ?? '');
+$key   = sanitize_key($_GET['key'] ?? '');
+$email = filter_var($_POST['email'] ?? '', FILTER_VALIDATE_EMAIL);
 
 // Forbidden
-
-$text \= $\_POST\['text'\];    // raw superglobal
-
-$id   \= (int)$\_GET\['id'\]; // implicit cast without validation
+$text = $_POST['text'];    // raw superglobal
+$id   = (int)$_GET['id']; // implicit cast without validation
+```
 
 ## **2.4  Database Rules**
 
@@ -223,10 +229,10 @@ $id   \= (int)$\_GET\['id'\]; // implicit cast without validation
 
 | FAIL | direct SQL string interpolation |
 | :---- | :---- |
-| **FAIL** | SELECT \* in production queries |
+| **FAIL** | SELECT \* in any query |
 | **FAIL** | unbounded query without LIMIT |
 
-## **2.5  Object Caching — Redis / Predis**
+## **2.5  Object Caching — Distributed Cache Layer**
 
 * All cache entries must have defined TTL. No infinite TTL.
 
@@ -236,17 +242,18 @@ $id   \= (int)$\_GET\['id'\]; // implicit cast without validation
 
 * Write operations must invalidate related cache entries immediately
 
-* Redis is a cache only. Never the source of truth.
+* The distributed cache is a cache only. Never the source of truth.
 
-## **2.6  OPcache — Production Configuration**
+## **2.6  Bytecode Cache — Production Configuration**
 
+*PHP-specific: this subsection applies to PHP deployments using OPcache. Apply equivalent bytecode cache configuration for other runtimes (e.g., Node.js uses V8's built-in JIT; JVM languages have their own JIT settings).*
+
+```ini
 ; Production only
-
-opcache.validate\_timestamps \= 0
-
-opcache.memory\_consumption  \= 128
-
-opcache.max\_accelerated\_files \= 10000
+opcache.validate_timestamps = 0
+opcache.memory_consumption  = 128
+opcache.max_accelerated_files = 10000
+```
 
 ## **2.7  WordPress Plugin Rules**
 
@@ -258,34 +265,29 @@ opcache.max\_accelerated\_files \= 10000
 
 * No implicit field access — no dynamic schema mutation at runtime
 
-  // Required pattern
+```php
+// Required pattern
+if (!is_page('media-record')) return;
+wp_enqueue_script('my-plugin-handle', ...);
 
-  if (\!is\_page('media-record')) return;
-
-  wp\_enqueue\_script('sparxstar-recorder', ...);
-
-
-  // Forbidden
-
-  wp\_enqueue\_script('sparxstar-recorder', ...); // global, no guard
+// Forbidden
+wp_enqueue_script('my-plugin-handle', ...); // global, no guard
+```
 
 ## **2.8  Abilities and Consent API**
 
 Every action must check ability and verify consent before execution. Bypassing ability checks is forbidden. Assuming consent is forbidden.
 
+```php
 // Required
-
-if (\!current\_user\_can('sparxstar\_record')) {
-
-    return new WP\_Error('forbidden', 'Insufficient ability');
-
+if (!current_user_can('app_record')) {
+    return new WP_Error('forbidden', 'Insufficient ability');
 }
 
-if (\!sparxstar\_has\_consent($user\_id, 'audio\_record')) {
-
-    return new WP\_Error('consent\_required', 'Consent not given');
-
+if (!has_consent($user_id, 'recording')) {
+    return new WP_Error('consent_required', 'Consent not given');
 }
+```
 
 | FAIL | governed action without ability check |
 | :---- | :---- |
@@ -309,25 +311,20 @@ if (\!sparxstar\_has\_consent($user\_id, 'audio\_record')) {
 
 All event listeners must be throttled or debounced. Continuous loops are forbidden.
 
+```js
 // Required — throttle pattern
-
-let lastRun \= 0;
+let lastRun = 0;
 
 function handleSensorEvent(data) {
-
-  if (Date.now() \- lastRun \< 100\) return; // 10 Hz max
-
-  lastRun \= Date.now();
-
+  if (Date.now() - lastRun < 100) return; // 10 Hz max
+  lastRun = Date.now();
   processData(data);
-
 }
 
 // Forbidden
-
-setInterval(() \=\> doWork(), 10); // unbounded loop
-
+setInterval(() => doWork(), 10); // unbounded loop
 sensor.addEventListener('data', handler); // no throttle
+```
 
 | FAIL | event listener without throttle or debounce |
 | :---- | :---- |
@@ -335,29 +332,22 @@ sensor.addEventListener('data', handler); // no throttle
 
 ## **3.3  API Call Discipline**
 
+```js
 // Required
-
-const response \= await fetch(url, {
-
+const response = await fetch(url, {
   signal: AbortSignal.timeout(5000), // 5s max
-
 });
 
 // Retry with exponential backoff — max 3 attempts
-
-async function fetchWithRetry(url, maxRetries=3) {
-
-  for (let i \= 0; i \< maxRetries; i++) {
-
+async function fetchWithRetry(url, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
     try { return await fetch(url, { signal: AbortSignal.timeout(5000) }); }
-
-    catch { await new Promise(r \=\> setTimeout(r, 1000 \* Math.pow(2, i))); }
-
+    catch { await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i))); }
   }
 
   throw new Error('Max retries exceeded');
-
 }
+```
 
 | FAIL | API call without timeout |
 | :---- | :---- |
@@ -366,31 +356,27 @@ async function fetchWithRetry(url, maxRetries=3) {
 
 ## **3.4  Memory Management**
 
+```js
 // Release media references when done
-
-video.srcObject \= null;
-
-stream.getTracks().forEach(track \=\> track.stop());
+video.srcObject = null;
+stream.getTracks().forEach(track => track.stop());
 
 // Stream blobs — never buffer full media in memory
-
-// Wrong: blob \= await response.blob(); // full file in memory
-
+// Wrong: blob = await response.blob(); // full file in memory
 // Right: stream progressively via ReadableStream
+```
 
 ## **3.5  Network Awareness**
 
+```js
 // Check before attempting upload
-
-if (\!navigator.onLine) {
-
+if (!navigator.onLine) {
   queueUpload(file); // IndexedDB queue
-
   return;
-
 }
 
 // Queue uploads locally — never assume stable connection
+```
 
 # **4\.  Audio and Video — Hard Limits**
 
@@ -403,7 +389,7 @@ if (\!navigator.onLine) {
 | :---- | :---- | :---- |
 | Sample rate | 16,000 Hz maximum | Sufficient for voice. Higher rates waste bandwidth. |
 | Channels | 1 (mono) | Stereo doubles the data for no voice quality gain. |
-| Bitrate | 24 kbps maximum | Hard cap 32 kbps. Opus/AAC-LC only. |
+| Bitrate | 24 kbps target | Hard cap: 32 kbps. Opus/AAC-LC only. |
 | Format | Opus or AAC-LC | No raw PCM. No WAV. Compressed only. |
 
 | Mode | Max Duration |
@@ -412,10 +398,10 @@ if (\!navigator.onLine) {
 | development | 180 seconds |
 | production | 120 seconds |
 
-| FAIL | sampleRate \> 16000 |
+| FAIL | `sampleRate > 16000` |
 | :---- | :---- |
-| **FAIL** | channels \> 1 |
-| **FAIL** | bitrate \> 32000 |
+| **FAIL** | `channels > 1` |
+| **FAIL** | `bitrate > 32000` |
 | **FAIL** | format is WAV or uncompressed PCM |
 
 ## **4.2  Video Capture Limits**
@@ -424,7 +410,7 @@ if (\!navigator.onLine) {
 | :---- | :---- | :---- |
 | Resolution | 640x480 maximum (VGA) | No HD. No 720p. No 1080p. |
 | Frame rate | 15 fps maximum | Sufficient for documentation. Higher wastes bandwidth. |
-| Bitrate | 500 kbps maximum | Hard cap 800 kbps. |
+| Bitrate | 500 kbps target | Hard cap: 800 kbps. |
 | Codec | H.264 Baseline only | HEVC and AV1 forbidden unless fallback exists. |
 
 | Mode | Max Duration |
@@ -441,27 +427,19 @@ if (\!navigator.onLine) {
 
 ## **4.3  JavaScript Capture Constraints**
 
-const constraints \= {
-
+```js
+const constraints = {
   audio: {
-
     sampleRate: 16000,
-
     channelCount: 1
-
   },
-
   video: {
-
-    width:     { ideal: 640,  max: 640 },
-
-    height:    { ideal: 480,  max: 480 },
-
-    frameRate: { ideal: 15,   max: 15  }
-
+    width: { ideal: 640, max: 640 },
+    height: { ideal: 480, max: 480 },
+    frameRate: { ideal: 15, max: 15 }
   }
-
 };
+```
 
 // Never start recording automatically
 
@@ -513,14 +491,14 @@ Either the upload completes fully and the DB write succeeds, or both are rolled 
 
 * N+1 queries are forbidden
 
-* All resolvers must check Sirus authority before executing governed actions
+* All resolvers must check the authority layer before executing governed actions
 
 | FAIL | N+1 query pattern in resolver |
 | :---- | :---- |
 | **FAIL** | unbounded list query without explicit limit |
-| **FAIL** | governed resolver without Sirus authority check |
+| **FAIL** | governed resolver without authority-layer check |
 
-# **7\.  Edge Layer — Cloudflare, Nginx, Varnish**
+# **7\.  Edge Layer — CDN, Reverse Proxy, HTTP Cache**
 
 ## **7.1  Request Filtering — Hard Fail Conditions**
 
@@ -580,14 +558,14 @@ Machines do not oops. Invalid request behavior is treated as intent, not error.
 
 * Write operations must invalidate edge cache immediately
 
-* Varnish and Cloudflare are disposable caches — never sources of truth
+* Edge caches and CDN layers are disposable caches — never sources of truth
 
 ## **7.5  Access Tiers**
 
 | Tier | Allowed | Restricted |
 | :---- | :---- | :---- |
 | Public read | GET requests. Public resources. No authentication required. | POST, PUT, DELETE require authentication. Bulk scraping rate-limited. |
-| Authenticated write | All methods. Scoped to caller's authorized coordinates. | Must pass Sirus authority check before any write action. |
+| Authenticated write | All methods. Scoped to caller's authorized coordinates. | Must pass authority-layer check before any write action. |
 
 # **8\.  Concurrency and State Consistency**
 
@@ -604,8 +582,8 @@ Machines do not oops. Invalid request behavior is treated as intent, not error.
 
 | Layer | Role | Rule |
 | :---- | :---- | :---- |
-| MariaDB | Authoritative | The source of truth. Never trusts upstream. |
-| Redis | Cache only | Never source of truth. Short TTL. Invalidated on write. |
+| Primary Database | Authoritative | The source of truth. Never trusts upstream. |
+| Distributed Cache | Cache only | Never source of truth. Short TTL. Invalidated on write. |
 | Edge cache | Disposable | TTL-bounded. Purged on write. Never queried for authority. |
 | GraphQL cache | Disposable | Must not serve stale data beyond defined TTL. |
 
@@ -613,63 +591,51 @@ Machines do not oops. Invalid request behavior is treated as intent, not error.
 
 TTL alone is not a cache invalidation strategy. Write operations must actively invalidate.
 
+```php
 // Required on every write
-
 DB::write($data);
-
-Redis::delete($cache\_key);
-
+Cache::delete($cache_key);
 EdgeCache::purge($route);
 
 // Forbidden
-
 // Relying on TTL expiry to propagate write changes
+```
 
 ## **8.4  Backpressure and Load Shedding**
 
 When the system is saturated, reject early rather than queue unbounded.
 
+```text
 // Priority order when under load
-
-if (system\_load \> THRESHOLD) {
-
-  // 1\. Protect active authenticated sessions
-
-  // 2\. Accept writes from established connections
-
-  // 3\. Reject new unauthenticated requests with 503
-
-  // 4\. Drop lowest-priority traffic first
-
-  return new WP\_Error('overloaded', '', \['status' \=\> 503\]);
-
+if (system_load > THRESHOLD) {
+  // 1. Protect active authenticated sessions
+  // 2. Accept writes from established connections
+  // 3. Reject new unauthenticated requests with 503
+  // 4. Drop lowest-priority traffic first
+  return response(503); // Service Unavailable — reject new traffic
 }
+```
 
 ## **8.5  Partial Failure Handling**
 
 There are no partial success states. An operation either succeeds completely or is rolled back completely.
 
+```php
 // Required — wrap multi-step operations in transaction
-
-$db-\>begin\_transaction();
+$upload_result = null;
+$db->begin_transaction();
 
 try {
-
-  $upload\_result \= store\_file($path);
-
-  $db\_result     \= write\_record($upload\_result);
-
-  $db-\>commit();
-
+  $upload_result = store_file($path);
+  $db_result     = write_record($upload_result);
+  $db->commit();
 } catch (Exception $e) {
-
-  $db-\>rollback();
-
-  if ($upload\_result) { delete\_file($path); }
-
-  return new WP\_Error('operation\_failed', 'Rolled back.');
-
+  $db->rollback();
+  if ($upload_result !== null) { delete_file($path); }
+  error_log(sprintf('Operation failed for %s: %s', $path, $e->getMessage()));
+  throw new RuntimeException('Operation failed. Rolled back.', 0, $e);
 }
+```
 
 # **9\.  Async Processing and Queue Rules**
 
@@ -714,7 +680,7 @@ try {
 | Cache hit ratio | \< 80% in production |
 | Upload failure rate | \> 2% of uploads |
 | Retry rate | \> 10% of requests |
-| Sirus call failures | Any failure in production |
+| authority-layer call failures | Any failure in production |
 | Blocked requests by geo | Tracked — reviewed weekly |
 
 # **12\.  Distributed System Maturity**
@@ -730,7 +696,7 @@ Required order on every write:
 
   1\. DB commit confirmed
 
-  2\. Cache invalidation (Redis)
+  2\. Cache invalidation (distributed cache layer)
 
   3\. Edge cache purge
 
@@ -792,17 +758,15 @@ Jobs that exhaust their retry budget must not be silently dropped. They move to 
 
 Schema changes must be versioned. Clients must tolerate the previous schema version during the transition window. No destructive schema change without a defined migration path.
 
+```text
 // Required — additive first, destructive second
-
 // Phase 1: add new field, keep old field
-
 // Phase 2: migrate data to new field
-
 // Phase 3: remove old field (separate deploy, after client update confirmed)
 
 // Forbidden
-
 // single deploy that removes a field clients still depend on
+```
 
 ## **12.6  Client-Side Storage Limits**
 
@@ -836,13 +800,13 @@ These conditions must cause CI to fail in development and production modes. In d
 
 ## **13.1  PHP**
 
-| FAIL | PHP file missing declare(strict\_types=1) |
+| FAIL | PHP file missing `declare(strict_types=1)` |
 | :---- | :---- |
 | **FAIL** | function missing typed parameters or return type |
 | **FAIL** | raw superglobal access without sanitization |
 | **FAIL** | direct SQL string interpolation |
-| **FAIL** | SELECT \* in any query |
-| **FAIL** | governed action without Sirus call |
+| **FAIL** | `SELECT *` in any query |
+| **FAIL** | governed action without authority-layer call |
 | **FAIL** | governed action without ability check |
 | **FAIL** | governed action without consent verification |
 
@@ -878,7 +842,7 @@ These conditions must cause CI to fail in development and production modes. In d
 | FAIL | query depth \> 5 |
 | :---- | :---- |
 | **FAIL** | N+1 query pattern in resolver |
-| **FAIL** | governed resolver without Sirus call |
+| **FAIL** | governed resolver without authority-layer call |
 
 ## **13.6  CSS**
 

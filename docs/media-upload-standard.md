@@ -1,12 +1,10 @@
 # Media Upload Standard
 
-**SPARXSTAR Platform Engineering — Audio, Video, and TUS Upload Implementation**
-
-Starisian Technologies
+**Starisian Technologies — Audio, Video, and TUS Upload Implementation**
 
 ---
 
-This document is the media and upload standard for the SPARXSTAR platform. It governs all audio capture, video capture, file upload, and media processing under SPARXSTAR governance.
+This document is the media and upload standard for Starisian Technologies. It governs all audio capture, video capture, file upload, and media processing.
 
 All rules in the [Standards Handbook](standards-handbook.md) apply in full. This document adds media- and upload-specific requirements on top of them.
 
@@ -95,14 +93,14 @@ const constraints = {
 
 ---
 
-# 4. Starmus Integration — Mandatory
+# 4. Audio Capture SDK Integration — Mandatory
 
-All audio and video capture must use the Starmus SDK. Direct `MediaRecorder` usage in product code is forbidden.
+All audio and video capture must use the approved audio capture SDK. Direct `MediaRecorder` usage in product code is forbidden.
 
-- (M) All recording initiated through `Starmus.startRecording(constraints)`
-- (M) All recording stopped through `Starmus.stopRecording()`
+- (M) All recording initiated through the SDK's `startRecording(constraints)` entry point
+- (M) All recording stopped through the SDK's `stopRecording()` entry point
 - (X) Direct `new MediaRecorder(stream)` in product code
-- (X) Custom bitrate negotiation bypassing Starmus limits
+- (X) Custom bitrate negotiation bypassing SDK-enforced limits
 
 ---
 
@@ -242,4 +240,4 @@ window.addEventListener('online', async () => {
 
 Version: 2.0 | Starisian Technologies | May 2026
 
-Applies to: All audio, video, and file upload code governed by SPARXSTAR standards.
+Applies to: All audio, video, and file upload code governed by Starisian Technologies standards.

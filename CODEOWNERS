@@ -1,5 +1,5 @@
-# sparxstar-platform-standards
-# All changes require owner approval — this repo is the public companion
-# to `sparxstar-platform-decisions` (ADRs / invariants / open questions).
-# Standards text is platform law in HOW form; treat changes as governance.
-* @SparxstarDevelopment
+# Coding standards (organization-wide)
+# All changes require owner approval — this repo is the HOW for every product,
+# every client, forever. The WHY / WHAT (ADRs, invariants, OQs) lives in each
+# product's own decision registry, never here.
+* @starisian-technologies/standards-owners

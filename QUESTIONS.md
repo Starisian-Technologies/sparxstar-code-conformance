@@ -1,14 +1,14 @@
 # Questions for Clarification — Coding Standards Review
 
-This file tracks current clarification questions, review notes, and platform implications against `sparxstar-coding-standards-v1.md`.
+This file tracks current clarification questions, review notes, and organization implications against `coding-standards-v1.md`.
 
 ## What It Gets Right
 
-1. **Sirus as the only named dependency**
-   Naming Sirus specifically while keeping other dependencies provider-agnostic is architecturally sound. Sirus is structural as the control plane, while other dependencies are operational.
+1. **The authority layer as the only named dependency**
+   Naming the authority layer specifically while keeping other dependencies provider-agnostic is architecturally sound. The authority layer is structural as the control plane, while other dependencies are operational.
 
 2. **Fail closed as the default posture**
-   Every unavailability condition (Sirus down, context null, authority null) resolves to fail closed. This is the correct governance stance.
+   Every unavailability condition (authority layer down, context null, authority null) resolves to fail closed. This is the correct governance stance.
 
 3. **Idempotency as a first-class requirement**
    Making idempotency mandatory for governed mutations is correct for unreliable networks where retries are expected.
@@ -31,10 +31,10 @@ This file tracks current clarification questions, review notes, and platform imp
    §0.4 appears to impose a one-operation-per-user rule, while §8.1 separately caps active mutations and active uploads and rejects concurrent requests with 429. The standard should explicitly connect this with client queueing/retry behavior under high latency when responses may be delayed or dropped.
 
 3. **Offline-first architecture lacks explicit state-machine standards**
-   IndexedDB queueing is specified (§3.5), but there is no governed offline state model defining what is available offline, what queues, what blocks until online, and what requires fresh Sirus context.
+   IndexedDB queueing is specified (§3.5), but there is no governed offline state model defining what is available offline, what queues, what blocks until online, and what requires fresh authority-layer context.
 
 4. **Governance token flow is not reflected in this standards document**
-   The standards cover Sirus authority resolution and write ordering, but do not explicitly include governance token lifecycle requirements for high-stakes vault writes. The document should reference this requirement directly or point to the authoritative governance spec.
+   The standards cover authority-layer resolution and write ordering, but do not explicitly include governance token lifecycle requirements for high-stakes vault writes. The document should reference this requirement directly or point to the authoritative governance spec.
 
 5. **CSS blur/shadow rule in §13.6 needs rationale**
    The rule is appropriate for constrained devices, but adding one line of rationale would improve enforceability and reduce workaround behavior.

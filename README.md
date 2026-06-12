@@ -1,6 +1,6 @@
-# SPARXSTAR Platform Engineering Standards
+# Starisian Technologies — Coding Standards
 
-The policies and standards of Starisian Technologies and the SPARXSTAR line of products.
+The organization-wide coding standards of Starisian Technologies. Read [`docs/standards-catalog.md`](docs/standards-catalog.md) first.
 
 ---
 
@@ -25,9 +25,9 @@ The standards are split into a language-agnostic handbook and per-language imple
 
 | Document | Purpose |
 | :---- | :---- |
-| [sparxstar-coding-standards-v1.md](sparxstar-coding-standards-v1.md) | v1.0 monolithic standards (reference — superseded by `docs/`) |
-| [SPARXSTAR-ENGINEERING-STANDARDS.md](SPARXSTAR-ENGINEERING-STANDARDS.md) | Engineering standards v2 summary |
-| [SPARXSTAR-CI-Enforcement-Matrix.md](SPARXSTAR-CI-Enforcement-Matrix.md) | Companion CI rule-status matrix (`ENFORCED`, `WARN`, `SPECIFIED`, `REFERENCE`, `RESERVED`) |
+| [coding-standards-v1.md](coding-standards-v1.md) | v1.0 monolithic standards (reference — superseded by `docs/`) |
+| [ENGINEERING-STANDARDS.md](ENGINEERING-STANDARDS.md) | Engineering standards v2 summary |
+| [CI-Enforcement-Matrix.md](CI-Enforcement-Matrix.md) | Companion CI rule-status matrix (`ENFORCED`, `WARN`, `SPECIFIED`, `REFERENCE`, `RESERVED`) |
 | [THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md](THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md) | Organizational constitution |
 | [QUESTIONS.md](QUESTIONS.md) | Open clarification questions and review notes |
 | [SECURITY.md](SECURITY.md) | Security policy |
@@ -37,19 +37,11 @@ The standards are split into a language-agnostic handbook and per-language imple
 
 ---
 
-## Companion Repository — Platform Decisions
+## Architecture Decisions Cross-Reference
 
-This repository is the **HOW**. The **WHY / WHAT** lives in the companion private repo `sparxstar-platform-decisions` (a.k.a. `sparxstar-architecture-decision-record`):
+This repository is the **HOW** for the organization. The **WHY / WHAT** — architecture decisions (ADR-NNN), invariants (INV-NNN), open questions (OQ-NNN), cross-repo specs, role-boundary statements — lives in each product's own decision registry, never here.
 
-| Surface | Purpose |
-| :---- | :---- |
-| `decisions/ADR-NNN-*.md` | Append-only architecture decision records; Accepted ADRs are immutable (supersede, never edit) |
-| `invariants.md` | Platform-wide falsifiable rules (INV-NNN) |
-| `open-questions.md` | Deliberately unsettled questions (OQ-NNN) |
-| `specs/` | Cross-repo table schemas |
-| `PRODUCT-ROLE-BOUNDARY.md` | Per-product role and boundary statements |
-
-Standards in this repo **cite** ADR / INV / OQ numbers; they do not restate decision text. See [AGENTS.md](AGENTS.md#2a-platform-decisions-cross-reference-companion-repo).
+Standards in this repo **cite** ADR / INV / OQ numbers; they do not restate decision text. See [AGENTS.md](AGENTS.md#2a-architecture-decisions-cross-reference) for citation discipline.
 
 ---
 

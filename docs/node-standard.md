@@ -1,12 +1,10 @@
 # Node.js / Server-Side JS Implementation Standard
 
-**SPARXSTAR Platform Engineering — Node.js Server Reference Implementation**
-
-Starisian Technologies
+**Starisian Technologies — Node.js Server Reference Implementation**
 
 ---
 
-This document is the Node.js and server-side JavaScript implementation standard for the SPARXSTAR platform. It governs all backend JavaScript services, API servers, worker processes, and build tooling written in Node.js under SPARXSTAR governance.
+This document is the Node.js and server-side JavaScript implementation standard for Starisian Technologies. It governs all backend JavaScript services, API servers, worker processes, and build tooling written in Node.js.
 
 All rules in the [Standards Handbook](standards-handbook.md) apply in full. This document adds Node.js-specific requirements on top of them.
 
@@ -93,7 +91,7 @@ function requiredEnv(key: string, type: EnvType): string | number {
 
 const config = {
   port: requiredEnv('PORT', 'number'),
-  sirusEndpoint: requiredEnv('SIRUS_ENDPOINT', 'url'),
+  authorityEndpoint: requiredEnv('AUTHORITY_ENDPOINT', 'url'),
   dbUrl: requiredEnv('DATABASE_URL', 'string'),
 };
 ```
@@ -149,7 +147,7 @@ router.post('/upload', asyncHandler(async (req, res) => {
 ## 4.3 Timeouts
 
 - (M) Request timeout configured at server level — default 30 seconds (generous for 2G/3G clients)
-- (M) External service calls (Sirus, DB, cache) use explicit per-call timeouts
+- (M) External service calls (authority layer, DB, cache) use explicit per-call timeouts
 - (X) Unbounded external service calls
 
 ---
@@ -274,9 +272,9 @@ console.log('Got chunk', chunkIndex);
 - (M) Rate limiting enforced at server level (complement to edge-layer limits in the handbook)
 - (M) Secrets managed via environment variables — never committed to source code
 - (M) CORS configured explicitly — no wildcard `*` in production
-- (M) All Sirus authority checks performed before governed actions
+- (M) All authority-layer checks performed before governed actions
 - (X) Hardcoded credentials, API keys, or secrets in source or config files
-- (X) Trust of client-supplied user IDs, timestamps, or permission claims without Sirus verification
+- (X) Trust of client-supplied user IDs, timestamps, or permission claims without authority-layer verification
 
 ---
 
@@ -303,7 +301,7 @@ console.log('Got chunk', chunkIndex);
 
 - (M) Jest for unit and integration tests
 - (M) All route handlers tested with happy path and error path
-- (M) All Sirus integration points have integration tests
+- (M) All authority-layer integration points have integration tests
 - (M) Test database distinct from development database — never test against production data
 
 ---
@@ -319,4 +317,4 @@ console.log('Got chunk', chunkIndex);
 
 Version: 2.0 | Starisian Technologies | May 2026
 
-Applies to: All Node.js and server-side JavaScript services governed by SPARXSTAR standards.
+Applies to: All Node.js and server-side JavaScript services governed by Starisian Technologies standards.

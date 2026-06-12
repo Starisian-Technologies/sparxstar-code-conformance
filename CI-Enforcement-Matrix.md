@@ -1,4 +1,4 @@
-# SPARXSTAR CI Enforcement Matrix
+# CI Enforcement Matrix
 
 Companion to `/docs/standards-handbook.md` and implementation standards. This matrix converts standards into machine-checkable enforcement states.
 
@@ -25,8 +25,8 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | SYS-005 | standards-handbook §0.5 | Idempotency key required for write operations | API / Mutations / Uploads | SPECIFIED | Contract tests / runtime middleware |
 | SYS-006 | standards-handbook §0.6 | Reserved section | All | RESERVED | N/A |
 | SYS-007 | standards-handbook §0.7 | No direct provider SDK usage without abstraction layer | App code | SPECIFIED | PHPStan custom rule (not yet shipped) + review gate |
-| SIRUS-001 | standards-handbook §1.2 | Governed actions must call Sirus before execution | Backend / Frontend governed flows | SPECIFIED | Static analysis custom rules |
-| SIRUS-002 | standards-handbook §1.3 | Fail closed when Sirus context/authority is unavailable | All governed repos | SPECIFIED | Integration tests |
+| AUTH-001 | standards-handbook §1.2 | Governed actions must call the authority layer before execution | Backend / Frontend governed flows | SPECIFIED | Static analysis custom rules |
+| AUTH-002 | standards-handbook §1.3 | Fail closed when authority-layer context/authority is unavailable | All governed repos | SPECIFIED | Integration tests |
 | GQL-001 | standards-handbook §2.1 | GraphQL max query depth 5 | GraphQL | SPECIFIED | `graphql-depth-limit` (no shared config ships yet) |
 | GQL-002 | standards-handbook §2.2 | Unbounded list query forbidden | GraphQL | SPECIFIED | Query complexity checks |
 | EDGE-001 | standards-handbook §3.1 | Empty/absent User-Agent fails request | Edge / API | SPECIFIED | WAF / reverse proxy policy (per-repo ops) |
@@ -48,7 +48,7 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | PHP-005 | php-wordpress-standard §10.1 | PHPStan level 5 minimum | PHP | SPECIFIED | PHPStan (no shared `phpstan.neon` shipped yet) |
 | JS-001 | javascript-react-standard §3 | Fetch/API calls require timeout and bounded retry | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped — Catalog #2) |
 | JS-002 | javascript-react-standard §6.2 | IndexedDB for critical offline data | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped) |
-| JS-003 | javascript-react-standard §11.2 | Helios required for auth (no custom frontend auth) | JS/TS | SPECIFIED | Architecture checks |
+| JS-003 | javascript-react-standard §11.2 | The auth SDK required for auth (no custom frontend auth) | JS/TS | SPECIFIED | Architecture checks |
 | NODE-001 | node-standard §2 | TypeScript strict mode required | Node.js | SPECIFIED | `tsc --noEmit` + shared `tsconfig` base (not yet shipped — Catalog #3) |
 | NODE-002 | node-standard §4.3 | HTTP server timeout configuration required | Node.js | SPECIFIED | Integration tests |
 | NODE-003 | node-standard §5 | Parameterized queries only | Node.js / SQL | SPECIFIED | ESLint / query lint rules (not yet shipped) |
@@ -67,7 +67,7 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | CSS-002 | css-standard §2 | Prohibited high-cost CSS properties blocked | Frontend CSS | SPECIFIED | Stylelint custom rule (no shared `stylelint` config ships yet — Catalog #4) |
 | MEDIA-001 | media-upload-standard §1 | Audio sample rate <= 16000 | JS/PHP | SPECIFIED | Runtime validation |
 | MEDIA-002 | media-upload-standard §2 | Video constraints (max resolution/FPS/bitrate) enforced | JS/PHP | SPECIFIED | Runtime validation |
-| MEDIA-003 | media-upload-standard §4 | Starmus required (no raw `MediaRecorder`) | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped — Catalog #5) |
+| MEDIA-003 | media-upload-standard §4 | The audio capture SDK required (no raw `MediaRecorder`) | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped — Catalog #5) |
 | MEDIA-004 | media-upload-standard §5.1 | Upload chunk size <= 512 KB | Upload services | SPECIFIED | Upload API tests (per-repo) |
 | MEDIA-005 | media-upload-standard §7.1 | Controlled FFmpeg pipeline only | Backend media processing | SPECIFIED | Processing service policy checks |
 | DOC-001 | README.md §Documentation Structure | Repository documentation structure reference | This repository | REFERENCE | Documentation reference |

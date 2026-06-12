@@ -1,6 +1,6 @@
 # Reusable workflow: enforce ADR-017 (pnpm platform-wide) in any consuming repo.
 #
-# Backs rule IDs NODE-PKG-001..004 in SPARXSTAR-CI-Enforcement-Matrix.md.
+# Backs rule IDs NODE-PKG-001..004 in CI-Enforcement-Matrix.md.
 # Per the master catalog (docs/standards-catalog.md, Part III Layer 3), this is the
 # template the rest of the per-domain reusable workflows follow: mode-aware (draft
 # warns; development+production block), thin wrapper, six-line caller per repo.

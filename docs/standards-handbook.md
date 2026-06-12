@@ -1,6 +1,6 @@
-# SPARXSTAR Standards Handbook
+# Starisian Technologies — Standards Handbook
 
-**Platform Engineering Standards — Language-Agnostic Law**
+**Engineering Standards — Language-Agnostic Law**
 
 Underserved Communities Edition — Starisian Technologies
 
@@ -16,15 +16,15 @@ Traditional coding standards govern naming, formatting, and basic implementation
 
 ## Scope
 
-Stack roles: CMS/framework runtime, server language runtime, JavaScript, GraphQL, TUS, edge layer (provider-agnostic), web server or equivalent, application runtime, relational database or equivalent, distributed object cache, bytecode cache. Reference implementation targets WordPress (latest stable) and PHP (latest stable with active support). Provider selection follows Section 0.7. Sirus is the cross-repo authority layer referenced throughout.
+Stack roles: CMS/framework runtime, server language runtime, JavaScript, GraphQL, TUS, edge layer (provider-agnostic), web server or equivalent, application runtime, relational database or equivalent, distributed object cache, bytecode cache. Reference implementation targets WordPress (latest stable) and PHP (latest stable with active support). Provider selection follows Section 0.7. The authority layer (the governance SDK) is the cross-repo control plane referenced throughout.
 
-## Sirus
+## The Authority Layer
 
-Sirus is not a helper library. It is not an optional service. It is a required dependency — a control plane that every governed repository must integrate. No repo may independently determine authority, context, or applicable rules. All such resolution is delegated to Sirus. If Sirus is unavailable: fail closed. No fallback. No guessing.
+The authority layer is not a helper library. It is not an optional service. It is a required dependency — a control plane that every governed repository must integrate. No repo may independently determine authority, context, or applicable rules. All such resolution is delegated to the authority layer. If the authority layer is unavailable: fail closed. No fallback. No guessing.
 
-## Platform Decisions Cross-Reference
+## Architecture Decisions Cross-Reference
 
-This handbook encodes the HOW. The WHY / WHAT — architecture decisions (ADR-NNN), platform invariants (INV-NNN), open questions (OQ-NNN), cross-repo specs, and per-product role/boundary statements — lives in the companion repo `sparxstar-platform-decisions`. Standards text in this repo cites those numbers; it must not restate or paraphrase decision/invariant text. Rules in this handbook that intersect platform law (identity authority, capture, governance outcomes, custody, projection) defer to the corresponding ADR/INV by number. If the companion repo is inaccessible, do not fabricate numbers — request access.
+This handbook encodes the HOW. The WHY / WHAT — architecture decisions (ADR-NNN), invariants (INV-NNN), open questions (OQ-NNN), cross-repo specs, and per-product role/boundary statements — lives in each product's own decision registry. Standards text in this repo cites those numbers; it must not restate or paraphrase decision/invariant text. Rules in this handbook that intersect product-level law (identity authority, capture, governance outcomes, custody, projection) defer to the corresponding ADR/INV by number. If the registry is inaccessible, do not fabricate numbers — request access.
 
 ---
 
@@ -114,50 +114,50 @@ This section is intentionally reserved to preserve numbering stability for cross
 | :---- | :---- | :---- |
 | Client | Untrusted | Validate everything. Assume nothing. |
 | API layer | Validated | Validates all upstream input before acting. |
-| Sirus output | Authoritative | Must not be modified, merged, or overridden downstream. |
+| Authority layer output | Authoritative | Must not be modified, merged, or overridden downstream. |
 | Distributed Cache | Disposable | Never treat as source of truth. Always verify. |
 | Primary Database | Authoritative | Single source of truth. Never trusts upstream. |
 | Edge cache | Disposable | TTL-bounded. Invalidated on write. |
 
 ## 0.8 Cross-Stack Coverage Requirements
 
-This standards system must remain explicit for core stacks and data formats used across SPARXSTAR repositories, including PHP, WordPress, JavaScript, React, CSS, SQL, PostgreSQL, Neo4j, XML, JSON, Laravel, and Vite.
+This standards system must remain explicit for core stacks and data formats used across all repositories, including PHP, WordPress, JavaScript, React, CSS, SQL, PostgreSQL, Neo4j, XML, JSON, Laravel, and Vite.
 
 Rules:
 
 - SQL, PostgreSQL, and Cypher (Neo4j) access must be parameterized and explicitly bounded (e.g., `LIMIT` / max rows); string interpolation in queries is forbidden.
 - XML and JSON payloads must be parsed with safe defaults and validated against explicit schema or structural contracts before business logic execution.
-- Laravel implementations must preserve the same platform laws as other runtimes (sanitize/validate/escape discipline, explicit authorization, idempotent writes, bounded execution, no silent failure).
-- Vite build pipelines must enforce bundle budgets and deterministic production output equivalent to platform build limits.
+- Laravel implementations must preserve the same org-wide laws as other runtimes (sanitize/validate/escape discipline, explicit authorization, idempotent writes, bounded execution, no silent failure).
+- Vite build pipelines must enforce bundle budgets and deterministic production output equivalent to org-wide build limits.
 
 Coverage for these stacks may be implemented in dedicated standards or in shared sections, but enforcement status must always be reflected in the CI matrices.
 
 ---
 
-# 1. Sirus — Cross-Repo Authority Layer
+# 1. Authority Layer — Cross-Repo Governance
 
-**Status:** Sirus is the only repository named specifically in this document. It is named because it is a required dependency, not because it is the most complex. It is the control plane. Everything else defers to it.
+**Status:** The authority layer (the governance SDK) is the only dependency named specifically in this document. It is named because it is a required dependency, not because it is the most complex. It is the control plane. Everything else defers to it.
 
-## 1.1 What Sirus Resolves
+## 1.1 What the Authority Layer Resolves
 
-No repository may independently determine authority, context, or applicable rules. Sirus is the only system permitted to answer the question: what rules apply right now to this action for this caller?
+No repository may independently determine authority, context, or applicable rules. The authority layer is the only system permitted to answer the question: what rules apply right now to this action for this caller?
 
 | Question | Who Answers |
 | :---- | :---- |
-| What authority does this caller have? | Sirus — resolveAuthority() |
-| What rules apply to this action? | Sirus — resolveContext() |
-| Is this action permitted? | Sirus — governed action check |
-| What consent has been given? | Sirus — consent resolution |
+| What authority does this caller have? | The authority layer — `resolveAuthority()` |
+| What rules apply to this action? | The authority layer — `resolveContext()` |
+| Is this action permitted? | The authority layer — governed action check |
+| What consent has been given? | The authority layer — consent resolution |
 
 ## 1.2 Mandatory Integration Pattern
 
-Every governed action must call Sirus before execution. No exceptions.
+Every governed action must call the authority layer before execution. No exceptions.
 
 Before any governed action:
 
 ```text
-context   = Sirus::resolveContext(request)
-authority = Sirus::resolveAuthority(caller)
+context   = AuthorityLayer::resolveContext(request)
+authority = AuthorityLayer::resolveAuthority(caller)
 
 if context is null OR authority is null:
   FAIL CLOSED
@@ -169,28 +169,28 @@ if context is null OR authority is null:
 
 ## 1.3 Hard Rules
 
-- Sirus MUST be called before any governed action in every repo
-- Sirus output is authoritative and must not be modified downstream
-- If Sirus is unavailable: fail closed. No fallback. No default permissive state
-- Absence of Sirus metadata means most restrictive state applies
-- No repo may hardcode roles, infer permissions locally, or assume context from request shape
-- Sirus decisions must not be merged with local assumptions
+- The authority layer MUST be called before any governed action in every repo.
+- Authority-layer output is authoritative and must not be modified downstream.
+- If the authority layer is unavailable: fail closed. No fallback. No default permissive state.
+- Absence of authority-layer metadata means the most restrictive state applies.
+- No repo may hardcode roles, infer permissions locally, or assume context from request shape.
+- Authority-layer decisions must not be merged with local assumptions.
 
 ## 1.4 Performance Constraint
 
 | Metric | Limit |
 | :---- | :---- |
-| Sirus calls per request | 1 preferred / 2 hard cap |
-| Sirus response cache TTL | 30 seconds maximum |
+| Authority-layer calls per request | 1 preferred / 2 hard cap |
+| Authority-layer response cache TTL | 30 seconds maximum |
 | Cross-user context reuse | Forbidden |
 | Long-lived authority caching | Forbidden — authority is dynamic and revocable |
 
 ## 1.5 CI Enforcement
 
-| **FAIL** | governed action exists without preceding Sirus call |
+| **FAIL** | governed action exists without preceding authority-layer call |
 | :---- | :---- |
-| **FAIL** | Sirus output modified or overridden downstream |
-| **FAIL** | local permission check without Sirus delegation |
+| **FAIL** | authority-layer output modified or overridden downstream |
+| **FAIL** | local permission check without authority-layer delegation |
 
 ---
 
@@ -210,12 +210,12 @@ if context is null OR authority is null:
 - Resolvers must be stateless
 - No nested DB calls inside resolvers — use DataLoader or batch loading
 - N+1 queries are forbidden
-- All resolvers must check Sirus authority before executing governed actions
+- All resolvers must check the authority layer before executing governed actions
 
 | **FAIL** | N+1 query pattern in resolver |
 | :---- | :---- |
 | **FAIL** | unbounded list query without explicit limit |
-| **FAIL** | governed resolver without Sirus authority check |
+| **FAIL** | governed resolver without authority-layer check |
 
 ---
 
@@ -278,7 +278,7 @@ Machines do not make mistakes by accident. Invalid request behavior is treated a
 | Tier | Allowed | Restricted |
 | :---- | :---- | :---- |
 | Public read | GET requests. Public resources. No authentication required. | POST, PUT, DELETE require authentication. Bulk scraping rate-limited. |
-| Authenticated write | All methods. Scoped to caller's authorized coordinates. | Must pass Sirus authority check before any write action. |
+| Authenticated write | All methods. Scoped to caller's authorized coordinates. | Must pass the authority-layer check before any write action. |
 
 ---
 
@@ -397,7 +397,7 @@ catch Exception as e:
 | Cache hit ratio | < 80% in production |
 | Upload failure rate | > 2% of uploads |
 | Retry rate | > 10% of requests |
-| Sirus call failures | Any failure in production |
+| Authority-layer call failures | Any failure in production |
 | Blocked requests by geo | Tracked — reviewed weekly |
 
 ---
@@ -521,4 +521,4 @@ Rate limit violations follow a defined escalation path. The system adapts to per
 
 Version: 2.0 | Starisian Technologies | May 2026
 
-Applies to: All platforms and languages governed by SPARXSTAR standards.
+Applies to: All platforms and languages governed by Starisian Technologies standards.
