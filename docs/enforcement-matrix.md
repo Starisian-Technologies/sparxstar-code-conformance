@@ -86,6 +86,9 @@ This document maps every enforceable rule in the SPARXSTAR standards to the tool
 | `SELECT *` in any query | ESLint (custom rule) | Lint | (W) | (B) | (B) |
 | Async route handler without error boundary | ESLint (custom rule) | Lint | (W) | (B) | (B) |
 | `console.log` in production code | ESLint `no-console` | Lint | (W) | (B) | (B) |
+| Package manager other than `pnpm` invoked (ADR-017) | CI workflow audit + repo lint | Lint / CI | (B) | (B) | (B) |
+| `package-lock.json` or `yarn.lock` present (ADR-017) | Repo file check | Lint | (B) | (B) | (B) |
+| `package.json` missing `packageManager: pnpm@...` (ADR-017) | Repo file check | Lint | (W) | (B) | (B) |
 
 ---
 
@@ -163,7 +166,7 @@ This document maps every enforceable rule in the SPARXSTAR standards to the tool
 | Undocumented public APIs (missing DocBlocks) | PHPCS / ESLint JSDoc | Lint | (W) | (B) | (B) |
 | Commented-out code in production | PHPCS / ESLint | Lint | (W) | (B) | (B) |
 | Missing license header in PHP files | PHPCS (custom sniff) | Lint | (W) | (B) | (B) |
-| Packages with known high/critical CVEs | npm audit / composer audit | CI | (W) | (B) | (B) |
+| Packages with known high/critical CVEs | pnpm audit / composer audit | CI | (W) | (B) | (B) |
 | Dependency license violation | license-checker | CI | (W) | (B) | (B) |
 
 ---
@@ -196,7 +199,7 @@ All repositories governed by SPARXSTAR standards run CI in the following stage o
 | 6 | Integration tests | PHPUnit integration suite, Jest integration suite |
 | 7 | E2E tests | Playwright |
 | 8 | Accessibility | axe-core (via Playwright) |
-| 9 | Security audit | npm audit / composer audit, license-checker |
+| 9 | Security audit | pnpm audit / composer audit, license-checker |
 | 10 | Review gates | PR checklist items (schema changes, migration safety, feature flags) |
 
 **Rules:**

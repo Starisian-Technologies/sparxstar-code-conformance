@@ -50,6 +50,10 @@ Companion to `/docs/standards-handbook.md` and implementation standards. This ma
 | NODE-001 | node-standard §2 | TypeScript strict mode required | Node.js | ENFORCED | `tsc --noEmit` + `tsconfig` strict-mode validation |
 | NODE-002 | node-standard §4.3 | HTTP server timeout configuration required | Node.js | ENFORCED | Integration tests |
 | NODE-003 | node-standard §5 | Parameterized queries only | Node.js / SQL | ENFORCED | ESLint / query lint rules |
+| NODE-PKG-001 | node-standard §11 (ADR-017) | `pnpm` is the only permitted JS/Node package manager platform-wide | Node.js / JS / repos with `package.json` | ENFORCED | Repo file check + CI workflow audit |
+| NODE-PKG-002 | node-standard §11 (ADR-017) | `pnpm-lock.yaml` is the only permitted JS lockfile; `package-lock.json` and `yarn.lock` forbidden | Node.js / JS | ENFORCED | Repo file check |
+| NODE-PKG-003 | node-standard §11 (ADR-017) | `package.json` MUST set `packageManager: "pnpm@..."` for Corepack pinning | Node.js / JS | ENFORCED | Repo file check |
+| NODE-PKG-004 | node-standard §11 (ADR-017) | CI installs MUST use `pnpm install --frozen-lockfile` | Node.js / JS / CI | ENFORCED | CI workflow audit |
 | SQL-001 | standards-handbook §0.8 | SQL queries must be parameterized and explicitly bounded (e.g., `LIMIT` / max rows) | SQL | SPECIFIED | Static analysis + query lint |
 | PG-001 | standards-handbook §0.8 | PostgreSQL queries must be parameterized; extension use behind abstraction | PostgreSQL | SPECIFIED | Static analysis + architecture checks |
 | NEO4J-001 | standards-handbook §0.8 | Cypher queries must use parameters; no string interpolation | Neo4j | SPECIFIED | Driver lint + integration tests |

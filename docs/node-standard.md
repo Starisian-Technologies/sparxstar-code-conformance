@@ -282,11 +282,20 @@ console.log('Got chunk', chunkIndex);
 
 # 11. Dependency Management
 
-- (M) `package-lock.json` committed and kept current
-- (M) Dependency license audit before adding any new package
-- (M) Regular dependency vulnerability scan (npm audit or equivalent) in CI
-- (X) Packages with known high/critical CVEs without documented mitigation
-- (X) Packages with no active maintenance and no plan for replacement
+- (M) **Package manager: `pnpm` (per ADR-017).** No `npm` or `yarn` invocations in workflows, scripts, READMEs, Dockerfiles, or `Makefile`s.
+- (M) `pnpm-lock.yaml` committed and kept current; `package-lock.json` and `yarn.lock` MUST NOT exist alongside it.
+- (M) `package.json` declares the pinned pnpm version via the `packageManager` field (e.g. `"packageManager": "pnpm@9.x"`); Corepack honors this automatically.
+- (M) CI installs with `pnpm install --frozen-lockfile` (strict equivalent of `npm ci`).
+- (M) Dependency license audit before adding any new package.
+- (M) Regular dependency vulnerability scan (`pnpm audit` or equivalent) in CI.
+- (X) `npm install`, `npm ci`, `yarn install`, or any non-pnpm package-manager invocation in any repo with a `package.json`.
+- (X) Packages with known high/critical CVEs without documented mitigation.
+- (X) Packages with no active maintenance and no plan for replacement.
+
+| **FAIL** | repo contains `package-lock.json` or `yarn.lock` (per ADR-017) |
+| :---- | :---- |
+| **FAIL** | `package.json` missing `packageManager: "pnpm@..."` field |
+| **FAIL** | CI workflow invokes `npm install`, `npm ci`, or `yarn install` |
 
 ---
 
