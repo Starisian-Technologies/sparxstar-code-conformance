@@ -25,9 +25,8 @@ The standards are split into a language-agnostic handbook and per-language imple
 
 | Document | Purpose |
 | :---- | :---- |
-| [coding-standards-v1.md](coding-standards-v1.md) | v1.0 monolithic standards (reference — superseded by `docs/`) |
 | [ENGINEERING-STANDARDS.md](ENGINEERING-STANDARDS.md) | Engineering standards v2 summary |
-| [CI-Enforcement-Matrix.md](CI-Enforcement-Matrix.md) | Companion CI rule-status matrix (`ENFORCED`, `WARN`, `SPECIFIED`, `REFERENCE`, `RESERVED`) |
+| [CI-Enforcement-Matrix.md](CI-Enforcement-Matrix.md) | Org-generic CI rule-status matrix (`ENFORCED`, `WARN`, `SPECIFIED`, `REFERENCE`, `RESERVED`). Product-specific rules live in product repos |
 | [THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md](THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md) | Organizational constitution |
 | [QUESTIONS.md](QUESTIONS.md) | Open clarification questions and review notes |
 | [SECURITY.md](SECURITY.md) | Security policy |

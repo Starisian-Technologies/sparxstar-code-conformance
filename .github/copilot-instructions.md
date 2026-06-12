@@ -15,7 +15,7 @@ This repository defines coding standards. Treat this repo as the source of polic
 3. `docs/enforcement-matrix.md` and `CI-Enforcement-Matrix.md` (enforcement mapping)
 4. Each product's own decision registry (the WHY / WHAT — ADRs, invariants, open questions, cross-repo specs)
 
-Legacy materials at the root (`coding-standards-v1.md`, `ENGINEERING-STANDARDS.md`) are input references; they are not final authority unless merged into the files above.
+Legacy material at the root (`ENGINEERING-STANDARDS.md`) is an input reference; it is not final authority unless merged into the files above.
 
 ## Decisions Cross-Reference Discipline
 

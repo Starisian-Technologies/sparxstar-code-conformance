@@ -17,7 +17,7 @@ Do not turn this repository into product-specific documentation. Do not name pro
 - **Core law:** `docs/standards-handbook.md`
 - **Implementation standards:** `docs/php-wordpress-standard.md`, `docs/javascript-react-standard.md`, `docs/node-standard.md`, `docs/css-standard.md`, `docs/media-upload-standard.md`
 - **Enforcement mapping:** `docs/enforcement-matrix.md`, `CI-Enforcement-Matrix.md`
-- **Legacy reference:** root legacy standards (`coding-standards-v1.md`, `ENGINEERING-STANDARDS.md`).
+- **Legacy reference:** `ENGINEERING-STANDARDS.md` at the root.
 
 When conflicts appear, move validated content into canonical docs and align references.
 

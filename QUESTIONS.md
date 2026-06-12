@@ -1,6 +1,6 @@
 # Questions for Clarification — Coding Standards Review
 
-This file tracks current clarification questions, review notes, and organization implications against `coding-standards-v1.md`.
+This file tracks current clarification questions, review notes, and organization implications. Originally written against the v1 monolithic standards; those have been split into the `docs/` rulebooks and the legacy file deleted (2026-06-12).
 
 ## What It Gets Right
 

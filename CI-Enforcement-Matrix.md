@@ -2,6 +2,15 @@
 
 Companion to `/docs/standards-handbook.md` and implementation standards. This matrix converts standards into machine-checkable enforcement states.
 
+## Scope — Org-Generic Only (Matrix Housing: Split, 2026-06-12)
+
+This matrix holds **organization-wide rules only**. Rules that only make sense with a product name attached do not live here — they live in a matrix supplement inside that product's own standards repo. Per-product supplements:
+
+- Cite this file as their parent matrix.
+- Never restate rows that already appear here.
+- Use product-scoped rule IDs (e.g. `<PRODUCT>-PHP-001`); org-generic IDs (`PHP-001`, `JS-001`, `AUTH-001`, etc.) are reserved for this matrix.
+- Follow the same `ENFORCED` / `WARN` / `SPECIFIED` / `REFERENCE` / `RESERVED` vocabulary and the same honesty rule (no row may claim `ENFORCED` without a backing tool that ships).
+
 ## Enforcement Status Vocabulary
 
 | Status | Meaning |

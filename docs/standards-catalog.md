@@ -68,8 +68,8 @@ These are not documents; they are constraints every domain standard must satisfy
 
 ---
 
-## Open Items
+## Resolved Items
 
-- Matrix housing: one matrix here (org-generic rows only) vs split with a product supplement in the product's repo.
-- Audio standard expansion scope.
-- Whether this repo goes public (required for cross-repo reusable workflows, or the org enables "allow private reuse").
+- **Matrix housing — SPLIT (resolved 2026-06-12).** This repo's [`CI-Enforcement-Matrix.md`](../CI-Enforcement-Matrix.md) and [`enforcement-matrix.md`](enforcement-matrix.md) hold **org-generic rows only**. Product-specific rules (rules that only make sense with a product name attached) live in a matrix supplement inside that product's own standards repo. Each product supplement cites this matrix as its parent and never restates org-generic rows.
+- **Audio standard — EXPAND (resolved 2026-06-12).** [`media-upload-standard.md`](media-upload-standard.md) expands to the full audio standard: capture surface, sample rates, formats, chunking, processing pipeline.
+- **Repo visibility — PUBLIC (resolved 2026-06-12).** This repo is public so cross-repo reusable workflows (e.g. `pnpm-enforcement.yml`) can be referenced from any consuming repo via `uses: starisian-technologies/starisian-technologies-coding-standards/.github/workflows/<name>.yml@<ref>` without per-org private-reuse configuration.
