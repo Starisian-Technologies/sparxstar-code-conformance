@@ -1,5 +1,5 @@
-SPARXSTAR Engineering Standards v2
-==================================
+Starisian Technologies Engineering Standards v2
+===============================================
 
 **Enterprise Implementation Specification**
 
@@ -91,7 +91,7 @@ Never allowed.
 
 ### Namespaces
 
--   (M) `Starisian\Sparxstar\{Product}`
+-   (M) `Starisian\{Product}\{Component}` — replace `{Product}` with the product-specific namespace defined in that product's standards
 
 -   (X) Abbreviations or deviations
 
@@ -113,11 +113,7 @@ Never allowed.
 
     -   DB tables
 
-Example:
-
-spx_\
-aiwa_\
-sirus_
+Each product defines its own prefix in that product's standards (e.g. `myproduct_action`, `myproduct_post_type`). Every global identifier MUST carry the product prefix.
 
 -   (X) Unprefixed global identifiers
 
@@ -181,30 +177,30 @@ Cloudflare (CDN, WAF, Workers)\
 
 * * * * *
 
-7\. First-Party Platform Services
----------------------------------
+7\. First-Party SDKs
+--------------------
 
-These are **platform primitives**, not optional plugins.
+These are **organization-wide primitives**, not optional plugins.
 
-### Sirus (Context Engine)
+### Governance SDK
 
 -   (M) Used for device, network, and environment context
 
 -   (X) Custom device fingerprinting
 
--   (M) Frontend error reporting through Sirus
+-   (M) Frontend error reporting through the governance SDK
 
-### Helios (Authentication)
+### Authentication SDK
 
--   (M) Trust Helios-issued identity
+-   (M) Trust identity issued by the auth SDK
 
 -   (X) Custom frontend auth systems
 
 -   (X) Direct use of `wp_set_auth_cookie()` for frontend users
 
-### Starmus (Audio)
+### Audio Capture SDK
 
--   (M) All recording via Starmus
+-   (M) All recording via the approved audio capture SDK
 
 -   (X) Raw MediaRecorder implementations
 
@@ -491,7 +487,7 @@ On tag (`v*`):
 
 -   2G-first design
 
--   Use platform services (Sirus, Helios, Starmus)
+-   Use organization-wide SDKs (governance, auth, audio capture)
 
 -   No silent failures
 

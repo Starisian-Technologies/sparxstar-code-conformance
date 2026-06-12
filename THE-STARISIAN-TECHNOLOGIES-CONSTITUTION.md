@@ -5,8 +5,8 @@ The Starisian Technology Constitution
 ----------------------------------
 
 Status: Foundational law\
-Scope: All Starisian Technologies / SPARXSTAR systems, data, workflows, automation, and AI use\
-Enforcement: Mandatory via SPARXSTAR platform\
+Scope: All Starisian Technologies systems, data, workflows, automation, and AI use\
+Enforcement: Mandatory across all products and clients\
 Override: None
 
 * * * * *

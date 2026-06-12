@@ -1,12 +1,10 @@
 # CSS / Build Limits Standard
 
-**SPARXSTAR Platform Engineering — CSS and Build Constraints**
-
-Starisian Technologies
+**Starisian Technologies — CSS and Build Constraints**
 
 ---
 
-This document is the CSS and build limits standard for the SPARXSTAR platform. It governs all stylesheets, CSS architecture, and asset build output written under SPARXSTAR governance.
+This document is the CSS and build limits standard for Starisian Technologies. It governs all stylesheets, CSS architecture, and asset build output.
 
 All rules in the [Standards Handbook](standards-handbook.md) apply in full. This document adds CSS- and build-specific requirements on top of them.
 
@@ -208,7 +206,7 @@ body {
 
 # 8. Linting
 
-- (M) Stylelint enforced in CI with SPARXSTAR config
+- (M) Stylelint enforced in CI with the shared organization config
 - (M) Lint failures block merge
 - (X) Auto-fix in CI — report mode only
 - (M) Rules enforced:
@@ -232,4 +230,4 @@ body {
 
 Version: 2.0 | Starisian Technologies | May 2026
 
-Applies to: All CSS and stylesheet code governed by SPARXSTAR standards.
+Applies to: All CSS and stylesheet code governed by Starisian Technologies standards.

@@ -1,12 +1,10 @@
 # Media Upload Standard
 
-**SPARXSTAR Platform Engineering — Audio, Video, and TUS Upload Implementation**
-
-Starisian Technologies
+**Starisian Technologies — Audio, Video, and TUS Upload Implementation**
 
 ---
 
-This document is the media and upload standard for the SPARXSTAR platform. It governs all audio capture, video capture, file upload, and media processing under SPARXSTAR governance.
+This document is the media and upload standard for Starisian Technologies. It governs all audio capture, video capture, file upload, and media processing.
 
 All rules in the [Standards Handbook](standards-handbook.md) apply in full. This document adds media- and upload-specific requirements on top of them.
 
@@ -42,6 +40,66 @@ These limits exist because bandwidth is a financial cost to users in constrained
 | **FAIL** | `channels > 1` |
 | **FAIL** | `bitrate > 32000` |
 | **FAIL** | format is WAV or uncompressed PCM |
+
+## 1.2 Capture Surface — Input Device and Permissions
+
+| Rule | Requirement |
+| :---- | :---- |
+| Permission request timing | (M) Only at the moment of user-initiated capture. Never on page load, never speculative. |
+| Permission denial | (M) Handle `NotAllowedError` with a recoverable UI path (explain, link to OS settings, retry). |
+| Device absence | (M) Handle `NotFoundError` and `OverconstrainedError` distinctly from denial. |
+| Device enumeration | (M) Use `enumerateDevices()` only after permission is granted; do not fingerprint devices pre-consent. |
+| Default input device | (M) Use the OS default unless the user explicitly selects another. |
+| In-call interruptions | (M) Pause capture on `mediaSession` interruption signals (incoming call, focus loss). |
+| Auto-start | (X) Never auto-start capture. Capture is always an explicit user action. |
+
+| **FAIL** | `getUserMedia` called before explicit user action |
+| :---- | :---- |
+| **FAIL** | permission denial handled identically to device absence |
+| **FAIL** | device enumeration called pre-consent |
+
+## 1.3 Codec Parameters — Opus and AAC-LC
+
+The 32 kbps cap and Opus/AAC-LC restriction are not the whole story. The following codec parameters are also enforced.
+
+### Opus (preferred)
+
+| Parameter | Value |
+| :---- | :---- |
+| Application | `voip` (latency- and intelligibility-tuned for speech) |
+| Frame duration | 20 ms (`opusenc --framesize 20`) |
+| Bit depth | 16-bit input (server resamples if higher) |
+| Variable bitrate | Allowed; hard ceiling stays at 32 kbps |
+| Forward error correction (FEC) | Enabled |
+| Packet loss percentage hint | 5% (the SDK MAY raise this on detected loss) |
+| Discontinuous transmission (DTX) | Enabled |
+
+### AAC-LC (fallback)
+
+| Parameter | Value |
+| :---- | :---- |
+| Profile | LC (Low Complexity) only — no HE-AAC, no AAC-LD |
+| Bitrate mode | CBR or constrained-VBR |
+| Frame size | 1024 samples |
+
+| **FAIL** | Opus encoder configured for `audio` or `restricted_lowdelay` application |
+| :---- | :---- |
+| **FAIL** | Opus frame duration ≠ 20 ms |
+| **FAIL** | AAC profile is HE-AAC, HE-AACv2, or AAC-LD |
+
+## 1.4 Audio Chunking — Frame-Aligned Boundaries
+
+Audio chunks for TUS upload MUST be aligned to encoded-packet boundaries. Splitting mid-packet produces undecodable chunks that the resume path cannot recover from cleanly.
+
+- (M) Chunk boundary always falls on an Opus / AAC frame boundary.
+- (M) Each chunk carries its own duration in metadata (`chunk_duration_ms`), independent of byte size.
+- (M) Concatenating chunks in order MUST reproduce the original encoded stream byte-for-byte.
+- (X) Splitting in the middle of an encoded frame.
+- (X) Re-encoding on the client to fit a chunk boundary — adjust the chunk boundary instead.
+
+| **FAIL** | concatenated chunks fail to decode end-to-end |
+| :---- | :---- |
+| **FAIL** | chunk metadata missing `chunk_duration_ms` |
 
 ---
 
@@ -95,14 +153,14 @@ const constraints = {
 
 ---
 
-# 4. Starmus Integration — Mandatory
+# 4. Audio Capture SDK Integration — Mandatory
 
-All audio and video capture must use the Starmus SDK. Direct `MediaRecorder` usage in product code is forbidden.
+All audio and video capture must use the approved audio capture SDK. Direct `MediaRecorder` usage in product code is forbidden.
 
-- (M) All recording initiated through `Starmus.startRecording(constraints)`
-- (M) All recording stopped through `Starmus.stopRecording()`
+- (M) All recording initiated through the SDK's `startRecording(constraints)` entry point
+- (M) All recording stopped through the SDK's `stopRecording()` entry point
 - (X) Direct `new MediaRecorder(stream)` in product code
-- (X) Custom bitrate negotiation bypassing Starmus limits
+- (X) Custom bitrate negotiation bypassing SDK-enforced limits
 
 ---
 
@@ -195,6 +253,28 @@ Server must independently verify duration after processing. Client-reported dura
 | **FAIL** | synchronous media transcoding in HTTP request lifecycle |
 | **FAIL** | server trusting client-reported duration without independent verification |
 
+## 7.4 Audio Processing Pipeline
+
+Server-side audio processing runs as an async job (per Standards Handbook §5). Every stage is deterministic and idempotent — re-running the pipeline on the same input produces byte-identical output.
+
+| Order | Stage | Required | Notes |
+| :---- | :---- | :---- | :---- |
+| 1 | Container probe | (M) | Reject if container does not match declared format or duration exceeds cap. |
+| 2 | Decode to PCM | (M) | 16-bit, mono, 16 kHz. Resample / downmix here, not on the client. |
+| 3 | Loudness normalization | (M) | Target `-16 LUFS` integrated, true-peak ceiling `-1.5 dBTP` (EBU R128 / ITU-R BS.1770). |
+| 4 | Silence trimming | (M) | Strip leading and trailing silence below `-40 dBFS`, max 2 seconds per end. Mid-clip silence is preserved. |
+| 5 | High-pass filter | (M) | 80 Hz HPF to remove DC and rumble. |
+| 6 | Optional noise reduction | (P) | Stationary-noise reduction only; never spectral subtraction that distorts speech. Disabled if SNR estimate > 25 dB. |
+| 7 | Canonical re-encode | (M) | Opus, 24 kbps target, `voip` application, 20 ms frames, FEC + DTX on. This is the archive form. |
+| 8 | Waveform peaks | (M) | Generate `peaks.json` with 1000 evenly-spaced peak samples for UI use. |
+| 9 | Checksum + metadata write | (M) | SHA-256 of canonical archive; duration, bit depth, sample rate, loudness measurements written to media record. |
+
+| **FAIL** | audio processing pipeline stage that is non-deterministic |
+| :---- | :---- |
+| **FAIL** | client-side loudness normalization (server is authoritative) |
+| **FAIL** | noise reduction enabled on already-clean input (degrades speech) |
+| **FAIL** | canonical archive written without SHA-256 |
+
 ---
 
 # 8. Network Awareness
@@ -242,4 +322,4 @@ window.addEventListener('online', async () => {
 
 Version: 2.0 | Starisian Technologies | May 2026
 
-Applies to: All audio, video, and file upload code governed by SPARXSTAR standards.
+Applies to: All audio, video, and file upload code governed by Starisian Technologies standards.

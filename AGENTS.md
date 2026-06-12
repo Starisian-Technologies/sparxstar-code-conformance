@@ -1,21 +1,54 @@
-# SPARXSTAR Standards Repository — Agent Guide
+# Starisian Technologies — Standards Repository Agent Guide
 
 This file guides autonomous agents maintaining standards in this repository.
+
+**Trademark rule:** zero product names, repo names, concept names, or anything trademarkable lands in this repo. If a rule only makes sense with a product name attached, the rule belongs in that product's repo, not here. See [`docs/standards-catalog.md`](docs/standards-catalog.md).
 
 ## 1) Repository Role
 
 This repository is policy infrastructure. Its output is enforceable standards and enforcement matrices that other repositories implement.
 
-Do not turn this repository into product-specific documentation.
+This repo is the **HOW** for the organization: code-agnostic standards, per-language implementation rules, and enforcement matrices. The **WHY / WHAT** (architecture decisions, invariants, open questions, cross-repo schemas, repo boundary review) lives in each product's own decision registry — never here.
+
+Do not turn this repository into product-specific documentation. Do not name products, repos, services, or trademarks. Do not restate ADR text or invariant text; cite by number.
 
 ## 2) Canonical Document Model
 
 - **Core law:** `docs/standards-handbook.md`
 - **Implementation standards:** `docs/php-wordpress-standard.md`, `docs/javascript-react-standard.md`, `docs/node-standard.md`, `docs/css-standard.md`, `docs/media-upload-standard.md`
-- **Enforcement mapping:** `docs/enforcement-matrix.md`, `SPARXSTAR-CI-Enforcement-Matrix.md`
-- **Legacy/reference corpus:** `.github/instructions/*`, root legacy standards
+- **Enforcement mapping:** `docs/enforcement-matrix.md`, `CI-Enforcement-Matrix.md`
+- **Legacy reference:** `ENGINEERING-STANDARDS.md` at the root.
 
 When conflicts appear, move validated content into canonical docs and align references.
+
+## 2a) Architecture Decisions Cross-Reference
+
+Each product has its own decision registry holding the append-only record of architecture decisions:
+
+- `decisions/ADR-NNN-*.md` — architecture decision records (append-only; Accepted ADRs are immutable; supersede, never edit).
+- `invariants.md` — falsifiable rules (INV-NNN). Cite numbers; never restate text.
+- `open-questions.md` — OQ-NNN. Block work that depends on an OQ in `OPEN` state.
+- `specs/` — cross-repo table schemas.
+- Role / boundary statements per product.
+
+Citation conventions for standards text and commit messages in this repo:
+
+```
+# Per ADR-NNN: <decision shorthand>
+# See INV-NNN: <invariant shorthand>
+# Blocked on OQ-NNN — RESOLVED by ADR-MMM
+# Schema per specs/<schema-file>
+```
+
+Conformance checks before editing standards text:
+
+1. Does the proposed text contradict an INV? → Block; cite the number.
+2. Does the proposed text assume a `OPEN` OQ is resolved? → Block; cite the OQ.
+3. Does the proposed text duplicate an ADR or invariant statement? → Replace with a citation.
+4. Does the proposed text drift from a `specs/` schema? → Flag as spec drift.
+5. Does the proposed text name a product, repo, service, or trademark? → Replace with the generic concept; if no generic concept exists, the rule belongs in the product's repo, not here.
+
+If the relevant decision registry is inaccessible, do not fabricate ADR/INV/OQ numbers from memory or from references inside other repos. Ask for access.
 
 ## 3) What Good Changes Look Like
 

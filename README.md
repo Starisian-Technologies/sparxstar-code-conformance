@@ -1,6 +1,6 @@
-# SPARXSTAR Platform Engineering Standards
+# Starisian Technologies — Coding Standards
 
-The policies and standards of Starisian Technologies and the SPARXSTAR line of products.
+The organization-wide coding standards of Starisian Technologies. Read [`docs/standards-catalog.md`](docs/standards-catalog.md) first.
 
 ---
 
@@ -12,6 +12,7 @@ The standards are split into a language-agnostic handbook and per-language imple
 
 | Document | Purpose |
 | :---- | :---- |
+| [docs/standards-catalog.md](docs/standards-catalog.md) | **Master catalog** — foundational principles, 16 domain standards (✅ / ⚠️ / ❌), the four delivery layers, and the build sequence. Read this first |
 | [docs/standards-handbook.md](docs/standards-handbook.md) | Language-agnostic law — system modes, determinism, no silent failure, bounded execution, idempotency, provider abstraction, caching, concurrency, source of truth, deployment safety, data lifecycle |
 | [docs/php-wordpress-standard.md](docs/php-wordpress-standard.md) | PHP + WordPress implementation — strict typing, namespacing, input discipline, DB rules, multisite, object caching, plugin architecture |
 | [docs/javascript-react-standard.md](docs/javascript-react-standard.md) | JavaScript + React implementation — execution budget, event throttling, API discipline, offline-first PWA, React architecture |
@@ -24,14 +25,22 @@ The standards are split into a language-agnostic handbook and per-language imple
 
 | Document | Purpose |
 | :---- | :---- |
-| [sparxstar-coding-standards-v1.md](sparxstar-coding-standards-v1.md) | v1.0 monolithic standards (reference — superseded by `docs/`) |
-| [SPARXSTAR-ENGINEERING-STANDARDS.md](SPARXSTAR-ENGINEERING-STANDARDS.md) | Engineering standards v2 summary |
-| [SPARXSTAR-CI-Enforcement-Matrix.md](SPARXSTAR-CI-Enforcement-Matrix.md) | Companion CI rule-status matrix (`ENFORCED`, `WARN`, `SPECIFIED`, `REFERENCE`, `RESERVED`) |
+| [ENGINEERING-STANDARDS.md](ENGINEERING-STANDARDS.md) | Engineering standards v2 summary |
+| [CI-Enforcement-Matrix.md](CI-Enforcement-Matrix.md) | Org-generic CI rule-status matrix (`ENFORCED`, `WARN`, `SPECIFIED`, `REFERENCE`, `RESERVED`). Product-specific rules live in product repos |
 | [THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md](THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md) | Organizational constitution |
 | [QUESTIONS.md](QUESTIONS.md) | Open clarification questions and review notes |
 | [SECURITY.md](SECURITY.md) | Security policy |
 | [AGENTS.md](AGENTS.md) | Cross-agent maintenance guide for keeping standards code-agnostic, enforceable, and complete |
 | [.github/copilot-instructions.md](.github/copilot-instructions.md) | Copilot-facing repository law and maintenance guardrails |
+| [CODEOWNERS](CODEOWNERS) | Owner approval gate for all standards changes |
+
+---
+
+## Architecture Decisions Cross-Reference
+
+This repository is the **HOW** for the organization. The **WHY / WHAT** — architecture decisions (ADR-NNN), invariants (INV-NNN), open questions (OQ-NNN), cross-repo specs, role-boundary statements — lives in each product's own decision registry, never here.
+
+Standards in this repo **cite** ADR / INV / OQ numbers; they do not restate decision text. See [AGENTS.md](AGENTS.md#2a-architecture-decisions-cross-reference) for citation discipline.
 
 ---
 
