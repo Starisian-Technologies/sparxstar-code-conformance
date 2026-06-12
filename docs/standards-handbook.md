@@ -22,6 +22,10 @@ Stack roles: CMS/framework runtime, server language runtime, JavaScript, GraphQL
 
 Sirus is not a helper library. It is not an optional service. It is a required dependency — a control plane that every governed repository must integrate. No repo may independently determine authority, context, or applicable rules. All such resolution is delegated to Sirus. If Sirus is unavailable: fail closed. No fallback. No guessing.
 
+## Platform Decisions Cross-Reference
+
+This handbook encodes the HOW. The WHY / WHAT — architecture decisions (ADR-NNN), platform invariants (INV-NNN), open questions (OQ-NNN), cross-repo specs, and per-product role/boundary statements — lives in the companion repo `sparxstar-platform-decisions`. Standards text in this repo cites those numbers; it must not restate or paraphrase decision/invariant text. Rules in this handbook that intersect platform law (identity authority, capture, governance outcomes, custody, projection) defer to the corresponding ADR/INV by number. If the companion repo is inaccessible, do not fabricate numbers — request access.
+
 ---
 
 ## Related Implementation Standards

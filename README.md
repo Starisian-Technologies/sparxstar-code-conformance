@@ -32,6 +32,23 @@ The standards are split into a language-agnostic handbook and per-language imple
 | [SECURITY.md](SECURITY.md) | Security policy |
 | [AGENTS.md](AGENTS.md) | Cross-agent maintenance guide for keeping standards code-agnostic, enforceable, and complete |
 | [.github/copilot-instructions.md](.github/copilot-instructions.md) | Copilot-facing repository law and maintenance guardrails |
+| [CODEOWNERS](CODEOWNERS) | Owner approval gate for all standards changes |
+
+---
+
+## Companion Repository — Platform Decisions
+
+This repository is the **HOW**. The **WHY / WHAT** lives in the companion private repo `sparxstar-platform-decisions` (a.k.a. `sparxstar-architecture-decision-record`):
+
+| Surface | Purpose |
+| :---- | :---- |
+| `decisions/ADR-NNN-*.md` | Append-only architecture decision records; Accepted ADRs are immutable (supersede, never edit) |
+| `invariants.md` | Platform-wide falsifiable rules (INV-NNN) |
+| `open-questions.md` | Deliberately unsettled questions (OQ-NNN) |
+| `specs/` | Cross-repo table schemas |
+| `PRODUCT-ROLE-BOUNDARY.md` | Per-product role and boundary statements |
+
+Standards in this repo **cite** ADR / INV / OQ numbers; they do not restate decision text. See [AGENTS.md](AGENTS.md#2a-platform-decisions-cross-reference-companion-repo).
 
 ---
 

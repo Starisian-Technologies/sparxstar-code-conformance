@@ -6,7 +6,9 @@ This file guides autonomous agents maintaining standards in this repository.
 
 This repository is policy infrastructure. Its output is enforceable standards and enforcement matrices that other repositories implement.
 
-Do not turn this repository into product-specific documentation.
+This repo is the **HOW**: code-agnostic standards, per-language implementation rules, and enforcement matrices. The **WHY / WHAT** (architecture decisions, invariants, open questions, cross-repo schemas, repo boundary review) lives in the companion private repo `sparxstar-platform-decisions` (a.k.a. `sparxstar-architecture-decision-record`).
+
+Do not turn this repository into product-specific documentation. Do not restate ADR text or invariant text; cite by number.
 
 ## 2) Canonical Document Model
 
@@ -16,6 +18,35 @@ Do not turn this repository into product-specific documentation.
 - **Legacy/reference corpus:** `.github/instructions/*`, root legacy standards
 
 When conflicts appear, move validated content into canonical docs and align references.
+
+## 2a) Platform Decisions Cross-Reference (companion repo)
+
+The companion repo `sparxstar-platform-decisions` holds the append-only registry of platform law:
+
+- `decisions/ADR-NNN-*.md` — architecture decision records (append-only; Accepted ADRs are immutable; supersede, never edit).
+- `invariants.md` — falsifiable platform-wide rules (INV-NNN). Cite numbers; never restate text.
+- `open-questions.md` — OQ-NNN. Block work that depends on an OQ in `OPEN` state.
+- `specs/` — cross-repo table schemas.
+- `PRODUCT-ROLE-BOUNDARY.md` — per-product role and boundary statements.
+
+Citation conventions for standards text and commit messages in this repo:
+
+```
+# Per ADR-008: two doors, one chain
+# See INV-009: deny nothing; quarantine instead
+# Blocked on OQ-001 (contributor-identity keystone) — RESOLVED by ADR-012
+# Schema per specs/morpheme-tier-tables.md
+```
+
+Conformance checks before editing standards text:
+
+1. Does the proposed text contradict an INV? → Block; cite the number.
+2. Does the proposed text assume a `OPEN` OQ is resolved? → Block; cite the OQ.
+3. Does the proposed text duplicate an ADR or invariant statement? → Replace with a citation.
+4. Does the proposed text drift from a `specs/` schema? → Flag as spec drift.
+5. Does the change touch Patent Family A/B flagged areas? → Stop. Flag for owner review.
+
+If the companion repo is inaccessible, do not fabricate ADR/INV/OQ numbers from memory or from references inside other repos. Ask for access.
 
 ## 3) What Good Changes Look Like
 
