@@ -2,14 +2,14 @@
 
 **Version:** 0.1  
 **Status:** SPECIFIED  
-**Scope:** All Python services — primarily MCP services processing audio and governed jobs  
+**Scope:** All Python services — primarily services processing audio pipelines and governed async jobs  
 **Python version:** 3.12+ (latest stable with active support)
 
 ---
 
 ## 0. Rationale
 
-MCP services are Python. They process audio pipelines and governed async jobs. The cross-cutting rules that apply to all languages apply here in full. This document states those rules in Python terms and adds Python-specific requirements.
+Python services process audio pipelines and governed async jobs. The cross-cutting rules that apply to all languages apply here in full. This document states those rules in Python terms and adds Python-specific requirements.
 
 ---
 
