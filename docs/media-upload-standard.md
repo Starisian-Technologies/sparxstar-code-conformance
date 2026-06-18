@@ -31,9 +31,11 @@ These limits exist because bandwidth is a financial cost to users in constrained
 | :---- | :---- |
 | draft | 300 seconds |
 | development | 180 seconds |
-| production | 120 seconds |
+| Capture (production) | 120 seconds |
 
 *Note: The 120-second production cap applies to standard intake/capture flows. Long-form recordings of culturally significant oral content must use a separately governed async flow with explicit authorization. See async processing rules in the [Standards Handbook](standards-handbook.md).*
+
+> **Note:** This is a capture cap (intake/recording), not a production limit. Long-form recordings such as oral histories and elder interviews proceed via a governed async flow with explicit authorisation and chunked upload. The cap prevents accidental runaway recordings, not intentional cultural storytelling.
 
 | **FAIL** | `sampleRate > 16000` |
 | :---- | :---- |

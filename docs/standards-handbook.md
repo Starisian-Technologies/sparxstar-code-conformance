@@ -192,6 +192,10 @@ if context is null OR authority is null:
 | **FAIL** | authority-layer output modified or overridden downstream |
 | **FAIL** | local permission check without authority-layer delegation |
 
+> **Token flow architecture:** How the governance token travels through the request lifecycle (minting, propagation, validation at each layer) is defined in the product architecture specifications (Helios/Sirus IAM + Consent envelope). This standard mandates that the token is present and validated; it does not define the token format or propagation mechanism. Implementations MUST reference the product architecture specifications for token structure and lifecycle.
+
+> **Access-tier propagation:** How the user's access tier (free / community / contributor / elder / administrator) propagates through the request lifecycle is defined in the product architecture specifications. This standard requires that access tier is resolved by the authority layer (never inferred locally), is present on every governed request, and is treated as immutable for the duration of a single request. Do not cache tier decisions across requests without explicit TTL from the authority layer.
+
 ---
 
 # 2. GraphQL Standards
@@ -240,6 +244,16 @@ Machines do not make mistakes by accident. Invalid request behavior is treated a
 | Suspicious pattern | 403 Forbidden |
 | Resource not found | 404 (no hinting — no suggestion of valid paths) |
 | Rate limit exceeded | 429 Too Many Requests |
+
+## 3.1.1 Client Behaviour on 429 (Slow-Online / 2G)
+
+**Client behaviour on 429 (slow-online / 2G):** When a 429 is received on a connection with high latency (>3s round-trip or unreliable connectivity), the client MUST:
+1. Queue the request locally (IndexedDB) — do NOT discard it.
+2. Retry with exponential backoff: first retry after `Retry-After` header (or 5s default), doubling on each subsequent attempt, capped at 5 minutes.
+3. Never silently drop the queued request. If the queue cannot be written, surface a visible failure state.
+4. Resume the queue automatically on reconnect.
+
+This extends the offline-first rule to slow-online conditions: a 429 on a 2G connection is operationally equivalent to a temporary offline state.
 
 ## 3.2 Rate Limits — Baseline
 
@@ -453,6 +467,14 @@ Jobs that exhaust their retry budget must not be silently dropped. They move to 
 
 | **FAIL** | job silently discarded after max retries without dead-letter entry |
 | :---- | :---- |
+
+> **Dead-letter retention policy:**
+> - Governance-sensitive dead letters (items that involved an authority-layer call, consent state change, or governed workflow transition) MUST be retained for a minimum of 90 days.
+> - Non-governance dead letters MUST be retained for a minimum of 7 days.
+> - Retention storage MUST be queryable (not just logs).
+> - Review responsibility: the owning service team is responsible for triaging dead letters at least weekly.
+> - Deletion: dead letters MUST be explicitly deleted after retention period by a scheduled process. Silent expiry is not permitted — the deletion event MUST be logged.
+> - No dead letter may be silently discarded at any point in its lifecycle.
 
 ## 8.4 Deployment Safety
 
