@@ -90,3 +90,5 @@ continuing is a retraction cascade across every repo that read the spec.
 Read `.github/instructions/governance/` for current ADR decisions,
 invariants, and open questions. These are the rules your specs must
 satisfy. Do not assume rules that are not in the governance reference.
+
+see also [Engingeering Standards](https://github.com/Starisian-Technologies/starisian-technologies-coding-standards/blob/main/ENGINEERING-STANDARDS.md) and 
