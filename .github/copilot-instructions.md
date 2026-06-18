@@ -1,48 +1,77 @@
-# Copilot Review Instructions — Product Specifications
+Starisian Technologies --- Copilot Instructions
+=============================================
 
-This repository holds the technical specifications for SPARXSTAR platform
-products. Specs define what each product does, how products connect, and
-what the seams look like.
+This repository defines coding standards. Treat this repo as the source of policy, not product implementation.
 
-## Your role
+Reference repositories (read via MCP)
+-------------------------------------
 
-You review every PR against the ADR registry. You have MCP access to the
-internal ADR registry at `sparxstar-architecture-decision-record`. Use it.
+Before reviewing any PR in this repo, read these two internal repos:
 
-## Review rules
+-   **ADR Registry:** `Starisian-Technologies/sparxstar-architecture-decision-record` --- decisions, invariants, open questions. Every standard must trace to a decision here. If a standard has no ADR source, flag it.
+-   **Product Specs:** `Starisian-Technologies/sparxstar-product-technical--specifications` --- what each product does. Standards must not contradict how products are specced. If a standard conflicts with a spec, flag both.
+-   **This repo:** `Starisian-Technologies/starisian-technologies-coding-standards` --- you are here. Standards, configs, workflows, matrices.
 
-- **One file per product.** If a PR adds a second spec file for a
-  product that already has one, flag it. The existing file should be
-  updated instead.
-- **Every spec follows the template** in
-  `platform/product-spec-document-structure.md`. All twelve sections
-  must be present. If a section is missing, flag it.
-- **Directory placement matters:**
-  - `platform/` — platform governance docs only
-  - `specs/general/` — cross-cutting specs, not product-specific
-  - `specs/{Group}/` — product specs and group architecture docs
-  - Do not put product specs in `platform/` or `specs/general/`
-  - Do not put cross-cutting specs in a group folder
-- Every spec must be consistent with the ADR registry. If a spec
-  contradicts a decision, flag it.
-- Specs must not assume answers to open questions. If a spec builds on
-  an OQ, flag it and cite the OQ number.
-- Cross-product specs (suite architecture, identity model, reward model)
-  belong in the appropriate group folder or in `specs/general/` if they
-  span groups.
-- Client-specific content does not belong here. Use generic language.
-  "The first client deployment" is acceptable. "AIWA" as a proper noun
-  in a spec title is not.
+Mission
+-------
 
-## What you must flag
+-   Keep standards enforceable, testable, and technology-agnostic by default.
+-   Encode stack-specific rules only where implementation constraints demand it.
+-   Preserve consistency between `docs/`, root reference files, and agent guidance.
 
-- A spec that contradicts an ADR or invariant
-- A spec that assumes an answer to an open question
-- A spec that should be in a product repo (single-product, no seams)
-- A product name used where a generic term would work
-- A governance snapshot file that appears to have been manually edited
+Authoritative sources (within this repo)
+----------------------------------------
 
-## Files you must NOT edit or suggest changes to
+1.  `docs/standards-catalog.md` --- master catalog, read this first
+2.  `docs/standards-handbook.md` --- global principles
+3.  `docs/*-standard.md` --- per-language standards
+4.  `docs/enforcement-matrix.md` and `CI-Enforcement-Matrix.md` --- enforcement mapping
 
-- `.github/instructions/governance/*` — auto-synced, read-only
-- Any file with a header stating "auto-generated, do not edit"
+Legacy material at the root (`ENGINEERING-STANDARDS.md`) is reference only; not final authority unless merged into the canonical docs.
+
+Review checklist
+----------------
+
+On every PR, check:
+
+1.  **ADR traceability.** Does every standard cite its source ADR/INV? A standard with no source has no authority --- flag it.
+2.  **ADR compliance.** Read the ADR registry via MCP. Does the standard contradict any decision or invariant? Flag with the number.
+3.  **OQ discipline.** Does the standard assume an OPEN OQ is resolved? Flag with the OQ number.
+4.  **Spec consistency.** Read the product specs via MCP. Does the standard conflict with how a product is specced? Flag both.
+5.  **Matrix honesty.** Is a row marked ENFORCED without a workflow? Flag --- status should be SPECIFIED.
+6.  **Trademark discipline.** Any product name, repo name, service name, or trademark? Flag --- this is the org-wide repo, zero product names.
+7.  **Governance snapshots.** Is the PR editing a file under `.github/instructions/governance/`? Flag --- auto-synced, read-only.
+
+Trademark discipline
+--------------------
+
+Zero product names. Refer to capabilities by generic role: "the authority layer", "the auth SDK", "the audio capture SDK", "the runtime layer". If a rule only makes sense with a product name, the rule belongs in that product's repo.
+
+Non-negotiable engineering rules
+--------------------------------
+
+-   If a rule cannot be enforced or verified, it is incomplete.
+-   Sanitize → Validate → Escape (in that order).
+-   No silent failure.
+-   Bounded execution and explicit limits are mandatory.
+-   Fail-closed for authority, trust, and safety decisions.
+-   Platform abstractions required; no hardwired provider-specific behavior.
+
+Stack coverage
+--------------
+
+All maintenance must keep standards current for: PHP, WordPress, JavaScript, React, Node, CSS, SQL, PostgreSQL, Neo4j, XML, JSON, Laravel, Vite.
+
+Security guardrails
+-------------------
+
+-   Never commit credentials, tokens, or secrets.
+-   Require parameterized database access.
+-   Keep CI stages explicit and ordered.
+
+What you must NOT do
+--------------------
+
+-   You are a reviewer, not the authority. Flag and explain. The owner decides.
+-   Do not suggest edits to governance snapshot files.
+-   Do not add product names in suggested changes.
