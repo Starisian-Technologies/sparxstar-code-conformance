@@ -91,4 +91,4 @@ Read `.github/instructions/governance/` for current ADR decisions,
 invariants, and open questions. These are the rules your specs must
 satisfy. Do not assume rules that are not in the governance reference.
 
-see also [Engingeering Standards](https://github.com/Starisian-Technologies/starisian-technologies-coding-standards/blob/main/ENGINEERING-STANDARDS.md) and 
+see also [Engingeering Standards](https://github.com/Starisian-Technologies/starisian-technologies-coding-standards/blob/main/ENGINEERING-STANDARDS.md) and the [Starisian Technologies Constitution](https://github.com/Starisian-Technologies/starisian-technologies-coding-standards/blob/main/THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md).
