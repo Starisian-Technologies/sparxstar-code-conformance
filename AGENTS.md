@@ -1,5 +1,3 @@
-# Agent Instructions — Product Specifications
-
 Agent Guide --- Starisian Technologies Coding Standards
 =====================================================
 
