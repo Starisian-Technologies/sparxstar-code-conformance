@@ -242,8 +242,7 @@ If not explicitly set, derive `STAR_PLUGIN_NAME` from the directory name: `preg_
 - name: WordPress Plugin Check
   uses: wordpress/plugin-check-action@v1
   with:
-    build-dir: '.'
-    checks: all
+    path: '.'
 ```
 
 Plugin Check failures block merge in `development` and `production` modes.

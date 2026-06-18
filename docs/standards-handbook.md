@@ -249,7 +249,7 @@ Machines do not make mistakes by accident. Invalid request behavior is treated a
 
 **Client behaviour on 429 (slow-online / 2G):** When a 429 is received on a connection with high latency (>3s round-trip or unreliable connectivity), the client MUST:
 1. Queue the request locally (IndexedDB) — do NOT discard it.
-2. Retry with exponential backoff: first retry after `Retry-After` header (or 5s default), doubling on each subsequent attempt, capped at 5 minutes.
+2. Retry with exponential backoff: first retry after `Retry-After` header (or 5s default), doubling on each subsequent attempt, capped at 5 minutes — unless `Retry-After` specifies a longer duration, which MUST be respected regardless of the cap.
 3. Never silently drop the queued request. If the queue cannot be written, surface a visible failure state.
 4. Resume the queue automatically on reconnect.
 

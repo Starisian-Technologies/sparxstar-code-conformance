@@ -36,7 +36,7 @@ except Exception:
 try:
     process_audio(path)
 except AudioProcessingError as exc:
-    logger.error("audio_processing_failed", path=path, error=str(exc))
+    logger.error("audio_processing_failed", path=path, exc_info=True)
     raise
 ```
 
