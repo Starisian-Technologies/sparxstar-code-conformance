@@ -68,12 +68,14 @@ jobs:
       - name: NODE-PKG-003 — packageManager field is pinned pnpm
         if: hashFiles('package.json') != ''
         shell: bash
+        env:
+          BLOCK_MODE: ${{ steps.mode.outputs.block }}
         run: |
           set -euo pipefail
           pm=$(node -e "try { const p = require('./package.json'); process.stdout.write(p.packageManager || '') } catch (e) { process.stdout.write('') }")
           if [[ "$pm" != pnpm@* ]]; then
             msg="ADR-017 (NODE-PKG-003): package.json missing pinned packageManager (expected 'pnpm@<version>', got '${pm:-<unset>}')"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"
               exit 1
             else
@@ -83,6 +85,8 @@ jobs:
 
       - name: NODE-PKG-001 — workflows/scripts do not invoke npm or yarn install
         shell: bash
+        env:
+          BLOCK_MODE: ${{ steps.mode.outputs.block }}
         run: |
           set -euo pipefail
           patterns='(^|[^[:alnum:]_-])(npm[[:space:]]+(install|i|ci)([[:space:]]|$)|yarn[[:space:]]+(install|add)([[:space:]]|$))'
@@ -91,7 +95,7 @@ jobs:
               -e "$patterns" . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'ADR-017 (NODE-PKG-001): non-pnpm package manager invocation found:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"
               exit 1
             else
@@ -102,6 +106,8 @@ jobs:
       - name: NODE-PKG-004 — pnpm install --frozen-lockfile dry run
         if: hashFiles('package.json') != ''
         shell: bash
+        env:
+          BLOCK_MODE: ${{ steps.mode.outputs.block }}
         run: |
           set -euo pipefail
           corepack enable
@@ -109,7 +115,7 @@ jobs:
             pnpm install --frozen-lockfile
           else
             msg="ADR-017 (NODE-PKG-002): package.json present but pnpm-lock.yaml missing"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"
               exit 1
             else
