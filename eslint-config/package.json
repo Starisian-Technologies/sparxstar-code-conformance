@@ -1,0 +1,13 @@
+{
+  "name": "@starisian/eslint-config",
+  "version": "0.1.0",
+  "description": "Starisian Technologies shared ESLint flat config",
+  "type": "module",
+  "main": "index.js",
+  "peerDependencies": {
+    "eslint": "^9",
+    "@typescript-eslint/eslint-plugin": "^8",
+    "@typescript-eslint/parser": "^8"
+  },
+  "license": "UNLICENSED"
+}

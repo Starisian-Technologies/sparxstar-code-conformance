@@ -1,0 +1,70 @@
+name: PHP Standards
+
+on:
+  workflow_call:
+    inputs:
+      php-version:
+        description: PHP version to use
+        type: string
+        default: '8.2'
+      phpstan-level:
+        description: PHPStan analysis level (5–8)
+        type: string
+        default: '5'
+      working-directory:
+        description: Working directory for all steps
+        type: string
+        default: '.'
+      mode:
+        description: 'Pipeline mode: draft | development | production'
+        type: string
+        default: 'production'
+
+jobs:
+  phpcs:
+    name: PHPCS Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    continue-on-error: ${{ inputs.mode == 'draft' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@c541c155eee45413f5b09a52248675b1a2575231 # v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          tools: composer
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist --optimize-autoloader
+
+      - name: Run PHPCS
+        run: vendor/bin/phpcs --standard=phpcs.xml.dist --report=checkstyle
+
+  phpstan:
+    name: PHPStan Static Analysis
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    continue-on-error: ${{ inputs.mode == 'draft' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@c541c155eee45413f5b09a52248675b1a2575231 # v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          tools: composer
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --no-dev --prefer-dist
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --level=${{ inputs.phpstan-level }} --no-progress

@@ -1,0 +1,34 @@
+name: Markdownlint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Working directory for all steps
+        type: string
+        default: '.'
+      mode:
+        description: 'Pipeline mode: draft | development | production'
+        type: string
+        default: 'production'
+      glob:
+        description: Glob pattern for markdown files to lint
+        type: string
+        default: '**/*.md'
+
+jobs:
+  markdownlint:
+    name: Markdownlint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    continue-on-error: ${{ inputs.mode == 'draft' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Run markdownlint-cli2
+        uses: DavidAnson/markdownlint-cli2-action@05f32210e84442804257b2a30f9e4e3b6b2cba5c # v19
+        with:
+          globs: ${{ inputs.glob }}

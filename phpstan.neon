@@ -1,0 +1,20 @@
+parameters:
+    level: 5
+    # Increase to 8 for core systems. Override in consuming repo.
+
+    paths:
+        - src
+    # Override paths in consuming repo.
+
+    excludePaths:
+        - vendor
+
+    checkMissingIterableValueType: false
+    inferPrivatePropertyTypeFromConstructor: true
+
+    # WordPress stubs — requires szepeviktor/phpstan-wordpress in consuming repo
+    # composer require --dev szepeviktor/phpstan-wordpress
+
+includes:
+    # Uncomment in consuming repo after installing the extension:
+    # - vendor/szepeviktor/phpstan-wordpress/extension.neon
