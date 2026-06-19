@@ -4,6 +4,7 @@
   "description": "Starisian Technologies organization-wide ESLint flat configurations. Shareable base + Node + React entrypoints.",
   "license": "UNLICENSED",
   "type": "module",
+  "publishConfig": {
     "access": "restricted"
   },
   "exports": {
