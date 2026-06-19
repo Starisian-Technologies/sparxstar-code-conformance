@@ -50,10 +50,10 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | DIST-003 | standards-handbook §8.4 | Deployment changes must be rollback-safe; breaking changes require feature flags | Release engineering | SPECIFIED | Deployment policy checks / migration tests |
 | DIST-004 | standards-handbook §8.5 | Schema version compatibility during rollout | Backend / Clients | SPECIFIED | Migration tests |
 | DIST-005 | standards-handbook §8.6 | Critical offline data in IndexedDB, not localStorage | Frontend | SPECIFIED | ESLint custom rule (not yet shipped) |
-| PHP-001 | php-wordpress-standard §2 | PHP files require `declare(strict_types=1)` | PHP | ENFORCED | `phpcs.xml.dist` shipped from this repo (`PSR12.Files.DeclareStrictTypes`) |
+| PHP-001 | php-wordpress-standard §2 | PHP files require `declare(strict_types=1)` | PHP | ENFORCED | `ruleset.xml` shipped from this repo (`PSR12.Files.DeclareStrictTypes`) |
 | PHP-002 | php-wordpress-standard §5 | No `SELECT *` in queries | PHP / SQL | SPECIFIED | PHPCS custom sniff (not yet shipped) |
-| PHP-003 | php-wordpress-standard §5 | All DB queries prepared (`$wpdb->prepare`) | PHP / SQL | ENFORCED | `phpcs.xml.dist` shipped (`WordPress.DB.PreparedSQL*`) |
-| PHP-004 | php-wordpress-standard §3.2 | WordPress globals must be prefixed | WordPress | ENFORCED | `phpcs.xml.dist` shipped (`WordPress.NamingConventions.PrefixAllGlobals`); consumer MUST set `<config name="prefixes" value="myproduct"/>` |
+| PHP-003 | php-wordpress-standard §5 | All DB queries prepared (`$wpdb->prepare`) | PHP / SQL | ENFORCED | `ruleset.xml` shipped (`WordPress.DB.PreparedSQL*`) |
+| PHP-004 | php-wordpress-standard §3.2 | WordPress globals must be prefixed | WordPress | ENFORCED | `ruleset.xml` shipped (`WordPress.NamingConventions.PrefixAllGlobals`); consumer MUST set `<config name="prefixes" value="myproduct"/>` |
 | PHP-005 | php-wordpress-standard §10.1 | PHPStan level 5 minimum | PHP | ENFORCED | `phpstan.neon` shipped from this repo (`level: 5`) |
 | JS-001 | javascript-react-standard §3 | Fetch/API calls require timeout and bounded retry | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped — Catalog #2) |
 | JS-002 | javascript-react-standard §6.2 | IndexedDB for critical offline data | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped) |

@@ -124,7 +124,7 @@ jobs:
           if [ -f pnpm-lock.yaml ]; then
             pnpm install --frozen-lockfile
           else
-            msg="ADR-017 (NODE-PKG-002): package.json present but pnpm-lock.yaml missing"
+            msg="ADR-017 (NODE-PKG-004): package.json present but pnpm-lock.yaml missing — --frozen-lockfile requires it"
             if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"
               exit 1
