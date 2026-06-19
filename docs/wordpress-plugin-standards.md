@@ -250,7 +250,7 @@ jobs:
       mode: production  # draft | development | production
 ```
 
-Override categories or excluded directories as needed via `with:` inputs (`categories`, `exclude-directories`). Enforcement rule: **WP-001** in the [enforcement matrix](enforcement-matrix.md).
+Override categories or excluded directories as needed via `with:` inputs (`categories`, `exclude_directories`). Enforcement rule: **WP-001** in the [enforcement matrix](enforcement-matrix.md).
 
 > **Branch protection required:** "Blocks merge" means the `plugin-check` job must be added as a required status check in the repository's branch protection rules for `main` (or your primary branch). A passing workflow alone does not block merge without this configuration.
 

@@ -40,7 +40,7 @@ jobs:
           coverage: none
 
       - name: Install Composer dependencies
-        run: composer install --no-dev --prefer-dist --optimize-autoloader
+        run: composer install --prefer-dist --optimize-autoloader
 
       - name: Run PHPCS
         run: vendor/bin/phpcs --standard=phpcs.xml.dist --report=checkstyle
@@ -64,7 +64,7 @@ jobs:
           coverage: none
 
       - name: Install Composer dependencies
-        run: composer install --no-dev --prefer-dist
+        run: composer install --prefer-dist
 
       - name: Run PHPStan
         env:

@@ -24,7 +24,15 @@ export default [
   {
     files: ['**/*.{ts,tsx}'],
     plugins: { '@typescript-eslint': tseslint },
-    languageOptions: { parser: tsParser },
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        // Required for type-aware rules (no-floating-promises, await-thenable).
+        // Consuming repos must have a tsconfig.json at their project root.
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       'no-console': 'error',
       'no-eval': 'error',

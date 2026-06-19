@@ -2,6 +2,7 @@
   "name": "@starisian/stylelint-config",
   "version": "0.1.0",
   "description": "Starisian Technologies shared Stylelint config",
+  "type": "module",
   "main": "index.js",
   "peerDependencies": {
     "stylelint": "^16",

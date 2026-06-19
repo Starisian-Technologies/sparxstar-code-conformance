@@ -45,7 +45,7 @@ These are not documents; they are constraints every domain standard must satisfy
 | 15a | WordPress plugin compliance | active | WordPress Plugin Check workflow (`wp-plugin-check.yml`) |
 | 15b | PHP / JS / CSS / formatting / docs CI | active | `php-standards.yml`, `js-standards.yml`, `css-standards.yml`, `formatting.yml`, `markdownlint.yml` |
 | 16 | Internationalization basics | missing | No hardcoded strings, UTF-8, BCP-47, ICU format |
-| 17 | Python | missing | `flake8` / `ruff`, `mypy` strict, `black` formatting |
+| 17 | Python | doc exists (`python-standard.md`), tooling pending | `ruff`, `mypy` strict, `uv` (pending ADR) |
 
 ---
 

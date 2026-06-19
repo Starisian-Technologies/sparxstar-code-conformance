@@ -15,7 +15,7 @@ export default {
     // No ID selectors — specificity cap: 0,1,0 (single class)
     'selector-max-id': 0,
 
-    // Nesting depth cap: 3 levels
+    // Selector complexity cap: max 3 compound selectors per rule (limits chained .a.b.c or a > b > c patterns)
     'selector-max-compound-selectors': 3,
 
     // Design token pattern: CSS custom properties must follow --token-name convention
