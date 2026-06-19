@@ -14,7 +14,7 @@ on:
       glob:
         description: Glob pattern for markdown files to lint
         type: string
-        default: '**/*.md'
+        default: '**/*.md !node_modules/**/*.md !vendor/**/*.md !dist/**/*.md !build/**/*.md'
 
 jobs:
   markdownlint:

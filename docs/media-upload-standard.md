@@ -33,7 +33,11 @@ These limits exist because bandwidth is a financial cost to users in constrained
 | development | 180 seconds |
 | Capture (production) | 120 seconds |
 
-**Note:** This is a per-segment capture cap, not a limit on total recorded content. Each individual recording segment captured through the standard intake interface is capped at 120 seconds. Long-form recordings (oral histories, elder interviews) are produced by capturing multiple governed segments through a separately authorized async flow with chunked upload — the cap prevents accidental runaway recording, not intentional cultural storytelling. See async processing rules in the [Standards Handbook](standards-handbook.md).
+**Note:** This is a per-segment capture cap, not a limit on total recorded content. Each individual recording segment
+captured through the standard intake interface is capped at 120 seconds. Long-form recordings (oral histories, elder
+interviews) are produced by capturing multiple governed segments through a separately authorized async flow with
+chunked upload — the cap prevents accidental runaway recording, not intentional cultural storytelling. See async
+processing rules in the [Standards Handbook](standards-handbook.md).
 
 | **FAIL** | `sampleRate > 16000` |
 | :---- | :---- |

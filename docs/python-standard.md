@@ -91,11 +91,10 @@ def process_audio(path: Path, config: AudioConfig) -> ProcessingResult:
 
 ### 2.2 Dependency Management
 
-- `uv` is the required package manager for Python services (mirrors the pnpm-only policy for Node).
-  **SPECIFIED-pending-ADR** — no formal decision record has been filed for this requirement;
-  treat as an open question until an ADR or INV is filed.
-- `uv.lock` MUST be committed.
-- No unpinned dependencies in production (`uv lock` with exact versions).
+- `uv` is the recommended package manager for Python services (pending a formal ADR; treat as guidance until the
+  decision record is filed). Other package managers are permitted until the ADR is resolved.
+- Lock files (`uv.lock` or equivalent) should be committed.
+- No unpinned dependencies in production.
 
 ### 2.3 Structured Logging
 

@@ -2,9 +2,12 @@
 
 **Version:** 0.1  
 **Status:** SPECIFIED  
-**Scope:** All client-side implementations (JavaScript/React applications, WordPress plugins, browser-based games, text editors)  
+**Scope:** All client-side implementations (JavaScript/React applications, WordPress plugins,
+browser-based games, text editors)  
 **Authority:** This is a specification, not a coding standard. Implementation decisions must conform to this spec.  
-**Decision record:** The thresholds and queue limits in this spec (latency: 3s, IndexedDB cap: 20 MB, retry limit: 3) were established in the 2026-06-18 standards review session. A formal ADR should be filed to make these traceable. Until then, treat all quantitative values as SPECIFIED-pending-ADR.
+**Decision record (OQ-001):** The thresholds and queue limits in this spec (latency: 3s, IndexedDB cap: 20 MB,
+retry limit: 3) were established in the 2026-06-18 standards review session. A formal ADR should be filed to make
+these traceable. Until then, treat all quantitative values as SPECIFIED-pending-ADR.
 
 ---
 
@@ -28,12 +31,9 @@ SLOW_ONLINE → OFFLINE  navigator.onLine false
 OFFLINE → SYNCING      navigator.onLine becomes true
 SYNCING → ONLINE       queue flushed, no conflicts
 SYNCING → CONFLICT     server rejects a queued write (version mismatch or governance rejection)
-SYNCING → ONLINE       queue flushed, no conflicts
-SYNCING → CONFLICT     server rejects a queued write (version mismatch or governance rejection)
 SYNCING → OFFLINE      navigator.onLine becomes false during sync
-SYNCING → SLOW_ONLINE  sync requests experience latency > 3s or 429 received
+SYNCING → SLOW_ONLINE  sync requests experience latency > 3s, or 429 received while latency is elevated
 CONFLICT → ONLINE      conflict resolved (user or system)
-CONFLICT → OFFLINE     navigator.onLine becomes false during conflict resolution
 CONFLICT → OFFLINE     navigator.onLine becomes false during conflict resolution
 ```
 
