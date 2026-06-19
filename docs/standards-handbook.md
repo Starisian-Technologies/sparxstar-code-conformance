@@ -248,7 +248,10 @@ Machines do not make mistakes by accident. Invalid request behavior is treated a
 
 ## 3.1.1 Client Behaviour on 429 (Slow-Online / 2G)
 
-> **Decision record:** These rules were established in the 2026-06-18 standards review session (slow-online / 2G gap identified). A formal ADR should be filed. Until then, status is SPECIFIED-pending-ADR.
+> **Open question (OQ — pending formal ADR):** These client-behavior rules were identified during
+> the 2026-06-18 standards review (slow-online / 2G gap). No formal ADR or INV has been filed yet.
+> All rules in this section are SPECIFIED-pending-ADR. A formal ADR MUST be filed, citing these
+> rules by section number, before any rule here is promoted to ENFORCED in the enforcement matrix.
 
 **Client behaviour on 429 (slow-online / 2G):** When a 429 is received on a connection with high latency (>3s round-trip or unreliable connectivity), the client MUST apply the following rules **to write/mutation requests only** (reads may be retried without queuing):
 1. Queue the mutation locally (IndexedDB) — do NOT discard it.

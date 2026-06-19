@@ -5,6 +5,11 @@
 **Scope:** All Python services — primarily services processing audio pipelines and governed async jobs  
 **Python version:** 3.12+ (floor; upgrade as new versions enter active support)
 
+> **Open question (OQ — pending formal ADR):** This standard introduces normative requirements
+> (package manager, toolchain, enforcement rules) that do not yet have a formal ADR or INV source.
+> All rules in this document are SPECIFIED-pending-ADR. A formal decision record MUST be filed,
+> citing this standard by version, before any rule here is promoted to ENFORCED in the enforcement matrix.
+
 ---
 
 ## 0. Rationale
@@ -86,7 +91,9 @@ def process_audio(path: Path, config: AudioConfig) -> ProcessingResult:
 
 ### 2.2 Dependency Management
 
-- `uv` is the required package manager for Python services (mirrors the pnpm-only policy for Node — pending a formal ADR; treat as SPECIFIED until the decision record is filed).
+- `uv` is the required package manager for Python services (mirrors the pnpm-only policy for Node).
+  **SPECIFIED-pending-ADR** — no formal decision record has been filed for this requirement;
+  treat as an open question until an ADR or INV is filed.
 - `uv.lock` MUST be committed.
 - No unpinned dependencies in production (`uv lock` with exact versions).
 
