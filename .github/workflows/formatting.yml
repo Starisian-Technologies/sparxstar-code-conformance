@@ -30,10 +30,12 @@ jobs:
     continue-on-error: ${{ inputs.mode == 'draft' }}
     steps:
       - name: Validate mode
+        env:
+          WORKFLOW_MODE: ${{ inputs.mode }}
         run: |
-          case "${{ inputs.mode }}" in
+          case "$WORKFLOW_MODE" in
             draft|development|production) ;;
-            *) echo "::error::Invalid mode '${{ inputs.mode }}'. Must be draft, development, or production." && exit 1 ;;
+            *) echo "::error::Invalid mode '$WORKFLOW_MODE'. Must be draft, development, or production." && exit 1 ;;
           esac
 
       - name: Checkout

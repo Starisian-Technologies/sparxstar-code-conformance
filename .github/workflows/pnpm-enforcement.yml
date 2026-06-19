@@ -36,13 +36,15 @@ jobs:
 
       - name: Determine block behavior
         id: mode
+        env:
+          WORKFLOW_MODE: ${{ inputs.mode }}
         shell: bash
         run: |
-          case "${{ inputs.mode }}" in
+          case "$WORKFLOW_MODE" in
             draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
             development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
             *)
-              echo "::error::Unknown mode '${{ inputs.mode }}' — expected draft | development | production"
+              echo "::error::Unknown mode '$WORKFLOW_MODE' — expected draft | development | production"
               exit 1
               ;;
           esac
