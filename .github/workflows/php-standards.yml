@@ -21,8 +21,20 @@ on:
         default: 'production'
 
 jobs:
+  validate-inputs:
+    name: Validate Inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate mode
+        run: |
+          case "${{ inputs.mode }}" in
+            draft|development|production) ;;
+            *) echo "::error::Invalid mode '${{ inputs.mode }}'. Must be draft, development, or production." && exit 1 ;;
+          esac
+
   phpcs:
     name: PHPCS Lint
+    needs: validate-inputs
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -43,10 +55,13 @@ jobs:
         run: composer install --prefer-dist --optimize-autoloader
 
       - name: Run PHPCS
+        # Expects phpcs.xml.dist at the repo root, extending or overriding the shared ruleset.
+        # See phpcs.xml.dist in starisian-technologies-coding-standards for the base config.
         run: vendor/bin/phpcs --standard=phpcs.xml.dist --report=checkstyle
 
   phpstan:
     name: PHPStan Static Analysis
+    needs: validate-inputs
     runs-on: ubuntu-latest
     defaults:
       run:

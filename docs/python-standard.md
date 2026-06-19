@@ -76,9 +76,12 @@ Every governed action (audio processing, data mutation, consent state change) MU
 
 ## 2. Python-Specific Requirements
 
+> All section 2 requirements are SPECIFIED-pending-ADR (see OQ-006 header above). Language is
+> normative guidance; rules are promoted to ENFORCED when an ADR is filed and CI tooling is delivered.
+
 ### 2.1 Type Annotations
 
-All function signatures MUST have complete type annotations. `mypy` strict mode is required.
+All function signatures should have complete type annotations. `mypy` strict mode is the target.
 
 ```python
 # FAIL
@@ -124,13 +127,13 @@ Use `structlog` or equivalent structured logging. All log entries MUST include:
 | Max file handle open duration | Explicit context manager required |
 | Temp files | Deleted on completion or exception |
 
-All file and resource handles MUST use context managers (`with` blocks). Explicit `.close()` without a context manager is a standards violation.
+All file and resource handles should use context managers (`with` blocks).
 
 ### 2.6 Audio Processing Specifics
 
-- FFmpeg calls MUST be sandboxed (no shell=True; use `subprocess` with explicit arg lists).
-- All FFmpeg invocations MUST have an explicit timeout.
-- Temp files from audio processing MUST be cleaned up in a `finally` block.
+- FFmpeg calls should be sandboxed (no shell=True; use `subprocess` with explicit arg lists).
+- All FFmpeg invocations should have an explicit timeout.
+- Temp files from audio processing should be cleaned up in a `finally` block.
 - Max audio file size before processing: 5 MB (consistent with global upload cap).
 
 ```python

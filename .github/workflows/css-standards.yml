@@ -25,6 +25,13 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     continue-on-error: ${{ inputs.mode == 'draft' }}
     steps:
+      - name: Validate mode
+        run: |
+          case "${{ inputs.mode }}" in
+            draft|development|production) ;;
+            *) echo "::error::Invalid mode '${{ inputs.mode }}'. Must be draft, development, or production." && exit 1 ;;
+          esac
+
       - name: Checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 

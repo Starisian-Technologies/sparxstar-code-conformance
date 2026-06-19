@@ -27,8 +27,8 @@ export default {
     // text-shadow on body text — paint cost, no readability gain; warn
     // box-shadow with spread > 4px increases paint area — cannot be enforced by property-disallowed-list alone; flagged in code review
     'property-disallowed-list': [
-      'filter',       // STD: CSS — GPU compositing; use @supports if genuinely needed and document the exception
-      'backdrop-filter', // STD: CSS — extremely GPU-intensive
+      'filter',           // STD: CSS — GPU compositing on low-resource devices; no exceptions
+      'backdrop-filter',  // STD: CSS — extremely GPU-intensive; no exceptions
     ],
 
     // Animation on layout properties triggers recalc — restrict to composited properties only
@@ -37,8 +37,8 @@ export default {
       'transition': ['/width/', '/height/', '/top/', '/left/', '/bottom/', '/right/'],
     },
 
-    // Font sizes must use rem (respects user settings)
-    'unit-disallowed-list': [],  // Override in consuming config if needed
+    // Font sizes must use rem (respects user font-size settings); px is disallowed on font-size only
+    'declaration-property-unit-disallowed-list': [{ '/^font-size/': ['px'] }],
 
     // Minimum font size: 1rem (16px default) — enforced in code review; no Stylelint rule available
   },

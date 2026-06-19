@@ -34,8 +34,8 @@
     <!-- Consuming repos override: <rule ref="WordPress.NamingConventions.PrefixAllGlobals"><properties><property name="prefixes" type="array" value="your_prefix"/></properties></rule> -->
     <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
         <properties>
-            <!-- Override this property in the consuming repo's phpcs.xml -->
-            <property name="prefixes" type="array" value="star"/>
+            <!-- REQUIRED: Override this in the consuming repo's phpcs.xml with the actual plugin prefix -->
+            <property name="prefixes" type="array" value="YOUR_PREFIX"/>
         </properties>
     </rule>
 

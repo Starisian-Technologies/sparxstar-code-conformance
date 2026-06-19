@@ -26,12 +26,10 @@ export default [
     plugins: { '@typescript-eslint': tseslint },
     languageOptions: {
       parser: tsParser,
-      parserOptions: {
-        // Required for type-aware rules (no-floating-promises, await-thenable).
-        // Consuming repos must have a tsconfig.json at their project root.
-        projectService: true,
-        tsconfigRootDir: process.cwd(),
-      },
+      // projectService omitted: type-aware rules (no-floating-promises, await-thenable) are off
+      // by default to keep this config usable in repos without a TS project reference.
+      // Consuming repos that enable those rules must add:
+      //   parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname }
     },
     rules: {
       'no-console': 'error',

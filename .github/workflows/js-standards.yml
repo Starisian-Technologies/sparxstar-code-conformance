@@ -17,8 +17,20 @@ on:
         default: 'lts/*'
 
 jobs:
+  validate-inputs:
+    name: Validate Inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate mode
+        run: |
+          case "${{ inputs.mode }}" in
+            draft|development|production) ;;
+            *) echo "::error::Invalid mode '${{ inputs.mode }}'. Must be draft, development, or production." && exit 1 ;;
+          esac
+
   eslint:
     name: ESLint
+    needs: validate-inputs
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -45,6 +57,7 @@ jobs:
 
   typescript:
     name: TypeScript Type Check
+    needs: validate-inputs
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -58,6 +71,7 @@ jobs:
         uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
         with:
           node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
 
       - name: Enable Corepack (pnpm)
         run: corepack enable
