@@ -4,13 +4,12 @@
         Starisian Technologies — organization-wide PHP / WordPress coding standard.
         Enforces docs/php-wordpress-standard.md and the rules listed in CI-Enforcement-Matrix.md.
 
-        Consumer extension:
-            <?xml version="1.0"?>
-            <ruleset>
-                <rule ref="vendor/starisian-technologies/coding-standards/phpcs.xml.dist"/>
-                <!-- Consumer MUST configure their product prefix (PHP-004): -->
-                <config name="prefixes" value="myproduct"/>
-            </ruleset>
+        Consumer extension (in your project's phpcs.xml.dist):
+            &lt;ruleset&gt;
+                &lt;rule ref="vendor/starisian-technologies/coding-standards/phpcs.xml.dist"/&gt;
+                &lt;!-- Consumer MUST configure their product prefix (PHP-004): --&gt;
+                &lt;config name="prefixes" value="myproduct"/&gt;
+            &lt;/ruleset&gt;
     </description>
 
     <!-- Files scanned by default unless the consumer overrides. -->
