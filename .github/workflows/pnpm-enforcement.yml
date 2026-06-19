@@ -48,6 +48,8 @@ jobs:
           esac
 
       - name: NODE-PKG-002 — no foreign lockfiles
+        env:
+          BLOCK_MODE: ${{ steps.mode.outputs.block }}
         shell: bash
         run: |
           set -euo pipefail
@@ -57,7 +59,7 @@ jobs:
           done
           if [ ${#forbidden[@]} -gt 0 ]; then
             msg="ADR-017 (NODE-PKG-002): forbidden lockfile(s) present: ${forbidden[*]}"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"
               exit 1
             else
@@ -67,6 +69,8 @@ jobs:
 
       - name: NODE-PKG-003 — packageManager field is pinned pnpm
         if: hashFiles('package.json') != ''
+        env:
+          BLOCK_MODE: ${{ steps.mode.outputs.block }}
         shell: bash
         env:
           BLOCK_MODE: ${{ steps.mode.outputs.block }}
