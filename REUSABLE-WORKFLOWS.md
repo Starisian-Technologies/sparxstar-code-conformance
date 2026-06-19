@@ -145,7 +145,7 @@ where you want visibility without blocking.
 ## Composer auth for PHP repos
 
 If the PHP workflow needs private packages (Ouroboros, Helios contracts),
-add the auth step before the reusable workflow call — or ensure the
+pass the required secrets to the reusable workflow (e.g., using secrets: inherit or explicit secrets) — or ensure the
 reusable workflow accepts auth inputs. The org secrets
 `COMPOSER_RESOLVER_CLIENT_ID` and `COMPOSER_RESOLVER_PRIVATE_KEY` are
 available to all repos.
