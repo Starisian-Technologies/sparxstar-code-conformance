@@ -5,10 +5,11 @@
 **Scope:** All Python services — primarily services processing audio pipelines and governed async jobs  
 **Python version:** 3.12+ (floor; upgrade as new versions enter active support)
 
-> **Open question (OQ — pending formal ADR):** This standard introduces normative requirements
+> **Open question (OQ-006 — pending formal ADR):** This standard introduces normative requirements
 > (package manager, toolchain, enforcement rules) that do not yet have a formal ADR or INV source.
 > All rules in this document are SPECIFIED-pending-ADR. A formal decision record MUST be filed,
 > citing this standard by version, before any rule here is promoted to ENFORCED in the enforcement matrix.
+> See QUESTIONS.md (OQ-006) for the tracked open question.
 
 ---
 
