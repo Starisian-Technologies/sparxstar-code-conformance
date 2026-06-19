@@ -45,8 +45,8 @@ export default [
 
       // Backs DIST-005 / JS-002 (localStorage not for critical data — surfaces
       // raw usage so reviewers can confirm it's not vault-grade).
-      'no-restricted-globals': ['warn', {
-        name: 'localStorage',
+      'no-restricted-syntax': ['warn', {
+        selector: "Identifier[name='localStorage'], MemberExpression[object.name='window'][property.name='localStorage']",
         message: 'Use IndexedDB for any data with a TTL or persistence requirement (DIST-005 / JS-002).',
       }],
     },
