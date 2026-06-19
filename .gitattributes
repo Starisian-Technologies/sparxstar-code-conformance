@@ -7,6 +7,10 @@
 /.gitignore          export-ignore
 /docs                export-ignore
 /prompts             export-ignore
+/packages            export-ignore
+/package.json        export-ignore
+/pnpm-lock.yaml      export-ignore
+/pnpm-workspace.yaml export-ignore
 /QUESTIONS.md        export-ignore
 /AGENTS.md           export-ignore
 /CODEOWNERS          export-ignore
