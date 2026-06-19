@@ -34,6 +34,15 @@ jobs:
             *) echo "::error::Invalid mode '$WORKFLOW_MODE'. Must be draft, development, or production." && exit 1 ;;
           esac
 
+      - name: Validate phpstan-level
+        env:
+          PHPSTAN_LEVEL: ${{ inputs.phpstan-level }}
+        run: |
+          case "$PHPSTAN_LEVEL" in
+            5|6|7|8) ;;
+            *) echo "::error::Invalid phpstan-level '$PHPSTAN_LEVEL'. Must be 5, 6, 7, or 8." && exit 1 ;;
+          esac
+
   phpcs:
     name: PHPCS Lint
     needs: validate-inputs

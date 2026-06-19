@@ -12,9 +12,16 @@ on:
         type: string
         default: 'production'
       glob:
-        description: Glob pattern for markdown files to lint
+        description: >-
+          Newline-delimited glob patterns for markdownlint-cli2-action.
+          Exclusions (! prefix) must be on separate lines.
         type: string
-        default: '**/*.md !node_modules/**/*.md !vendor/**/*.md !dist/**/*.md !build/**/*.md'
+        default: |
+          **/*.md
+          !node_modules/**/*.md
+          !vendor/**/*.md
+          !dist/**/*.md
+          !build/**/*.md
 
 jobs:
   markdownlint:

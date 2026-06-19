@@ -12,13 +12,14 @@ export default {
     // !important is forbidden
     'declaration-no-important': true,
 
-    // No ID selectors — specificity cap: 0,1,0 (single class)
+    // No ID selectors (IDs have specificity 1,0,0 and override class styles unpredictably)
     'selector-max-id': 0,
 
     // Selector complexity cap: max 3 compound selectors per rule (limits chained .a.b.c or a > b > c patterns)
     'selector-max-compound-selectors': 3,
 
-    // Design token pattern: CSS custom properties must follow --token-name convention
+    // CSS custom property name pattern (the part after '--', which stylelint matches against)
+    // e.g. --color-primary passes; --ColorPrimary or --color_primary fail
     'custom-property-pattern': '^[a-z][a-z0-9]*(-[a-z0-9]+)*$',
 
     // Prohibited properties (GPU-intensive; degrade performance on low-resource target devices)
