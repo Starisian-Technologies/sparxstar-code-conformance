@@ -2,9 +2,8 @@
   "name": "@starisian-technologies/eslint-config",
   "version": "0.1.0",
   "description": "Starisian Technologies organization-wide ESLint flat configurations. Shareable base + Node + React entrypoints.",
-  "license": "proprietary",
+  "license": "UNLICENSED",
   "type": "module",
-  "publishConfig": {
     "access": "restricted"
   },
   "exports": {
