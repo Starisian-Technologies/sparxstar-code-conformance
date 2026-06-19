@@ -9,7 +9,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "lint": "pnpm -r run lint",
-    "test": "pnpm -r run test"
+    "lint": "pnpm -r --if-present run lint",
+    "test": "pnpm -r --if-present run test"
   }
 }
