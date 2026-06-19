@@ -74,8 +74,6 @@ jobs:
         env:
           BLOCK_MODE: ${{ steps.mode.outputs.block }}
         shell: bash
-        env:
-          BLOCK_MODE: ${{ steps.mode.outputs.block }}
         run: |
           set -euo pipefail
           pm=$(node -e "try { const p = require('./package.json'); process.stdout.write(p.packageManager || '') } catch (e) { process.stdout.write('') }")
