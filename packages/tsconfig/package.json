@@ -2,7 +2,7 @@
   "name": "@starisian-technologies/tsconfig",
   "version": "0.1.0",
   "description": "Starisian Technologies organization-wide TypeScript base configurations. Enforces NODE-001 (strict mode).",
-  "license": "proprietary",
+  "license": "UNLICENSED",
   "publishConfig": {
     "access": "restricted"
   },
