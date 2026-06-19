@@ -31,24 +31,9 @@ jobs:
     with:
       mode: development
 
-  php:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/php-standards.yml@main
-    with:
-      phpstan_level: "5"
-
-  js:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/js-standards.yml@main
-
-  css:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/css-standards.yml@main
-
-  formatting:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/formatting.yml@main
-
-  wp-plugin-check:
-    uses: Starisian-Technologies/starisian-technologies-coding-standards/.github/workflows/wp-plugin-check.yml@main
-    with:
-      categories: "performance,accessibility,security"
+  # Additional domain workflows (PHP, JS, CSS, formatting, etc.) will be added
+  # to this repository over time. Add their jobs here once they exist under
+  # .github/workflows/ in this repo.
 ```
 
 ## Which jobs to include
