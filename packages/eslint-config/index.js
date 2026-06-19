@@ -22,8 +22,7 @@ export default [
   },
 
   js.configs.recommended,
-  ...tseslint.configs.recommended,
-
+  ...tseslint.configs.recommendedTypeChecked,
   {
     languageOptions: {
       ecmaVersion: 2022,
