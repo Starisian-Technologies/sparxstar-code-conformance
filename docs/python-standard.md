@@ -176,7 +176,7 @@ subprocess.run(
 | No silent failure | SPECIFIED |
 | Bounded execution | SPECIFIED |
 | Structured logging | SPECIFIED |
-| uv package manager | SPECIFIED |
+| uv package manager (recommended, pending ADR) | GUIDANCE |
 | FFmpeg sandboxing | SPECIFIED |
 | pytest coverage | SPECIFIED |
 

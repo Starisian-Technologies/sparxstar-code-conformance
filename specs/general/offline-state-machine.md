@@ -67,15 +67,17 @@ The following MUST remain available in OFFLINE state:
 - Queue capacity: 20 MB LRU eviction (oldest non-governance items evicted first; governance-sensitive items NEVER evicted without user acknowledgement)
 - Queue order: FIFO per resource; cross-resource order not guaranteed
 - Queue flush: On transition to SYNCING; exponential backoff on partial failure; max 3 retries per item before marking as dead-letter
-- Dead-letter: Items that fail 3 flush attempts move to dead-letter (see `docs/standards-handbook.md` Section 8.3 — dead-letter retention policy)
+- Dead-letter: Items that fail 3 flush attempts move to dead-letter
+  (see `../../docs/standards-handbook.md` Section 8.3 — dead-letter retention policy)
 
 ## Visibility Rule
 
-The current offline state MUST be visible to the user at all times. A hidden or silent state transition is a standards violation.
+The current offline state MUST be visible to the user at all times. A hidden or silent state transition is a
+standards violation.
 
 ## Implementation References
 
-- JavaScript/React: `docs/javascript-react-standard.md` — offline-first PWA section
-- WordPress Plugins: `docs/wordpress-plugin-standards.md` — offline-first section
-- Queue rules: `docs/standards-handbook.md` — Section 5 (Async Processing)
-- Dead-letter: `docs/standards-handbook.md` — Section 8.3 (dead-letter retention policy)
+- JavaScript/React: `../../docs/javascript-react-standard.md` — offline-first PWA section
+- WordPress Plugins: `../../docs/wordpress-plugin-standards.md` — offline-first section
+- Queue rules: `../../docs/standards-handbook.md` — Section 5 (Async Processing)
+- Dead-letter: `../../docs/standards-handbook.md` — Section 8.3 (dead-letter retention policy)
