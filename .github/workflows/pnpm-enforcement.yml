@@ -34,12 +34,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Sanitize input.mode through an env var (CodeQL: never interpolate
+      # workflow_call inputs directly into a shell run block).
       - name: Determine block behavior
         id: mode
         env:
           INPUT_MODE: ${{ inputs.mode }}
         shell: bash
         run: |
+          set -euo pipefail
           case "$INPUT_MODE" in
             draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
             development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
@@ -88,11 +91,13 @@ jobs:
           fi
 
       - name: NODE-PKG-001 — workflows/scripts do not invoke npm or yarn install
-        shell: bash
         env:
           BLOCK_MODE: ${{ steps.mode.outputs.block }}
+        shell: bash
         run: |
           set -euo pipefail
+          # ERE-safe boundary: command tokens must be followed by whitespace or end-of-line
+          # (POSIX ERE does not implement \b — that would match a backspace byte).
           patterns='(^|[^[:alnum:]_-])(npm[[:space:]]+(install|i|ci)([[:space:]]|$)|yarn[[:space:]]+(install|add)([[:space:]]|$))'
           hits=$(grep -REn --include='*.yml' --include='*.yaml' --include='*.sh' \
               --include='Dockerfile*' --include='Makefile*' --include='package.json' --include='README*' --include='*.md' \
@@ -109,9 +114,9 @@ jobs:
 
       - name: NODE-PKG-004 — pnpm install --frozen-lockfile dry run
         if: hashFiles('package.json') != ''
-        shell: bash
         env:
           BLOCK_MODE: ${{ steps.mode.outputs.block }}
+        shell: bash
         run: |
           set -euo pipefail
           corepack enable

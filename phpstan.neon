@@ -4,29 +4,30 @@
 # Consumer extension:
 #   includes:
 #       - vendor/starisian-technologies/coding-standards/phpstan.neon
+#   parameters:
+#       paths:
+#           - src
+#           - tests
 #
-# Consumers MAY override `level` upward and add their own `paths`;
-# they MUST NOT lower the level below 5.
+# This shared config deliberately omits paths and excludePaths — those are
+# project-specific and MUST be set in the consumer's phpstan.neon.
+# Consumers MAY raise `level` but MUST NOT drop below 5.
 
+# Relative path is resolved from THIS file's directory. When installed at
+# vendor/starisian-technologies/coding-standards/phpstan.neon, the consumer's
+# phpstan-wordpress sits at ../../szepeviktor/phpstan-wordpress/extension.neon.
 includes:
     - ../../szepeviktor/phpstan-wordpress/extension.neon
+
 parameters:
     # PHP-005 — PHPStan level 5 minimum.
     level: 5
 
-    paths:
-        - .
-
-    excludePaths:
-        analyseAndScan:
-            - vendor/*
-            - node_modules/*
-            - build/*
-            - dist/*
-            - tests/fixtures/*
-
-    # Treat any phpDoc tag we do not know as a real type, not as an error.
+    # `false` means PHPStan treats phpDoc types as *not* automatically
+    # trusted and will infer types more conservatively when contradicted
+    # by code analysis (default is true).
     treatPhpDocTypesAsCertain: false
 
-    # Surface implicit nullables explicitly.
+    # Surface ignore patterns that never matched a real error — prevents
+    # stale `@phpstan-ignore-next-line` directives from rotting silently.
     reportUnmatchedIgnoredErrors: true

@@ -40,32 +40,43 @@ The standards are split into a language-agnostic handbook and per-language imple
 
 | Package | Ecosystem | Backs |
 | :--- | :--- | :--- |
-| `starisian-technologies/coding-standards` | Composer (`/composer.json`, `/phpcs.xml.dist`, `/phpstan.neon`) | PHP-001, PHP-003, PHP-004 (with prefix override), PHP-005 |
+| `starisian-technologies/coding-standards` | Composer (`/composer.json`, `/ruleset.xml`, `/phpstan.neon`) | PHP-001, PHP-003, PHP-004 (with prefix override), PHP-005 |
 | `@starisian-technologies/eslint-config` | npm (`packages/eslint-config/`) | baseline JS/TS quality + JSX a11y + flagged `localStorage` (DIST-005 / JS-002) |
 | `@starisian-technologies/tsconfig` | npm (`packages/tsconfig/`) | NODE-001 (TypeScript strict mode) |
 
 ### Consume PHP standards
 
+Composer 2.2+ requires consumers to allow the `dealerdirect/phpcodesniffer-composer-installer` plugin (the plugin registers the shipped standard with PHPCS so it's reachable by name):
+
 ```bash
 composer config repositories.starisian-standards vcs https://github.com/starisian-technologies/starisian-technologies-coding-standards
+composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
 composer require --dev starisian-technologies/coding-standards
 ```
 
-Then in the consumer's `phpcs.xml.dist`:
+The PHPCS installer plugin discovers `ruleset.xml` shipped by this package and registers it as the standard name `StarisianCodingStandards`. Consumer's `phpcs.xml.dist`:
 
 ```xml
 <?xml version="1.0"?>
 <ruleset>
-    <rule ref="vendor/starisian-technologies/coding-standards/phpcs.xml.dist"/>
+    <rule ref="StarisianCodingStandards"/>
+    <!-- PHP-004 — your product's WordPress global prefix (REQUIRED). -->
     <config name="prefixes" value="myproduct"/>
+    <!-- Scan targets are the consumer's choice. -->
+    <file>./src</file>
+    <file>./tests</file>
 </ruleset>
 ```
 
-And in `phpstan.neon`:
+Consumer's `phpstan.neon`:
 
 ```yaml
 includes:
     - vendor/starisian-technologies/coding-standards/phpstan.neon
+parameters:
+    paths:
+        - src
+        - tests
 ```
 
 ### Consume JS/TS standards

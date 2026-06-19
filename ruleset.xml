@@ -3,17 +3,13 @@
     <description>
         Starisian Technologies — organization-wide PHP / WordPress coding standard.
         Enforces docs/php-wordpress-standard.md and the rules listed in CI-Enforcement-Matrix.md.
-
-        Consumer extension (in your project's phpcs.xml.dist):
-            &lt;ruleset&gt;
-                &lt;rule ref="vendor/starisian-technologies/coding-standards/phpcs.xml.dist"/&gt;
-                &lt;!-- Consumer MUST configure their product prefix (PHP-004): --&gt;
-                &lt;config name="prefixes" value="myproduct"/&gt;
-            &lt;/ruleset&gt;
+        Discoverable via dealerdirect/phpcodesniffer-composer-installer as standard
+        name "StarisianCodingStandards". Consumers reference it by name
+        (rule ref="StarisianCodingStandards") and MUST set their product prefix
+        (config name="prefixes" value="myproduct") in their own ruleset.
+        This file deliberately omits file and exclude-pattern directives —
+        consumers define scan targets in their own ruleset.
     </description>
-
-    <!-- Note: This shared ruleset intentionally does not define <file> or <exclude-pattern>.
-         Consumers should define scanned paths/patterns in their own ruleset. -->
 
     <arg value="sp"/>
     <arg name="extensions" value="php"/>
@@ -48,7 +44,8 @@
     </rule>
 
     <!-- PHP-004 — All WordPress globals must be prefixed. Consumer MUST set
-         <config name="prefixes" value="myproduct"/> in their own ruleset. -->
+         their product prefix in their own ruleset via:
+         config name="prefixes" value="myproduct" -->
     <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
         <severity>5</severity>
         <type>error</type>

@@ -57,7 +57,8 @@ export default [
 | _baseline_ | No `any` without justification | `@typescript-eslint/no-explicit-any` |
 | _baseline_ | No `console.log` in production code | `no-console` (allow `warn`/`error`) |
 | _baseline_ | Accessibility (React) | `jsx-a11y/recommended` |
-| `DIST-005` / `JS-002` | `localStorage` flagged (use IndexedDB instead) | `no-restricted-syntax` (warn) |
+| `DIST-005` / `JS-002` | `localStorage` flagged (use IndexedDB instead) | `no-restricted-syntax` (warn) — catches `localStorage`, `window.localStorage`, `globalThis.localStorage`, `self.localStorage` |
+
 ## What it does NOT enforce
 
 The following matrix rules require **custom ESLint rules** (Build Sequence Step 7). The config does not ship them yet:

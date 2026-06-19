@@ -25,7 +25,8 @@ export default [
       // Force explicit env var module pattern (node-standard §3).
       'n/no-process-env': 'warn',
 
-      // Prevent blocking the event loop with synchronous I/O APIs.
+      // Prevent blocking the event loop with synchronous I/O APIs
+      // (fs.readFileSync, crypto.pbkdf2Sync, etc.) outside of bootstrap.
       'n/no-sync': ['warn', { allowAtRootLevel: true }],
     },
   },

@@ -45,10 +45,19 @@ export default [
 
       // Backs DIST-005 / JS-002 (localStorage not for critical data — surfaces
       // raw usage so reviewers can confirm it's not vault-grade).
-      'no-restricted-syntax': ['warn', {
-        selector: "Identifier[name='localStorage'], MemberExpression[object.name='window'][property.name='localStorage']",
-        message: 'Use IndexedDB for any data with a TTL or persistence requirement (DIST-005 / JS-002).',
-      }],
+      // Covers bare `localStorage` and `window.localStorage` /
+      // `globalThis.localStorage` / `self.localStorage`; `no-restricted-globals`
+      // alone misses the property-access forms.
+      'no-restricted-syntax': ['warn',
+        {
+          selector: "Identifier[name='localStorage']",
+          message: 'Use IndexedDB for any data with a TTL or persistence requirement (DIST-005 / JS-002).',
+        },
+        {
+          selector: "MemberExpression[object.name=/^(window|globalThis|self)$/][property.name='localStorage']",
+          message: 'Use IndexedDB for any data with a TTL or persistence requirement (DIST-005 / JS-002).',
+        },
+      ],
     },
   },
 ];

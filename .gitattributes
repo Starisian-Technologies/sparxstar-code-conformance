@@ -1,17 +1,26 @@
 # Normalize line endings.
 * text=auto eol=lf
 
-# Exclude development files from git-archive based tarballs (e.g., Composer VCS installs/archives).
+# `export-ignore` excludes paths from `git archive` and Composer VCS
+# installs (Composer reads .gitattributes to build dist archives).
+# It does NOT affect npm/pnpm tarballs — those are controlled by the
+# `files` array in each package's package.json.
+
+# Generic dev/CI material excluded from the Composer archive.
 /.github             export-ignore
 /.gitattributes      export-ignore
 /.gitignore          export-ignore
 /docs                export-ignore
 /prompts             export-ignore
-/packages            export-ignore
-/package.json        export-ignore
-/pnpm-lock.yaml      export-ignore
-/pnpm-workspace.yaml export-ignore
 /QUESTIONS.md        export-ignore
 /AGENTS.md           export-ignore
 /CODEOWNERS          export-ignore
 /THE-STARISIAN-TECHNOLOGIES-CONSTITUTION.md export-ignore
+
+# JS/TS workspace material excluded from the Composer archive so a
+# `composer require starisian-technologies/coding-standards` does not
+# ship the entire Node toolchain into the consumer's vendor/ tree.
+/package.json        export-ignore
+/pnpm-workspace.yaml export-ignore
+/pnpm-lock.yaml      export-ignore
+/packages            export-ignore

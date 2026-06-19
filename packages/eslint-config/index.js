@@ -3,6 +3,11 @@
 //
 //   import starisian from '@starisian-technologies/eslint-config';
 //   export default [...starisian, { /* repo overrides */ }];
+//
+// Type-aware rules (typescript-eslint recommendedTypeChecked) are scoped to
+// *.ts/*.tsx/*.mts/*.cts only. JavaScript files in the same repo are linted
+// with non-type-aware rules so ESLint does not crash when no tsconfig is
+// reachable (e.g. linting eslint.config.js itself or a JS-only project).
 
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
@@ -21,8 +26,9 @@ export default [
     ],
   },
 
+  // ---- Language-agnostic baseline (applies to all files) ----
   js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
+
   {
     languageOptions: {
       ecmaVersion: 2022,
@@ -30,15 +36,10 @@ export default [
       globals: {
         ...globals.es2022,
       },
-      parserOptions: {
-        projectService: true,
-      },
     },
-
     plugins: {
       import: importPlugin,
     },
-
     rules: {
       // Quality / correctness — baseline.
       'no-console': ['error', { allow: ['warn', 'error'] }],
@@ -57,7 +58,31 @@ export default [
       // No silent failure (Standards Handbook §0.3).
       'no-empty': ['error', { allowEmptyCatch: false }],
 
-      // TypeScript discipline — typescript-eslint recommended + tightening.
+      // Import hygiene (works for both JS and TS).
+      'import/no-duplicates': 'error',
+      'import/no-cycle': ['error', { maxDepth: 10 }],
+      'import/no-self-import': 'error',
+      'import/order': ['warn', {
+        groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
+        'newlines-between': 'always',
+        alphabetize: { order: 'asc', caseInsensitive: true },
+      }],
+    },
+  },
+
+  // ---- TypeScript-only block (type-aware rules require tsconfig reachable) ----
+  ...tseslint.configs.recommendedTypeChecked.map((cfg) => ({
+    ...cfg,
+    files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],
+  })),
+  {
+    files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+      },
+    },
+    rules: {
       '@typescript-eslint/no-explicit-any': ['error', { fixToUnknown: false, ignoreRestArgs: false }],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
@@ -70,22 +95,16 @@ export default [
       '@typescript-eslint/no-unsafe-call': 'warn',
       '@typescript-eslint/no-unsafe-return': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
-
-      // Import hygiene.
-      'import/no-duplicates': 'error',
-      'import/no-cycle': ['error', { maxDepth: 10 }],
-      'import/no-self-import': 'error',
-      'import/order': ['warn', {
-        groups: ['builtin', 'external', 'internal', 'parent', 'sibling', 'index', 'type'],
-        'newlines-between': 'always',
-        alphabetize: { order: 'asc', caseInsensitive: true },
-      }],
     },
   },
 
-  // Tests get a slightly looser regime.
+  // ---- Test files get a slightly looser regime (TS only). ----
   {
-    files: ['**/*.test.{ts,tsx,js,jsx}', '**/*.spec.{ts,tsx,js,jsx}', '**/tests/**/*'],
+    files: [
+      '**/*.test.{ts,tsx,mts,cts}',
+      '**/*.spec.{ts,tsx,mts,cts}',
+      '**/tests/**/*.{ts,tsx,mts,cts}',
+    ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-non-null-assertion': 'off',
