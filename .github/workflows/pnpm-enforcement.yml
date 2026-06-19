@@ -47,7 +47,7 @@ jobs:
               ;;
           esac
 
-      - name: NODE-PKG-001 — no foreign lockfiles
+      - name: NODE-PKG-002 — no foreign lockfiles
         shell: bash
         run: |
           set -euo pipefail
