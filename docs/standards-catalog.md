@@ -27,9 +27,9 @@ These are not documents; they are constraints every domain standard must satisfy
 
 | # | Standard | Status | Enforcing tool(s) |
 |---|---|---|---|
-| 1 | PHP / WordPress | doc + Layer 1 config shipped (Composer pkg `starisian-technologies/coding-standards`) | `ruleset.xml`, `phpstan.neon` shipped; custom sniffs (Step 7) outstanding |
-| 2 | JavaScript / TypeScript / React | doc + Layer 1 config shipped (npm pkgs `@starisian-technologies/eslint-config`, `@starisian-technologies/tsconfig`) | `eslint-config` flat config + `tsconfig` base shipped; custom rules (Step 7) outstanding |
-| 3 | Node / server-side JS | doc + Layer 1 config shipped (`@starisian-technologies/eslint-config/node`, `@starisian-technologies/tsconfig/node.json`) | Node-specific lint + tsconfig shipped; custom rules (Step 7) outstanding |
+| 1 | PHP / WordPress | doc + Layer 1 config shipped (Composer pkg `starisian-technologies/coding-standards`); Layer 3 workflow pending | `ruleset.xml`, `phpstan.neon` shipped; PHP reusable workflow (Step 5) and custom sniffs (Step 7) outstanding |
+| 2 | JavaScript / TypeScript / React | doc + Layer 1 config shipped (npm pkgs `@starisian-technologies/eslint-config`, `@starisian-technologies/tsconfig`); Layer 3 workflow pending | `eslint-config` flat config + `tsconfig` base shipped; JS/TS reusable workflow (Step 5) and custom rules (Step 7) outstanding |
+| 3 | Node / server-side JS | doc + Layer 1 config shipped (`@starisian-technologies/eslint-config/node`, `@starisian-technologies/tsconfig/node.json`); Layer 3 workflow pending | Node-specific lint + tsconfig shipped; reusable workflow (Step 5) and custom rules (Step 7) outstanding |
 | 4 | CSS / styling (code) | doc exists, config missing | `stylelint` config, build-size checks |
 | 5 | Audio / media / upload | doc exists, config missing | ESLint custom rules, runtime validation, upload tests |
 | 6 | Markdown / documentation | missing | `markdownlint` config |
