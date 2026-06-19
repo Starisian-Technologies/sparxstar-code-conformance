@@ -9,7 +9,7 @@
 # they MUST NOT lower the level below 5.
 
 includes:
-    - ../szepeviktor/phpstan-wordpress/extension.neon
+    - ../../szepeviktor/phpstan-wordpress/extension.neon
 parameters:
     # PHP-005 — PHPStan level 5 minimum.
     level: 5
