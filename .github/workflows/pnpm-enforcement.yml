@@ -101,6 +101,7 @@ jobs:
           patterns='(^|[^[:alnum:]_-])(npm[[:space:]]+(install|i|ci)([[:space:]]|$)|yarn[[:space:]]+(install|add)([[:space:]]|$))'
           hits=$(grep -REn --include='*.yml' --include='*.yaml' --include='*.sh' \
               --include='Dockerfile*' --include='Makefile*' --include='package.json' --include='README*' --include='*.md' \
+              --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=dist --exclude-dir=build \
               -e "$patterns" . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'ADR-017 (NODE-PKG-001): non-pnpm package manager invocation found:\n'"$hits"

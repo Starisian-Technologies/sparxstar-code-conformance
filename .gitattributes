@@ -1,10 +1,13 @@
 # Normalize line endings.
 * text=auto eol=lf
 
-# `export-ignore` excludes paths from `git archive` and Composer VCS
-# installs (Composer reads .gitattributes to build dist archives).
-# It does NOT affect npm/pnpm tarballs — those are controlled by the
-# `files` array in each package's package.json.
+# `export-ignore` excludes paths from `git archive` tarballs. Composer
+# uses git archive when building dist ZIPs (`composer require` without
+# --prefer-source), so these paths stay out of the consumer's vendor/
+# tree under that install path. It does NOT affect Composer source
+# installs (--prefer-source), which clone the full repo, and it does
+# NOT affect npm/pnpm tarballs — those are controlled by the `files`
+# array in each package's package.json.
 
 # Generic dev/CI material excluded from the Composer archive.
 /.github             export-ignore
