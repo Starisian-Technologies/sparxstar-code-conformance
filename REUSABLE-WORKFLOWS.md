@@ -13,7 +13,7 @@ and means a standard update fixes every repo at once.
 
 Create one file in your repo: `.github/workflows/standards.yml`
 
-This single file calls ALL the reusable workflows. You don't need
+This single file can call one or more reusable workflows. You don't need
 a separate workflow file per check — one file, multiple jobs.
 
 ```yaml
