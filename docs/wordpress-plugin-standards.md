@@ -236,6 +236,24 @@ If not explicitly set, derive `STAR_PLUGIN_NAME` from the directory name: `preg_
 
 * Define fixtures for 2G/3G throttling; include UC/old‑Android smoke tests.
 
+**WordPress Plugin Check (Required):** All WordPress plugins MUST run the WordPress Plugin Check in CI via the reusable workflow in the coding-standards repo. This checks for performance, accessibility, security, and plugin directory compliance. Plugin Check failures block merge in `development` and `production` modes.
+
+Add to your plugin repo's `.github/workflows/plugin-check.yml`:
+
+```yaml
+name: WordPress Plugin Check
+on: [push, pull_request]
+jobs:
+  plugin-check:
+    uses: <org>/<standards-repo>/.github/workflows/wp-plugin-check.yml@<ref>
+    with:
+      mode: production  # draft | development | production
+```
+
+Override categories or excluded directories as needed via `with:` inputs (`categories`, `exclude_directories`). Enforcement rule: **WP-001** in the [enforcement matrix](enforcement-matrix.md).
+
+> **Branch protection required:** "Blocks merge" means the `plugin-check` job must be added as a required status check in the repository's branch protection rules for `main` (or your primary branch). A passing workflow alone does not block merge without this configuration.
+
 ---
 
 ## 16) Documentation

@@ -1,0 +1,50 @@
+name: Markdownlint
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Working directory for all steps
+        type: string
+        default: '.'
+      mode:
+        description: 'Pipeline mode: draft | development | production'
+        type: string
+        default: 'production'
+      glob:
+        description: >-
+          Newline-delimited glob patterns for markdownlint-cli2-action.
+          Exclusions (! prefix) must be on separate lines.
+        type: string
+        default: |
+          **/*.md
+          !node_modules/**/*.md
+          !vendor/**/*.md
+          !dist/**/*.md
+          !build/**/*.md
+
+jobs:
+  markdownlint:
+    name: Markdownlint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    continue-on-error: ${{ inputs.mode == 'draft' }}
+    steps:
+      - name: Validate mode
+        env:
+          WORKFLOW_MODE: ${{ inputs.mode }}
+        run: |
+          case "$WORKFLOW_MODE" in
+            draft|development|production) ;;
+            *) echo "::error::Invalid mode '$WORKFLOW_MODE'. Must be draft, development, or production." && exit 1 ;;
+          esac
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Run markdownlint-cli2
+        uses: DavidAnson/markdownlint-cli2-action@05f32210e84442804257b2a30f9e4e3b6b2cba5c # v19
+        with:
+          globs: ${{ inputs.glob }}

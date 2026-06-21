@@ -37,6 +37,7 @@ This handbook encodes the HOW. The WHY / WHAT — architecture decisions (ADR-NN
 | Node / Server-side JS | [node-standard.md](node-standard.md) |
 | CSS / Build Limits | [css-standard.md](css-standard.md) |
 | Media / Audio / TUS | [media-upload-standard.md](media-upload-standard.md) |
+| Python (audio pipelines & async jobs) | [python-standard.md](python-standard.md) |
 | Enforcement Matrix | [enforcement-matrix.md](enforcement-matrix.md) |
 
 ---
@@ -192,6 +193,18 @@ if context is null OR authority is null:
 | **FAIL** | authority-layer output modified or overridden downstream |
 | **FAIL** | local permission check without authority-layer delegation |
 
+> **Token flow architecture (OQ-004, pending ADR):** How the governance token travels through the request lifecycle
+> (minting, propagation, validation at each layer) is defined in the product architecture specifications. This
+> standard mandates that the token is present and validated; it does not define the token format or propagation
+> mechanism. Implementations should reference the product architecture specifications for token structure and
+> lifecycle.
+
+> **Access-tier propagation (OQ-005, pending ADR):** How the user's access tier propagates through the request
+> lifecycle is defined in the product architecture specifications. This standard requires that access tier is
+> resolved by the authority layer (never inferred locally), is present on every governed request, and is treated
+> as immutable for the duration of a single request. Do not cache tier decisions across requests without explicit
+> TTL from the authority layer.
+
 ---
 
 # 2. GraphQL Standards
@@ -240,6 +253,26 @@ Machines do not make mistakes by accident. Invalid request behavior is treated a
 | Suspicious pattern | 403 Forbidden |
 | Resource not found | 404 (no hinting — no suggestion of valid paths) |
 | Rate limit exceeded | 429 Too Many Requests |
+
+## 3.1.1 Client Behavior on 429 (Slow-Online / 2G)
+
+> **Decision record (OQ-002):** These rules were established in the 2026-06-18 standards review session
+> (slow-online / 2G gap identified). A formal ADR should be filed to make these traceable. Until then, treat
+> as SPECIFIED-pending-ADR.
+
+**Client behaviour on 429 (slow-online / 2G):** When a 429 is received on a connection with high latency
+(>3s round-trip or unreliable connectivity), the following guidance applies **to write/mutation requests only**
+(reads may be retried without queuing):
+
+1. Queue the mutation locally (IndexedDB) — do not discard it.
+2. Retry with exponential backoff: first retry after the `Retry-After` header value (if present), or 5s default.
+   `Retry-After` may be delta-seconds (integer) or an HTTP-date; parse accordingly. Double on each subsequent
+   attempt, capped at 5 minutes — unless `Retry-After` specifies a longer duration, which should be respected.
+3. Do not silently drop the queued mutation. If the queue cannot be written, surface a visible failure state.
+4. Resume the queue automatically on reconnect.
+
+This extends the offline-first rule to slow-online conditions: a 429 on a 2G connection is operationally
+equivalent to a temporary offline state for write operations.
 
 ## 3.2 Rate Limits — Baseline
 
@@ -453,6 +486,19 @@ Jobs that exhaust their retry budget must not be silently dropped. They move to 
 
 | **FAIL** | job silently discarded after max retries without dead-letter entry |
 | :---- | :---- |
+
+> **Dead-letter retention policy (OQ-003, pending ADR):** The following retention periods were established in the
+> 2026-06-18 standards review session. A formal ADR should be filed to make these traceable. Until then, treat
+> as SPECIFIED-pending-ADR.
+>
+> - Governance-sensitive dead letters (items that involved an authority-layer call, consent state change, or
+>   governed workflow transition) should be retained for a minimum of 90 days.
+> - Non-governance dead letters should be retained for a minimum of 7 days.
+> - Retention storage should be queryable (not just logs).
+> - Review responsibility: the owning service team should triage dead letters at least weekly.
+> - Deletion: dead letters should be explicitly deleted after the configured retention period by a scheduled
+>   process. Silent expiry is not permitted — the deletion event should be logged.
+> - No dead letter may be silently discarded at any point in its lifecycle.
 
 ## 8.4 Deployment Safety
 

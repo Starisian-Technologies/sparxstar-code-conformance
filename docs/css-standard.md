@@ -33,6 +33,8 @@ CSS is not free. Every byte of CSS is downloaded, parsed, and applied on devices
 
 # 2. Prohibited CSS — Performance
 
+**Rationale:** Heavy GPU compositing effects (blur, large shadows) degrade performance on low-resource target devices ($50 Android phones, 2 GB RAM). Prohibition is not aesthetic — it is a performance guarantee.
+
 The following CSS properties are prohibited in production stylesheets on performance grounds. They consume GPU, increase paint cost, and cause visible jank on constrained devices.
 
 | Property / Pattern | Reason | Production Status |

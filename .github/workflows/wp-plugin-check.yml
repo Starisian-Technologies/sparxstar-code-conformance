@@ -1,0 +1,39 @@
+name: WordPress Plugin Check
+
+on:
+  workflow_call:
+    inputs:
+      categories:
+        description: "Check categories (performance, accessibility, plugin_repo, security)"
+        type: string
+        default: "performance,accessibility,plugin_repo,security"
+      exclude_directories:
+        description: "Comma-separated list of directories to exclude from checks"
+        type: string
+        default: "vendor,node_modules"
+      mode:
+        description: "System mode: draft warns, development/production block"
+        type: string
+        default: "production"
+
+jobs:
+  plugin-check:
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ inputs.mode == 'draft' }}
+    steps:
+      - name: Validate mode
+        env:
+          WORKFLOW_MODE: ${{ inputs.mode }}
+        run: |
+          case "$WORKFLOW_MODE" in
+            draft|development|production) ;;
+            *) echo "::error::Invalid mode '$WORKFLOW_MODE'. Must be draft, development, or production." && exit 1 ;;
+          esac
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: WordPress Plugin Check
+        uses: wordpress/plugin-check-action@98a1788320d0add90df2d8183934ecccbc4e05d2 # v1
+        with:
+          categories: ${{ inputs.categories }}
+          exclude-directories: ${{ inputs.exclude_directories }}

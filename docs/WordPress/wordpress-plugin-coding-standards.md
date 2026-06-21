@@ -236,6 +236,8 @@ If not explicitly set, derive `STAR_PLUGIN_NAME` from the directory name: `preg_
 
 * Define fixtures for 2G/3G throttling; include UC/old‑Android smoke tests.
 
+**WordPress Plugin Check (Required):** See the canonical requirement and workflow snippet in [`docs/wordpress-plugin-standards.md` — Section 15 (Testing)](../../docs/wordpress-plugin-standards.md). Enforcement rule: **WP-001** in the [enforcement matrix](../../docs/enforcement-matrix.md).
+
 ---
 
 ## 16) Documentation

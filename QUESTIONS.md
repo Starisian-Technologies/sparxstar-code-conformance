@@ -45,6 +45,29 @@ This file tracks current clarification questions, review notes, and organization
 7. **No code standard for access-tier propagation**
    Access tiers are referenced at edge level (§7.5), but there is no coding standard for how access tier is represented and propagated through the request lifecycle.
 
+## Open Questions — Pending ADR
+
+The following items are referenced in standards documents by OQ number. A formal ADR must be filed in the ADR
+registry for each before the associated requirement can be promoted from SPECIFIED to ENFORCED.
+
+- **OQ-001** (`specs/general/offline-state-machine.md`): Quantitative thresholds — latency 3s, IndexedDB
+  cap 20 MB, retry limit 3 — established 2026-06-18 review session; not yet traced to a formal ADR.
+
+- **OQ-002** (`docs/standards-handbook.md` §3.1.1): 429 client-behavior rules (queuing, retry schedule,
+  Retry-After handling) — established 2026-06-18 review session; not yet traced to a formal ADR.
+
+- **OQ-003** (`docs/standards-handbook.md` §8.3): Dead-letter retention periods (90 days
+  governance-sensitive, 7 days non-governance) — established 2026-06-18 review session; not yet traced.
+
+- **OQ-004** (`docs/standards-handbook.md` §1): Governance token lifecycle (minting, propagation,
+  validation per layer); ADR needed to make the product-architecture cross-reference normative.
+
+- **OQ-005** (`docs/standards-handbook.md` §1): Access-tier resolution and propagation rules; ADR
+  needed to make the requirement normative.
+
+- **OQ-006** (`docs/python-standard.md`): All normative requirements in the Python standard (package
+  manager, toolchain, enforcement rules); document is SPECIFIED-pending-ADR until formal ADR is filed.
+
 ## What This Implies for the Platform
 
 - This document should be published to a central standards repository so rules can be consumed and automated consistently.

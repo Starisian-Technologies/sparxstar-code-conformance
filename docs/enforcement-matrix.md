@@ -51,6 +51,9 @@ This document maps every enforceable rule in the Starisian Technologies standard
 | Unprefixed global function, hook, CPT, taxonomy | PHPCS (custom sniff) | Lint | (W) | (B) | (B) |
 | PHPStan level < 5 violations | PHPStan | Static analysis | (W) | (B) | (B) |
 | Plugin activation not handling network-wide activation | PHPUnit (test) | Test | (W) | (B) | (B) |
+| **PHP-001** PHP file missing `declare(strict_types=1)` | `php-standards.yml` (phpcs) | CI | (W) | (B) | (B) |
+| **PHP-002** `SELECT *` in query | `php-standards.yml` (phpcs) | CI | (W) | (B) | (B) |
+| **PHP-003** DB query not using `$wpdb->prepare()` | `php-standards.yml` (phpcs) | CI | (W) | (B) | (B) |
 
 ---
 
@@ -70,6 +73,8 @@ This document maps every enforceable rule in the Starisian Technologies standard
 | Direct `MediaRecorder` usage | ESLint (custom rule) | Lint | (W) | (B) | (B) |
 | `console.log` in production build | ESLint `no-console` | Lint | (W) | (W) | (B) |
 | Accessibility violations | axe-core (Playwright) | E2E test | (W) | (B) | (B) |
+| **JS-003** `@typescript-eslint/no-explicit-any` violation | `js-standards.yml` (eslint) | CI | (W) | (B) | (B) |
+| **JS-004** TypeScript type errors (`tsc --noEmit`) | `js-standards.yml` (typescript) | CI | (W) | (B) | (B) |
 
 ---
 
@@ -86,6 +91,7 @@ This document maps every enforceable rule in the Starisian Technologies standard
 | `SELECT *` in any query | ESLint (custom rule) | Lint | (W) | (B) | (B) |
 | Async route handler without error boundary | ESLint (custom rule) | Lint | (W) | (B) | (B) |
 | `console.log` in production code | ESLint `no-console` | Lint | (W) | (B) | (B) |
+| **WP-001** WordPress Plugin Check fails (performance, accessibility, security) | `.github/workflows/wp-plugin-check.yml` | CI | (W) | (B) | (B) |
 | Package manager other than `pnpm` invoked (ADR-017) | `.github/workflows/pnpm-enforcement.yml` | CI | (W) | (B) | (B) |
 | `package-lock.json` or `yarn.lock` present (ADR-017) | `.github/workflows/pnpm-enforcement.yml` | CI | (W) | (B) | (B) |
 | `package.json` missing `packageManager: pnpm@...` (ADR-017) | `.github/workflows/pnpm-enforcement.yml` | CI | (W) | (B) | (B) |
@@ -106,10 +112,27 @@ This document maps every enforceable rule in the Starisian Technologies standard
 | `px` units for font sizes | Stylelint (custom rule) | Lint | (W) | (B) | (B) |
 | Hard-coded hex/pixel values (non-token) | Stylelint (custom rule) | Lint | (W) | (W) | (B) |
 | Missing `prefers-reduced-motion` for animations | Stylelint `a11y` plugin | Lint | (W) | (B) | (B) |
+| **CSS-003** Prohibited CSS properties (`filter`, `backdrop-filter`) | `css-standards.yml` (stylelint) | CI | (W) | (B) | (B) |
 
 ---
 
-# 5. Media and Upload Enforcement
+# 5. Formatting Enforcement
+
+| Rule | Tool | Stage | draft | dev | prod |
+| :---- | :---- | :---- | :---- | :---- | :---- |
+| **FORMAT-001** Prettier formatting violation | `formatting.yml` | CI | (W) | (B) | (B) |
+
+---
+
+# 6. Documentation Enforcement
+
+| Rule | Tool | Stage | draft | dev | prod |
+| :---- | :---- | :---- | :---- | :---- | :---- |
+| **DOCS-001** Markdownlint violation | `markdownlint.yml` | CI | (W) | (B) | (B) |
+
+---
+
+# 7. Media and Upload Enforcement
 
 | Rule | Tool | Stage | draft | dev | prod |
 | :---- | :---- | :---- | :---- | :---- | :---- |
@@ -130,7 +153,7 @@ This document maps every enforceable rule in the Starisian Technologies standard
 
 ---
 
-# 6. Distributed System and Architecture Enforcement
+# 8. Distributed System and Architecture Enforcement
 
 | Rule | Tool | Stage | draft | dev | prod |
 | :---- | :---- | :---- | :---- | :---- | :---- |
@@ -147,7 +170,7 @@ This document maps every enforceable rule in the Starisian Technologies standard
 
 ---
 
-# 7. GraphQL Enforcement
+# 9. GraphQL Enforcement
 
 | Rule | Tool | Stage | draft | dev | prod |
 | :---- | :---- | :---- | :---- | :---- | :---- |
@@ -158,7 +181,7 @@ This document maps every enforceable rule in the Starisian Technologies standard
 
 ---
 
-# 8. Security and Commercialization Enforcement
+# 10. Security and Commercialization Enforcement
 
 | Rule | Tool | Stage | draft | dev | prod |
 | :---- | :---- | :---- | :---- | :---- | :---- |
@@ -171,7 +194,7 @@ This document maps every enforceable rule in the Starisian Technologies standard
 
 ---
 
-# 9. Cross-Stack Data and Framework Enforcement
+# 11. Cross-Stack Data and Framework Enforcement
 
 | Rule | Tool | Stage | draft | dev | prod |
 | :---- | :---- | :---- | :---- | :---- | :---- |
@@ -185,7 +208,7 @@ This document maps every enforceable rule in the Starisian Technologies standard
 
 ---
 
-# 10. CI Pipeline Stages and Order
+# 12. CI Pipeline Stages and Order
 
 All repositories governed by Starisian Technologies standards run CI in the following stage order. Later stages do not run if earlier stages fail.
 

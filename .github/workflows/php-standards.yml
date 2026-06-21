@@ -1,0 +1,98 @@
+name: PHP Standards
+
+on:
+  workflow_call:
+    inputs:
+      php-version:
+        description: PHP version to use
+        type: string
+        default: '8.2'
+      phpstan-level:
+        description: PHPStan analysis level (5–8)
+        type: string
+        default: '5'
+      working-directory:
+        description: Working directory for all steps
+        type: string
+        default: '.'
+      mode:
+        description: 'Pipeline mode: draft | development | production'
+        type: string
+        default: 'production'
+
+jobs:
+  validate-inputs:
+    name: Validate Inputs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate mode
+        env:
+          WORKFLOW_MODE: ${{ inputs.mode }}
+        run: |
+          case "$WORKFLOW_MODE" in
+            draft|development|production) ;;
+            *) echo "::error::Invalid mode '$WORKFLOW_MODE'. Must be draft, development, or production." && exit 1 ;;
+          esac
+
+      - name: Validate phpstan-level
+        env:
+          PHPSTAN_LEVEL: ${{ inputs.phpstan-level }}
+        run: |
+          case "$PHPSTAN_LEVEL" in
+            5|6|7|8) ;;
+            *) echo "::error::Invalid phpstan-level '$PHPSTAN_LEVEL'. Must be 5, 6, 7, or 8." && exit 1 ;;
+          esac
+
+  phpcs:
+    name: PHPCS Lint
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    continue-on-error: ${{ inputs.mode == 'draft' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@c541c155eee45413f5b09a52248675b1a2575231 # v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          tools: composer
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --optimize-autoloader
+
+      - name: Run PHPCS
+        # Expects phpcs.xml.dist at the repo root, extending or overriding the shared ruleset.
+        # See phpcs.xml.dist in starisian-technologies-coding-standards for the base config.
+        run: vendor/bin/phpcs --standard=phpcs.xml.dist --report=checkstyle
+
+  phpstan:
+    name: PHPStan Static Analysis
+    needs: validate-inputs
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    continue-on-error: ${{ inputs.mode == 'draft' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@c541c155eee45413f5b09a52248675b1a2575231 # v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          tools: composer
+          coverage: none
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist
+
+      - name: Run PHPStan
+        env:
+          PHPSTAN_LEVEL: ${{ inputs.phpstan-level }}
+        run: vendor/bin/phpstan analyse --level="$PHPSTAN_LEVEL" --no-progress

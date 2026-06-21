@@ -1,0 +1,48 @@
+// @starisian/eslint-config — Starisian Technologies shared ESLint flat config
+// Requires: eslint@^9, @typescript-eslint/eslint-plugin@^8, @typescript-eslint/parser@^8
+
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
+
+/** @type {import('eslint').Linter.FlatConfig[]} */
+export default [
+  {
+    ignores: ['**/vendor/**', '**/node_modules/**', '**/dist/**', '**/build/**'],
+  },
+  {
+    files: ['**/*.{js,jsx,mjs,cjs}'],
+    rules: {
+      'no-console': 'error',
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-var': 'error',
+      'prefer-const': 'error',
+      eqeqeq: ['error', 'always'],
+      // STD: JS-002 — wrap fetch in AbortController with 5s timeout; enforce via custom rule (not yet written)
+    },
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    plugins: { '@typescript-eslint': tseslint },
+    languageOptions: {
+      parser: tsParser,
+      // projectService omitted: type-aware rules (no-floating-promises, await-thenable) are off
+      // by default to keep this config usable in repos without a TS project reference.
+      // Consuming repos that enable those rules must add:
+      //   parserOptions: { projectService: true, tsconfigRootDir: import.meta.dirname }
+    },
+    rules: {
+      'no-console': 'error',
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-var': 'error',
+      'prefer-const': 'error',
+      eqeqeq: ['error', 'always'],
+      '@typescript-eslint/no-explicit-any': 'error',
+      // Type-aware rules require `parserOptions.project` (or project service) in the consuming repo.
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/await-thenable': 'off',
+      // STD: JS-002 — wrap fetch in AbortController with 5s timeout; enforce via custom rule (not yet written)
+    },
+  },
+];

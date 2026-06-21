@@ -1,0 +1,59 @@
+name: Formatting
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        description: Working directory for all steps
+        type: string
+        default: '.'
+      mode:
+        description: 'Pipeline mode: draft | development | production'
+        type: string
+        default: 'production'
+      node-version:
+        description: Node.js version to use
+        type: string
+        default: 'lts/*'
+      file-pattern:
+        description: Glob pattern passed to prettier --check
+        type: string
+        default: '.'
+
+jobs:
+  prettier-check:
+    name: Prettier Check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    continue-on-error: ${{ inputs.mode == 'draft' }}
+    steps:
+      - name: Validate mode
+        env:
+          WORKFLOW_MODE: ${{ inputs.mode }}
+        run: |
+          case "$WORKFLOW_MODE" in
+            draft|development|production) ;;
+            *) echo "::error::Invalid mode '$WORKFLOW_MODE'. Must be draft, development, or production." && exit 1 ;;
+          esac
+
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+        with:
+          node-version: ${{ inputs.node-version }}
+          cache: 'pnpm'
+
+      - name: Enable Corepack (pnpm)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Prettier check (no auto-fix)
+        env:
+          FILE_PATTERN: ${{ inputs.file-pattern }}
+        run: pnpm exec prettier --check "$FILE_PATTERN"
