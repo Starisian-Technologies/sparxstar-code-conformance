@@ -3,7 +3,7 @@
   "description": "Fixture: FAIL — missing vipwpcs, triggers presence validation warning",
   "type": "wordpress-plugin",
   "require": {
-    "php": ">=8.1"
+    "php": ">=8.2"
   },
   "require-dev": {
     "squizlabs/php_codesniffer": "^3.9"

@@ -84,6 +84,7 @@ jobs:
             echo "active_exceptions=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+          pip3 install pyyaml --quiet
           python3 - <<'PYEOF'
 import sys
 import os
@@ -92,7 +93,7 @@ from datetime import date
 try:
     import yaml
 except ImportError:
-    print("::error::PyYAML not available — install it to enforce standards exceptions (pip3 install pyyaml)")
+    print("::error::PyYAML not available after install attempt — cannot parse exceptions file")
     sys.exit(1)
 
 today = date.today().isoformat()
@@ -136,7 +137,7 @@ PYEOF
         if: inputs.mode != 'development'
         shell: bash
         run: |
-          echo "::warning::DEPRECATED: 'mode' input will be removed 2027-01-01 — migrate to 'enforcement_mode: required | advisory' (STD-TOOLCHAIN-001 §2)"
+          echo "::warning::DEPRECATED: 'mode' input will be removed 2027-01-01 — migrate to 'enforcement_mode: required | advisory' (STD-TOOLCHAIN-001 §3)"
 
       - name: Presence validation — standalone-react profile
         # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
@@ -200,13 +201,8 @@ if 'vitest' not in rd:
           elif [ "$em" = "advisory" ]; then
             echo "block=false" >> "$GITHUB_OUTPUT"
           else
-            case "$lm" in
-              draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
-              development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
-              *)
-                echo "::error::Unknown enforcement_mode '$em' — expected required | advisory"
-                exit 1 ;;
-            esac
+            echo "::error::Unknown enforcement_mode '$em' — expected required | advisory (STD-TOOLCHAIN-001 §3)"
+            exit 1
           fi
 
       - name: JS-LINT-001 — ESLint

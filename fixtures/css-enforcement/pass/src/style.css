@@ -3,6 +3,7 @@
 :root {
   --color-primary: #0066cc;
   --color-text: #1a1a1a;
+  --color-white: #fff;
   --font-size-base: 1rem;
   --font-size-lg: 1.25rem;
   --spacing-md: 1rem;
@@ -13,7 +14,7 @@
   align-items: center;
   padding: var(--spacing-md) calc(var(--spacing-md) * 2);
   background-color: var(--color-primary);
-  color: #fff;
+  color: var(--color-white);
   font-size: var(--font-size-base);
   border: none;
   border-radius: 0.25rem;

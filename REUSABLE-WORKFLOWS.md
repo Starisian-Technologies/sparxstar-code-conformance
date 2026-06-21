@@ -139,9 +139,11 @@ available to all repos.
 
 - **One `standards.yml` file per repo.** Don't create separate workflow
   files per check.
-- **Always pin to `@main`.** The coding-standards repo's main branch is
-  the source of truth. When a standard is updated, every repo gets the
-  update on its next PR.
+- **Always pin to a release tag (e.g., `@v1`).** The coding-standards
+  repo uses semantic versioning; pin to the current major tag so you
+  receive non-breaking updates automatically. Never pin to `@main` in
+  production — breaking changes land on `main` first. See
+  STD-TOOLCHAIN-001 §3 for the three-axis versioning model.
 - **Don't duplicate checks.** If the reusable workflow checks phpcs,
   don't also run phpcs separately in another workflow. One source of
   enforcement.

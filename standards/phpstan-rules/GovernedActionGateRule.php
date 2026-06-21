@@ -114,6 +114,9 @@ class GovernedActionGateRule implements Rule
     private function stmtsCallGate(array $stmts): bool
     {
         foreach ($stmts as $stmt) {
+            if (!($stmt instanceof Node)) {
+                continue;
+            }
             if ($stmt instanceof Node\Stmt\Expression &&
                 $stmt->expr instanceof Node\Expr\FuncCall &&
                 $stmt->expr->name instanceof Node\Name &&
