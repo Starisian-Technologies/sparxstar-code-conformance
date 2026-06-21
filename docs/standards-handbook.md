@@ -254,7 +254,7 @@ Machines do not make mistakes by accident. Invalid request behavior is treated a
 | Resource not found | 404 (no hinting — no suggestion of valid paths) |
 | Rate limit exceeded | 429 Too Many Requests |
 
-## 3.1.1 Client Behaviour on 429 (Slow-Online / 2G)
+## 3.1.1 Client Behavior on 429 (Slow-Online / 2G)
 
 > **Decision record (OQ-002):** These rules were established in the 2026-06-18 standards review session
 > (slow-online / 2G gap identified). A formal ADR should be filed to make these traceable. Until then, treat
