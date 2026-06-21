@@ -25,7 +25,7 @@ use PHPStan\Rules\RuleErrorBuilder;
  * REST handlers, WP-CLI commands, and other entry points require explicit
  * @governed-mutation annotation for the rule to fire on them.
  *
- * STATUS: warn-only — not required until backing ADR is ratified (§10 directive 10).
+ * STATUS: warn-only — not required until backing ADR is ratified (STD-TOOLCHAIN-001 §5).
  *
  * SCOPE: Entry points only — not every function that writes. The gate is asserted
  * at the entry point; internal helpers below it are out of scope.
@@ -37,8 +37,8 @@ class GovernedActionGateRule implements Rule
 
     /** Function name patterns that identify WP entry points. */
     private const ENTRY_POINT_PATTERNS = [
-        '/^(wp_ajax_|wp_ajax_nopriv_)/',  // AJAX handlers
-        '/^admin_post_/',                   // admin-post handlers
+        '/^(wp_ajax_|wp_ajax_nopriv_)/',           // AJAX handlers (authenticated + unauthenticated)
+        '/^(admin_post_|admin_post_nopriv_)/',      // admin-post handlers (authenticated + unauthenticated)
     ];
 
     /** Gate function the platform requires to be called. */

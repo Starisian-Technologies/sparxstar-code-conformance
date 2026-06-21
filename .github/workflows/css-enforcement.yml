@@ -150,7 +150,7 @@ PYEOF
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ inputs.node-version }}
+          node-version: ${{ inputs['node-version'] }}
 
       - name: Enable corepack (pnpm)
         if: hashFiles('package.json') != ''
@@ -334,11 +334,11 @@ PYEOF
             fi
           fi
 
-      - name: CSS-BUNDLE-001 — total bundle size <= ${{ inputs.css-size-limit-kb }} KB gzipped
+      - name: CSS-BUNDLE-001 — total bundle size <= ${{ inputs['css-size-limit-kb'] }} KB gzipped
         shell: bash
         run: |
           set -euo pipefail
-          limit_kb="${{ inputs.css-size-limit-kb }}"
+          limit_kb="${{ inputs['css-size-limit-kb'] }}"
           limit_bytes=$(( limit_kb * 1024 ))
 
           css_dir=""

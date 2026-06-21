@@ -179,7 +179,7 @@ if 'vitest' not in rd:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ inputs.node-version }}
+          node-version: ${{ inputs['node-version'] }}
 
       - name: Enable corepack (pnpm)
         shell: bash
@@ -283,11 +283,11 @@ if 'vitest' not in rd:
             fi
           fi
 
-      - name: JS-BUNDLE-001 — total bundle size <= ${{ inputs.bundle-size-limit-kb }} KB gzipped
+      - name: JS-BUNDLE-001 — total bundle size <= ${{ inputs['bundle-size-limit-kb'] }} KB gzipped
         shell: bash
         run: |
           set -euo pipefail
-          limit_kb="${{ inputs.bundle-size-limit-kb }}"
+          limit_kb="${{ inputs['bundle-size-limit-kb'] }}"
           limit_bytes=$(( limit_kb * 1024 ))
 
           js_dir=""

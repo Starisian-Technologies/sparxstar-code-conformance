@@ -191,7 +191,7 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ inputs.php-version }}
+          php-version: ${{ inputs['php-version'] }}
           tools: composer, phpcs, phpstan
           coverage: none
 
@@ -223,7 +223,7 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
       - name: Validate PHPStan level input
         shell: bash
         run: |
-          level="${{ inputs.phpstan-level }}"
+          level="${{ inputs['phpstan-level'] }}"
           if ! [[ "$level" =~ ^[0-9]+$ ]] || [ "$level" -lt 5 ]; then
             echo "::error::phpstan-level must be an integer >= 5 (got '$level')"
             exit 1
@@ -306,14 +306,14 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
             echo "::notice::PHP-LINT-001: No phpcs.xml and automattic/vipwpcs not installed — skipping"
           fi
 
-      - name: PHP-STATIC-001 — PHPStan level ${{ inputs.phpstan-level }}
+      - name: PHP-STATIC-001 — PHPStan level ${{ inputs['phpstan-level'] }}
         if: hashFiles('phpstan.neon') != '' || hashFiles('phpstan.neon.dist') != '' || hashFiles('phpstan.dist.neon') != ''
         shell: bash
         run: |
           set -euo pipefail
-          if ! phpstan analyse --level="${{ inputs.phpstan-level }}" --no-progress 2>&1; then
+          if ! phpstan analyse --level="${{ inputs['phpstan-level'] }}" --no-progress 2>&1; then
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
-              echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs.phpstan-level }} violations found"
+              echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs['phpstan-level'] }} violations found"
               exit 1
             else
               echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking)"
@@ -327,12 +327,12 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
           set -euo pipefail
           scan_path="src"
           [ -d "$scan_path" ] || scan_path="."
-          if ! phpstan analyse "$scan_path" --level="${{ inputs.phpstan-level }}" \
+          if ! phpstan analyse "$scan_path" --level="${{ inputs['phpstan-level'] }}" \
                --no-progress \
                --exclude-path=vendor \
                2>&1; then
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
-              echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs.phpstan-level }} violations found"
+              echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs['phpstan-level'] }} violations found"
               exit 1
             else
               echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking)"
