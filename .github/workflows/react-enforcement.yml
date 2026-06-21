@@ -85,6 +85,7 @@ jobs:
           fi
           python3 - <<'PYEOF'
 import sys
+import os
 from datetime import date
 
 try:
@@ -126,7 +127,6 @@ if malformed:
     print(f"::error::Malformed exception entries: {', '.join(malformed)}")
     sys.exit(1)
 
-import os
 with open(os.environ["GITHUB_OUTPUT"], "a") as out:
     out.write(f"active_exceptions={','.join(active)}\n")
 PYEOF

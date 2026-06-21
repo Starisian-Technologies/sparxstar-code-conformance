@@ -27,7 +27,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 class GovernedActionGateRule implements Rule
 {
     /** Docblock tags that mark a method as a governed mutation entry point. */
-    private const GOVERNED_TAGS = ['@governed-mutation', '@governed-mutation'];
+    private const GOVERNED_TAGS = ['@governed-mutation'];
 
     /** Function name patterns that identify WP entry points. */
     private const ENTRY_POINT_PATTERNS = [
@@ -38,9 +38,9 @@ class GovernedActionGateRule implements Rule
     /** Gate function the platform requires to be called. */
     private const GATE_FUNCTION = 'assert_governed_action';
 
-    public function getNodeType(): string
+    public function getNodeTypes(): array
     {
-        return Node::class;
+        return [\PhpParser\Node\Stmt\ClassMethod::class, \PhpParser\Node\Stmt\Function_::class];
     }
 
     public function processNode(Node $node, Scope $scope): array
