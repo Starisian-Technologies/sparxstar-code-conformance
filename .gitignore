@@ -28,3 +28,6 @@ pnpm-debug.log*
 .eslintcache
 .tsbuildinfo
 *.tsbuildinfo
+
+# Claude Code session data
+.claude/
