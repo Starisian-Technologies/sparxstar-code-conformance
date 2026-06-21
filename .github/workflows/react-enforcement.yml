@@ -51,6 +51,7 @@ on:
         default: required
       mode:
         description: 'DEPRECATED: use enforcement_mode.'
+        # REMOVAL: 2027-01-01 — all callers must migrate to enforcement_mode before this date
         required: false
         type: string
         default: development
@@ -131,14 +132,25 @@ with open(os.environ["GITHUB_OUTPUT"], "a") as out:
     out.write(f"active_exceptions={','.join(active)}\n")
 PYEOF
 
+      - name: Warn on deprecated 'mode' input
+        if: inputs.mode != 'development'
+        shell: bash
+        run: |
+          echo "::warning::DEPRECATED: 'mode' input will be removed 2027-01-01 — migrate to 'enforcement_mode: required | advisory' (STD-TOOLCHAIN-001 §2)"
+
       - name: Presence validation — standalone-react profile
         # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
+        # Exception: package.json is fail-closed for typed standalone repos regardless of §4 status.
         shell: bash
         run: |
           set -euo pipefail
           fail() { echo "::warning::PRESENCE: $1"; }
 
-          [ -f "package.json" ]    || fail "package.json missing"
+          # package.json is non-negotiable for standalone-react — hard fail, not warn
+          if [ ! -f "package.json" ]; then
+            echo "::error::PRESENCE: package.json missing — standalone-react profile requires it (fail-closed)"
+            exit 1
+          fi
           [ -f "pnpm-lock.yaml" ] || fail "pnpm-lock.yaml missing — lockfile must be committed"
           [ -f "eslint.config.mjs" ] || fail "eslint.config.mjs missing — ESLint 9 flat config required"
           [ -f "tsconfig.json" ]  || fail "tsconfig.json missing"
