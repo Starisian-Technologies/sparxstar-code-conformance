@@ -12,14 +12,14 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
     with:
       mode: required
       profile_version: v1
 
   react:
     needs: pnpm
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/react-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/react-enforcement.yml@v1
     with:
       repo_type: standalone-react
       profile_version: v1
@@ -29,14 +29,14 @@ jobs:
 
   css:
     needs: pnpm
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@v1
     with:
       repo_type: standalone-react
       profile_version: v1
       enforcement_mode: required
 
   media:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@v1
     with:
       enforcement_mode: required
       profile_version: v1

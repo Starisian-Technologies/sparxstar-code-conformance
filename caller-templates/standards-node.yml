@@ -12,14 +12,14 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
     with:
       mode: required
       profile_version: v1
 
   node:
     needs: pnpm
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/node-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/node-enforcement.yml@v1
     with:
       repo_type: standalone-node
       profile_version: v1
@@ -27,7 +27,7 @@ jobs:
       node-version: '22'
 
   media:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@v1
     with:
       enforcement_mode: required
       profile_version: v1

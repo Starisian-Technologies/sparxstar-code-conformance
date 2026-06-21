@@ -23,7 +23,7 @@ startCaptureButton?.addEventListener('click', async () => {
   });
 
   // Delegate to approved SDK — do not instantiate MediaRecorder directly
-  const recorder = window.SparxStarSDK.createRecorder(stream, {
+  const recorder = window.ApprovedMediaSDK.createRecorder(stream, {
     mimeType: 'audio/webm;codecs=opus',
   });
 

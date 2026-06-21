@@ -73,12 +73,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+      - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+          if [ ! -f ".standards/standards-exceptions.yml" ]; then
             echo "active_exceptions=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -89,8 +89,8 @@ from datetime import date
 try:
     import yaml
 except ImportError:
-    print("::notice::PyYAML not available — exceptions file not parsed. Install python3-yaml.")
-    sys.exit(0)
+    print("::error::PyYAML not available — install it to enforce standards exceptions (pip3 install pyyaml)")
+    sys.exit(1)
 
 today = date.today().isoformat()
 active = []
@@ -98,7 +98,7 @@ expired = []
 malformed = []
 
 try:
-    with open(".sparxstar/standards-exceptions.yml") as f:
+    with open(".standards/standards-exceptions.yml") as f:
         data = yaml.safe_load(f)
 except Exception as e:
     print(f"::error::standards-exceptions.yml malformed — {e}")
@@ -125,8 +125,8 @@ if malformed:
     print(f"::error::Malformed exception entries (missing required fields): {', '.join(malformed)}")
     sys.exit(1)
 
-import subprocess
-with open("$GITHUB_OUTPUT", "a") as out:
+import os
+with open(os.environ["GITHUB_OUTPUT"], "a") as out:
     out.write(f"active_exceptions={','.join(active)}\n")
 PYEOF
 
@@ -248,16 +248,15 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
         shell: bash
         run: |
           set -euo pipefail
-          if phpcs --report=emacs 2>&1 | grep -q 'ERROR'; then
+          phpcs_exit=0
+          phpcs --report=full 2>&1 || phpcs_exit=$?
+          if [ "$phpcs_exit" -ne 0 ]; then
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
-              phpcs
+              echo "::error::PHP-LINT-001: PHPCS violations found (exit $phpcs_exit)"
               exit 1
             else
-              phpcs --warning-severity=0 || true
-              echo "::warning::PHP-LINT-001: PHPCS violations found (see log above)"
+              echo "::warning::PHP-LINT-001: PHPCS violations found (non-blocking)"
             fi
-          else
-            phpcs
           fi
 
       - name: PHP-LINT-001 — PHPCS (default WordPress VIP ruleset, no config file)
@@ -270,10 +269,18 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
             php_file=$(find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' | head -1)
             if [ -n "$php_file" ]; then
               scan_dir=$(dirname "$php_file")
+              phpcs_exit=0
               phpcs --standard=WordPress --extensions=php \
                 --ignore=vendor/,node_modules/ \
-                "$scan_dir" \
-                2>&1 | tee /tmp/phpcs-out.txt || true
+                "$scan_dir" 2>&1 || phpcs_exit=$?
+              if [ "$phpcs_exit" -ne 0 ]; then
+                if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+                  echo "::error::PHP-LINT-001: PHPCS violations found (exit $phpcs_exit)"
+                  exit 1
+                else
+                  echo "::warning::PHP-LINT-001: PHPCS violations found (non-blocking)"
+                fi
+              fi
             else
               echo "::notice::PHP-LINT-001: No PHP files found to scan"
             fi
@@ -362,10 +369,10 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
             --include='*.php' \
             --exclude-dir=vendor \
             --exclude-dir=node_modules \
-            "'wp_[a-z]|\"wp_[a-z]" \
+            '(FROM|JOIN|INTO|UPDATE|TABLE)\s+[`\'"\"]?wp_[a-z]' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'PHP-WP-001: hardcoded wp_ table prefix found — use $wpdb->prefix instead:\n'"$hits"
+            msg=$'PHP-WP-001: hardcoded wp_ table prefix in SQL context — use $wpdb->prefix instead:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"
               exit 1

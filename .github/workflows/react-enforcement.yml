@@ -74,12 +74,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+      - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+          if [ ! -f ".standards/standards-exceptions.yml" ]; then
             echo "active_exceptions=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -90,8 +90,8 @@ from datetime import date
 try:
     import yaml
 except ImportError:
-    print("::notice::PyYAML not available — exceptions file not parsed.")
-    sys.exit(0)
+    print("::error::PyYAML not available — install it to enforce standards exceptions (pip3 install pyyaml)")
+    sys.exit(1)
 
 today = date.today().isoformat()
 active = []
@@ -99,7 +99,7 @@ expired = []
 malformed = []
 
 try:
-    with open(".sparxstar/standards-exceptions.yml") as f:
+    with open(".standards/standards-exceptions.yml") as f:
         data = yaml.safe_load(f)
 except Exception as e:
     print(f"::error::standards-exceptions.yml malformed — {e}")
@@ -126,7 +126,8 @@ if malformed:
     print(f"::error::Malformed exception entries: {', '.join(malformed)}")
     sys.exit(1)
 
-with open("$GITHUB_OUTPUT", "a") as out:
+import os
+with open(os.environ["GITHUB_OUTPUT"], "a") as out:
     out.write(f"active_exceptions={','.join(active)}\n")
 PYEOF
 
@@ -224,18 +225,24 @@ if 'vitest' not in rd:
             fi
           fi
 
-      - name: JS-TEST-001 — Jest unit tests
-        if: hashFiles('jest.config.*') != '' || hashFiles('jest.config.js') != ''
+      - name: JS-TEST-001 — unit tests (Vitest / Jest)
         shell: bash
         run: |
           set -euo pipefail
-          if ! pnpm exec jest --ci --passWithNoTests 2>&1; then
+          if [ "$(find . -name 'vitest.config.*' -not -path '*/node_modules/*' | head -1)" != "" ]; then
+            runner="vitest run"
+          elif [ "$(find . -name 'jest.config.*' -not -path '*/node_modules/*' | head -1)" != "" ]; then
+            runner="jest --ci --passWithNoTests"
+          else
+            echo "::warning::JS-TEST-001: no vitest.config.* or jest.config.* found — skipping unit tests"
+            exit 0
+          fi
+          if ! pnpm exec $runner 2>&1; then
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
-              echo "::error::JS-TEST-001: Jest test suite failed"
-              exit 1
+              echo "::error::JS-TEST-001: unit test suite failed"; exit 1
             else
-              pnpm exec jest --ci --passWithNoTests || true
-              echo "::warning::JS-TEST-001: Jest failures found (non-blocking)"
+              pnpm exec $runner || true
+              echo "::warning::JS-TEST-001: unit test failures (non-blocking)"
             fi
           fi
 
@@ -252,7 +259,7 @@ if 'vitest' not in rd:
             fi
           fi
 
-      - name: JS-BUNDLE-001 — bundle size <= ${{ inputs.bundle-size-limit-kb }} KB gzipped
+      - name: JS-BUNDLE-001 — total bundle size <= ${{ inputs.bundle-size-limit-kb }} KB gzipped
         shell: bash
         run: |
           set -euo pipefail
@@ -269,20 +276,19 @@ if 'vitest' not in rd:
             exit 0
           fi
 
-          exceeded=()
+          total_bytes=0
           while IFS= read -r -d '' file; do
             size=$(gzip -c "$file" | wc -c)
-            if [ "$size" -gt "$limit_bytes" ]; then
-              size_kb=$(( size / 1024 ))
-              exceeded+=("$file (${size_kb} KB gzipped, limit ${limit_kb} KB)")
-            fi
+            total_bytes=$(( total_bytes + size ))
           done < <(find "$js_dir" -name '*.js' -not -name '*.map' -print0)
 
-          if [ ${#exceeded[@]:-0} -gt 0 ]; then
-            msg="JS-BUNDLE-001: bundle(s) exceed ${limit_kb} KB gzipped limit: ${exceeded[*]}"
+          total_kb=$(( total_bytes / 1024 ))
+          echo "::notice::JS-BUNDLE-001: total JS bundle ${total_kb} KB gzipped (limit ${limit_kb} KB)"
+
+          if [ "$total_bytes" -gt "$limit_bytes" ]; then
+            msg="JS-BUNDLE-001: total JS bundle ${total_kb} KB gzipped exceeds limit of ${limit_kb} KB"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
-              echo "::error::$msg"
-              exit 1
+              echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
             fi

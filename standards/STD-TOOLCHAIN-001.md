@@ -1,4 +1,4 @@
-# SPARXSTAR Platform Standard — Toolchain & Quality Enforcement
+# the platform Platform Standard — Toolchain & Quality Enforcement
 Standard ID: STD-TOOLCHAIN-001
 Version: 1.3
 Status: Active
@@ -9,7 +9,7 @@ Owners: Platform Engineering
 
 ## 1. Purpose
 
-This standard defines the mandatory toolchain, dependency contracts, and CI enforcement gates for all SPARXSTAR platform repositories. It governs which linters, static analyzers, test frameworks, and package managers are authoritative per repository profile. Consuming repos adopt this standard by referencing the reusable workflows from `starisian-technologies/starisian-coding-standards`.
+This standard defines the mandatory toolchain, dependency contracts, and CI enforcement gates for all the platform platform repositories. It governs which linters, static analyzers, test frameworks, and package managers are authoritative per repository profile. Consuming repos adopt this standard by referencing the reusable workflows from `this standards repository`.
 
 ---
 
@@ -49,7 +49,7 @@ Presence-validation steps and Bucket-3 grep guards start **WARN-ONLY** until sel
 
 ## 5. Governed-Action Gate (§5)
 
-REST route handlers, admin-post handlers, AJAX handlers, WP-CLI mutation commands, and service methods annotated `@governed-mutation` or `@sparxstar-governed` must call `sparxstar_assert_governed_action()` before mutating state.
+REST route handlers, admin-post handlers, AJAX handlers, WP-CLI mutation commands, and service methods annotated `@governed-mutation` or `@governed-mutation` must call `assert_governed_action()` before mutating state.
 
 Enforced by: `GovernedActionGateRule` PHPStan rule (see `standards/phpstan-rules/`). Status: warn-only until backing ADR is ratified.
 
@@ -69,7 +69,7 @@ All JS/TS repositories use **pnpm** exclusively (ADR-017). `pnpm-enforcement.yml
 
 ## 8. Exception Process (§8)
 
-Advisory exceptions to required rules must be declared in `.sparxstar/standards-exceptions.yml` in the consuming repo. Each exception entry requires:
+Advisory exceptions to required rules must be declared in `.standards/standards-exceptions.yml` in the consuming repo. Each exception entry requires:
 
 ```yaml
 exceptions:

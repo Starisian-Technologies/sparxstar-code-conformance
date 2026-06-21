@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace SparxStar\Standards\PHPStan\Rules;
+namespace Starisian\Standards\PHPStan\Rules;
 
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Function_;
@@ -27,7 +27,7 @@ use PHPStan\Rules\RuleErrorBuilder;
 class GovernedActionGateRule implements Rule
 {
     /** Docblock tags that mark a method as a governed mutation entry point. */
-    private const GOVERNED_TAGS = ['@governed-mutation', '@sparxstar-governed'];
+    private const GOVERNED_TAGS = ['@governed-mutation', '@governed-mutation'];
 
     /** Function name patterns that identify WP entry points. */
     private const ENTRY_POINT_PATTERNS = [
@@ -36,7 +36,7 @@ class GovernedActionGateRule implements Rule
     ];
 
     /** Gate function the platform requires to be called. */
-    private const GATE_FUNCTION = 'sparxstar_assert_governed_action';
+    private const GATE_FUNCTION = 'assert_governed_action';
 
     public function getNodeType(): string
     {

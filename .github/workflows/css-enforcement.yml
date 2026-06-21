@@ -69,24 +69,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+      - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+          if [ ! -f ".standards/standards-exceptions.yml" ]; then
             echo "active_exceptions=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           python3 - <<'PYEOF'
 import sys
+import os
 from datetime import date
 
 try:
     import yaml
 except ImportError:
-    print("::notice::PyYAML not available — exceptions file not parsed.")
-    sys.exit(0)
+    print("::error::PyYAML not available — install it to enforce standards exceptions (pip3 install pyyaml)")
+    sys.exit(1)
 
 today = date.today().isoformat()
 active = []
@@ -94,7 +95,7 @@ expired = []
 malformed = []
 
 try:
-    with open(".sparxstar/standards-exceptions.yml") as f:
+    with open(".standards/standards-exceptions.yml") as f:
         data = yaml.safe_load(f)
 except Exception as e:
     print(f"::error::standards-exceptions.yml malformed — {e}")
@@ -121,7 +122,7 @@ if malformed:
     print(f"::error::Malformed exception entries: {', '.join(malformed)}")
     sys.exit(1)
 
-with open("$GITHUB_OUTPUT", "a") as out:
+with open(os.environ["GITHUB_OUTPUT"], "a") as out:
     out.write(f"active_exceptions={','.join(active)}\n")
 PYEOF
 
@@ -316,7 +317,7 @@ PYEOF
             fi
           fi
 
-      - name: CSS-BUNDLE-001 — bundle size <= ${{ inputs.css-size-limit-kb }} KB gzipped
+      - name: CSS-BUNDLE-001 — total bundle size <= ${{ inputs.css-size-limit-kb }} KB gzipped
         shell: bash
         run: |
           set -euo pipefail
@@ -333,17 +334,17 @@ PYEOF
             exit 0
           fi
 
-          exceeded=()
+          total_bytes=0
           while IFS= read -r -d '' file; do
             size=$(gzip -c "$file" | wc -c)
-            if [ "$size" -gt "$limit_bytes" ]; then
-              size_kb=$(( size / 1024 ))
-              exceeded+=("$file (${size_kb} KB gzipped, limit ${limit_kb} KB)")
-            fi
+            total_bytes=$(( total_bytes + size ))
           done < <(find "$css_dir" -name '*.css' -not -name '*.map' -print0)
 
-          if [ ${#exceeded[@]:-0} -gt 0 ]; then
-            msg="CSS-BUNDLE-001: CSS bundle(s) exceed ${limit_kb} KB gzipped: ${exceeded[*]}"
+          total_kb=$(( total_bytes / 1024 ))
+          echo "::notice::CSS-BUNDLE-001: total CSS bundle ${total_kb} KB gzipped (limit ${limit_kb} KB)"
+
+          if [ "$total_bytes" -gt "$limit_bytes" ]; then
+            msg="CSS-BUNDLE-001: total CSS bundle ${total_kb} KB gzipped exceeds limit of ${limit_kb} KB"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else

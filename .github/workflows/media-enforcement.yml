@@ -58,24 +58,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+      - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+          if [ ! -f ".standards/standards-exceptions.yml" ]; then
             echo "active_exceptions=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           python3 - <<'PYEOF'
 import sys
+import os
 from datetime import date
 
 try:
     import yaml
 except ImportError:
-    print("::notice::PyYAML not available — exceptions file not parsed.")
-    sys.exit(0)
+    print("::error::PyYAML not available — install it to enforce standards exceptions (pip3 install pyyaml)")
+    sys.exit(1)
 
 today = date.today().isoformat()
 active = []
@@ -83,7 +84,7 @@ expired = []
 malformed = []
 
 try:
-    with open(".sparxstar/standards-exceptions.yml") as f:
+    with open(".standards/standards-exceptions.yml") as f:
         data = yaml.safe_load(f)
 except Exception as e:
     print(f"::error::standards-exceptions.yml malformed — {e}")
@@ -110,7 +111,7 @@ if malformed:
     print(f"::error::Malformed exception entries: {', '.join(malformed)}")
     sys.exit(1)
 
-with open("$GITHUB_OUTPUT", "a") as out:
+with open(os.environ["GITHUB_OUTPUT"], "a") as out:
     out.write(f"active_exceptions={','.join(active)}\n")
 PYEOF
 
@@ -163,7 +164,7 @@ PYEOF
             --exclude='*.test.*' --exclude='*.spec.*' \
             'getUserMedia\s*\(' \
             . 2>/dev/null \
-            | xargs grep -L 'sampleRate' 2>/dev/null \
+            | xargs -r grep -L 'sampleRate' 2>/dev/null \
             || true)
           if [ -n "$files_without_sr" ]; then
             msg=$'MEDIA-CONSTRAINTS-001: getUserMedia() called without sampleRate constraint:\n'"$files_without_sr"

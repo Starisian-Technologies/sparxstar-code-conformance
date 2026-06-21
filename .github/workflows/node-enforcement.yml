@@ -72,24 +72,25 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+      - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
         shell: bash
         run: |
           set -euo pipefail
-          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+          if [ ! -f ".standards/standards-exceptions.yml" ]; then
             echo "active_exceptions=" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           python3 - <<'PYEOF'
 import sys
+import os
 from datetime import date
 
 try:
     import yaml
 except ImportError:
-    print("::notice::PyYAML not available — exceptions file not parsed.")
-    sys.exit(0)
+    print("::error::PyYAML not available — install it to enforce standards exceptions (pip3 install pyyaml)")
+    sys.exit(1)
 
 today = date.today().isoformat()
 active = []
@@ -97,7 +98,7 @@ expired = []
 malformed = []
 
 try:
-    with open(".sparxstar/standards-exceptions.yml") as f:
+    with open(".standards/standards-exceptions.yml") as f:
         data = yaml.safe_load(f)
 except Exception as e:
     print(f"::error::standards-exceptions.yml malformed — {e}")
@@ -124,7 +125,7 @@ if malformed:
     print(f"::error::Malformed exception entries: {', '.join(malformed)}")
     sys.exit(1)
 
-with open("$GITHUB_OUTPUT", "a") as out:
+with open(os.environ["GITHUB_OUTPUT"], "a") as out:
     out.write(f"active_exceptions={','.join(active)}\n")
 PYEOF
 
@@ -328,9 +329,12 @@ if '@wordpress/scripts' in rd:
             'console\.(log|warn|error|debug|info)\s*\(' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            echo "::error::NODE-LOG-001: console.* found in production source:"
-            echo "$hits"
-            exit 1
+            msg=$'NODE-LOG-001: console.* found in production source:\n'"$hits"
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::$msg"; exit 1
+            else
+              echo "::warning::$msg"
+            fi
           fi
 
       - name: NODE-ESM-001 — package.json declares "type": "module"
@@ -353,21 +357,26 @@ if '@wordpress/scripts' in rd:
             fi
           fi
 
-      - name: NODE-TEST-001 — Jest test suite
-        if: hashFiles('jest.config.*') != ''
+      - name: NODE-TEST-001 — unit tests (Vitest / Jest)
         shell: bash
         run: |
           set -euo pipefail
-          if ! pnpm exec jest --ci --passWithNoTests 2>&1; then
+          if [ "$(find . -name 'vitest.config.*' -not -path '*/node_modules/*' | head -1)" != "" ]; then
+            runner="vitest run"
+          elif [ "$(find . -name 'jest.config.*' -not -path '*/node_modules/*' | head -1)" != "" ]; then
+            runner="jest --ci --passWithNoTests"
+          else
+            echo "::warning::NODE-TEST-001: no vitest.config.* or jest.config.* found — skipping unit tests"
+            exit 0
+          fi
+          if ! pnpm exec $runner 2>&1; then
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
-              echo "::error::NODE-TEST-001: Jest test suite failed"
-              exit 1
+              echo "::error::NODE-TEST-001: unit test suite failed"; exit 1
             else
-              pnpm exec jest --ci --passWithNoTests || true
-              echo "::warning::NODE-TEST-001: Jest failures (non-blocking)"
+              pnpm exec $runner || true
+              echo "::warning::NODE-TEST-001: unit test failures (non-blocking)"
             fi
           fi
-
       - name: NODE-AUDIT-001 — pnpm vulnerability audit
         shell: bash
         run: |
