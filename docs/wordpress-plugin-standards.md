@@ -245,7 +245,7 @@ name: WordPress Plugin Check
 on: [push, pull_request]
 jobs:
   plugin-check:
-    uses: starisian-technologies/starisian-technologies-coding-standards/.github/workflows/wp-plugin-check.yml@<ref>
+    uses: <org>/<standards-repo>/.github/workflows/wp-plugin-check.yml@<ref>
     with:
       mode: production  # draft | development | production
 ```
