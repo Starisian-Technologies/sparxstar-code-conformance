@@ -24,8 +24,7 @@
     "tsconfig.json"
   ],
   "tsconfig-required": {
-    "strict": true,
-    "type": "module"
+    "strict": true
   },
   "recommended-files": [
     "vitest.config.ts"

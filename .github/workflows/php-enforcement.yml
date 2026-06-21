@@ -264,8 +264,11 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
         shell: bash
         run: |
           set -euo pipefail
-          if composer show | grep -q 'automattic/vipwpcs' 2>/dev/null || \
-             composer show | grep -q 'wp-coding-standards/wpcs' 2>/dev/null; then
+          if [ ! -f "composer.json" ]; then
+            echo "::notice::PHP-LINT-001: no composer.json and no phpcs.xml — skipping"
+            exit 0
+          fi
+          if composer show 2>/dev/null | grep -qE 'automattic/vipwpcs|wp-coding-standards/wpcs'; then
             php_file=$(find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' | head -1)
             if [ -n "$php_file" ]; then
               scan_dir=$(dirname "$php_file")

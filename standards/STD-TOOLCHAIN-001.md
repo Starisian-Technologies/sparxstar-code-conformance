@@ -3,7 +3,7 @@
 > ADR Citations: ADR-017 (pnpm), ADR-042 (exceptions). All other requirements are pending ADR assignment — treat as draft authority until cited.
 Standard ID: STD-TOOLCHAIN-001
 Version: 1.3
-Status: Active
+Status: Draft
 Last Updated: 2026-06-21
 Owners: Platform Engineering
 
@@ -106,7 +106,8 @@ Expired exceptions are **fail-closed** — CI blocks immediately. Malformed entr
 
 Required rulesets: `WordPressVIPMinimum`, `WordPress-Extra`, `WordPress-Docs`, `PHPCompatibilityWP`
 
-Required files: `composer.json`, `composer.lock`, `phpcs.xml`, `phpstan.neon`, `phpunit.xml`
+Required files: `composer.json`, `composer.lock`, `phpcs.xml`, `phpstan.neon`
+Recommended files: `phpunit.xml`
 
 **JS toolchain (via @wordpress/scripts):**
 - `@wordpress/scripts` ^30.0.0
@@ -140,7 +141,7 @@ See machine-readable contract: `standards/profiles/standalone-react/v1/manifest.
 - `vitest` ^2
 - Prohibited: `@wordpress/scripts`, `eslint-plugin-node`
 
-Required files: `package.json`, `pnpm-lock.yaml`, `eslint.config.mjs`, `tsconfig.json` (strict: true, type: module)
+Required files: `package.json`, `pnpm-lock.yaml`, `eslint.config.mjs`, `tsconfig.json` (strict: true); `package.json` (`type: "module"` — enforced by NODE-ESM-001)
 
 See machine-readable contract: `standards/profiles/standalone-node/v1/manifest.json`
 

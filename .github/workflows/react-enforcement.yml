@@ -173,6 +173,7 @@ if 'vitest' not in rd:
         run: corepack enable
 
       - name: Install dependencies
+        if: hashFiles('package.json') != ''
         shell: bash
         run: pnpm install --frozen-lockfile
 
@@ -295,7 +296,7 @@ if 'vitest' not in rd:
           fi
 
       - name: JS-CONSOLE-001 — no console.log in production build output
-        if: inputs.mode == 'production'
+        if: inputs.mode == 'production' || inputs.enforcement_mode == 'required'
         shell: bash
         run: |
           set -euo pipefail

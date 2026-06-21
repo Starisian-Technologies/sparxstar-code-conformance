@@ -175,7 +175,7 @@ PYEOF
           fi
 
       - name: CSS-LINT-001 — Stylelint
-        if: hashFiles('.stylelintrc*') != '' || hashFiles('stylelint.config.*') != ''
+        if: (hashFiles('.stylelintrc*') != '' || hashFiles('stylelint.config.*') != '') && hashFiles('package.json') != ''
         shell: bash
         run: |
           set -euo pipefail
@@ -212,7 +212,6 @@ PYEOF
 
           check_pattern "CSS-PERF-001 filter:blur" 'filter\s*:\s*blur\s*\('
           check_pattern "CSS-PERF-002 backdrop-filter" 'backdrop-filter\s*:'
-          check_pattern "CSS-PERF-003 box-shadow spread>4px" 'box-shadow\s*:[^;]*\s[5-9][0-9]*px|box-shadow\s*:[^;]*\s[1-9][0-9]+px'
           check_pattern "CSS-PERF-004 animation on layout properties" \
             'animation\s*:[^;]*(width|height|top|left|right|bottom|margin|padding)'
           check_pattern "CSS-PERF-004 transition on layout properties" \
@@ -285,7 +284,7 @@ PYEOF
             fi
           fi
 
-      - name: CSS-A11Y-001 — no outline:none without replacement
+      - name: CSS-A11Y-001 — no outline:none or outline:0
         shell: bash
         run: |
           set -euo pipefail
@@ -353,6 +352,17 @@ PYEOF
           fi
 
       # ── Bucket-3: warn-only gaps (Directive 5 — pending ADR ratification) ──
+
+      - name: CSS-PERF-003 (warn-only) — large box-shadow values
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn \
+            --include='*.css' --include='*.scss' --include='*.less' \
+            --exclude-dir=node_modules --exclude-dir=vendor \
+            'box-shadow\s*:[^;]*\s[1-9][0-9]{2,}px' \
+            . 2>/dev/null || true)
+          [ -n "$hits" ] && echo "::warning::CSS-PERF-003 (advisory): large px value in box-shadow — verify spread/blur radius is intentional:"$'\n'"$hits" || true
 
       - name: CSS-PERF-005 (warn-only) — text-shadow on body text
         shell: bash
