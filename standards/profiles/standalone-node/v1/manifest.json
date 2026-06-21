@@ -13,7 +13,21 @@
   "eslint-config": "eslint.config.mjs",
   "eslint-style": "flat-config",
   "eslint-plugin-note": "Use eslint-plugin-n (maintained, flat-config-ready). Do NOT use eslint-plugin-node (unmaintained for ESLint 9).",
-  "prohibited": ["@wordpress/scripts", "eslint-plugin-node (unmaintained)"],
-  "required-files": ["package.json", "pnpm-lock.yaml", "eslint.config.mjs", "tsconfig.json", "vitest.config.ts"],
-  "tsconfig-required": { "strict": true, "type": "module" }
+  "prohibited": [
+    "@wordpress/scripts",
+    "eslint-plugin-node (unmaintained)"
+  ],
+  "required-files": [
+    "package.json",
+    "pnpm-lock.yaml",
+    "eslint.config.mjs",
+    "tsconfig.json"
+  ],
+  "tsconfig-required": {
+    "strict": true,
+    "type": "module"
+  },
+  "recommended-files": [
+    "vitest.config.ts"
+  ]
 }

@@ -96,7 +96,7 @@ malformed = []
 
 try:
     with open(".standards/standards-exceptions.yml") as f:
-        data = yaml.safe_load(f)
+        data = yaml.safe_load(f) or {}
 except Exception as e:
     print(f"::error::standards-exceptions.yml malformed — {e}")
     sys.exit(1)
@@ -252,11 +252,11 @@ PYEOF
           hits=$(grep -Prn \
             --include='*.css' --include='*.scss' \
             --exclude-dir=node_modules --exclude-dir=vendor \
-            '(color|background|border|fill|stroke)\s*:\s*#[0-9a-fA-F]{3,8}' \
+            '^\s*(color|background(-color)?|border(-color)?|fill|stroke)\s*:\s*#[0-9a-fA-F]{3,8}' \
             . 2>/dev/null \
-            | grep -v ':root' \
-            | grep -v 'tokens\.' \
-            | grep -v '_tokens\.' \
+            | grep -Pv ':root' \
+            | grep -Pv 'tokens\.' \
+            | grep -Pv '_tokens\.' \
             || true)
           if [ -n "$hits" ]; then
             msg=$'CSS-TOKEN-001: hardcoded hex colors found — use CSS custom properties:\n'"$hits"
@@ -381,15 +381,15 @@ PYEOF
         shell: bash
         run: |
           set -euo pipefail
-          files=$(grep -Prln \
+          missing=$(grep -PrlZn \
             --include='*.css' --include='*.scss' \
             --exclude-dir=node_modules --exclude-dir=vendor \
             '@font-face' \
-            . 2>/dev/null || true)
-          if [ -n "$files" ]; then
-            missing=$(echo "$files" | xargs grep -Pl '@font-face' | xargs grep -PL 'font-display\s*:' 2>/dev/null || true)
-            [ -n "$missing" ] && echo "::warning::CSS-PERF-006 (advisory): @font-face without font-display in:"$'\n'"$missing" || true
-          fi
+            . 2>/dev/null \
+            | xargs -0 -r grep -PZL 'font-display\s*:' 2>/dev/null \
+            | xargs -0 -r printf '%s\n' \
+            || true)
+          [ -n "$missing" ] && echo "::warning::CSS-PERF-006 (advisory): @font-face without font-display in:"$'\n'"$missing" || true
 
       - name: CSS-A11Y-002 (warn-only) — @keyframes without prefers-reduced-motion
         shell: bash

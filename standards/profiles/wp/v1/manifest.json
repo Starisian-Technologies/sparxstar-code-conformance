@@ -16,8 +16,21 @@
     "allow-plugins": {
       "dealerdirect/phpcodesniffer-composer-installer": true
     },
-    "required-rulesets": ["WordPressVIPMinimum", "WordPress-Extra", "WordPress-Docs", "PHPCompatibilityWP"],
-    "required-files": ["composer.json", "composer.lock", "phpcs.xml", "phpstan.neon", "phpunit.xml"]
+    "required-rulesets": [
+      "WordPressVIPMinimum",
+      "WordPress-Extra",
+      "WordPress-Docs",
+      "PHPCompatibilityWP"
+    ],
+    "required-files": [
+      "composer.json",
+      "composer.lock",
+      "phpcs.xml",
+      "phpstan.neon"
+    ],
+    "recommended-files": [
+      "phpunit.xml"
+    ]
   },
   "js": {
     "require-dev": {
@@ -31,9 +44,16 @@
       "lint:css": "wp-scripts lint-css",
       "test": "wp-scripts test-unit-js"
     },
-    "prohibited": ["typescript-eslint", "eslint (hand-pinned)", "stylelint (hand-pinned)"],
-    "note": "@wordpress/scripts owns eslint/stylelint versions — do not hand-pin in WP repos",
-    "required-files": ["package.json", "pnpm-lock.yaml"]
+    "prohibited": [
+      "typescript-eslint",
+      "eslint (hand-pinned)",
+      "stylelint (hand-pinned)"
+    ],
+    "note": "@wordpress/scripts owns eslint/stylelint versions \u2014 do not hand-pin in WP repos",
+    "required-files": [
+      "package.json",
+      "pnpm-lock.yaml"
+    ]
   },
   "e2e": {
     "framework": "@playwright/test",

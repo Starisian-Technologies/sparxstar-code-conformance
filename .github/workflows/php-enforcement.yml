@@ -100,7 +100,7 @@ malformed = []
 
 try:
     with open(".standards/standards-exceptions.yml") as f:
-        data = yaml.safe_load(f)
+        data = yaml.safe_load(f) or {}
 except Exception as e:
     print(f"::error::standards-exceptions.yml malformed — {e}")
     sys.exit(1)
@@ -365,11 +365,12 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
         shell: bash
         run: |
           set -euo pipefail
+          wp_pattern='(?i)(FROM|JOIN|INTO|UPDATE|TABLE)\s+[`'"'"'"]?wp_[a-z]'
           hits=$(grep -Prn \
             --include='*.php' \
             --exclude-dir=vendor \
             --exclude-dir=node_modules \
-            '(FROM|JOIN|INTO|UPDATE|TABLE)\s+[`\'"\"]?wp_[a-z]' \
+            "$wp_pattern" \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'PHP-WP-001: hardcoded wp_ table prefix in SQL context — use $wpdb->prefix instead:\n'"$hits"

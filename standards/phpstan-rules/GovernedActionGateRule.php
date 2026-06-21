@@ -15,9 +15,15 @@ use PHPStan\Rules\RuleErrorBuilder;
  * STD-TOOLCHAIN-001 §5 — Governed-action gate rule.
  *
  * A governed mutation entry point must call the platform consent/ability gate
- * before mutating state. Scope: REST route handlers, admin-post handlers,
- * AJAX handlers, WP-CLI mutation commands, and service methods annotated
- * as governed mutations.
+ * before mutating state.
+ *
+ * Detection scope (what this rule actually checks):
+ *   - Functions/methods annotated with @governed-mutation in their docblock.
+ *   - Top-level functions whose names match WP AJAX/admin-post patterns
+ *     (wp_ajax_*, wp_ajax_nopriv_*, admin_post_*).
+ *
+ * REST handlers, WP-CLI commands, and other entry points require explicit
+ * @governed-mutation annotation for the rule to fire on them.
  *
  * STATUS: warn-only — not required until backing ADR is ratified (§10 directive 10).
  *
@@ -57,9 +63,10 @@ class GovernedActionGateRule implements Rule
             return [];
         }
 
-        $name = $node instanceof ClassMethod
-            ? $scope->getClassReflection()?->getName() . '::' . $node->name->name
-            : $node->name->name;
+        $classPrefix = ($node instanceof ClassMethod)
+            ? (($scope->getClassReflection()?->getName() ?? '<unknown>') . '::')
+            : '';
+        $name = $classPrefix . $node->name->name;
 
         return [
             RuleErrorBuilder::message(

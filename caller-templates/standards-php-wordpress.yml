@@ -19,8 +19,7 @@ jobs:
     if: ${{ hashFiles('package.json') != '' }}
     uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
     with:
-      mode: required
-      profile_version: v1
+      mode: production
 
   php:
     uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/php-enforcement.yml@v1

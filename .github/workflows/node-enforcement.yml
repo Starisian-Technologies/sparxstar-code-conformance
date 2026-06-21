@@ -99,7 +99,7 @@ malformed = []
 
 try:
     with open(".standards/standards-exceptions.yml") as f:
-        data = yaml.safe_load(f)
+        data = yaml.safe_load(f) or {}
 except Exception as e:
     print(f"::error::standards-exceptions.yml malformed — {e}")
     sys.exit(1)

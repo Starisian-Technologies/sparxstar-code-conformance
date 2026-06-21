@@ -101,7 +101,7 @@ malformed = []
 
 try:
     with open(".standards/standards-exceptions.yml") as f:
-        data = yaml.safe_load(f)
+        data = yaml.safe_load(f) or {}
 except Exception as e:
     print(f"::error::standards-exceptions.yml malformed — {e}")
     sys.exit(1)
@@ -295,7 +295,7 @@ if 'vitest' not in rd:
           fi
 
       - name: JS-CONSOLE-001 — no console.log in production build output
-        if: inputs.enforcement_mode == 'required' && inputs.mode == 'production'
+        if: inputs.mode == 'production'
         shell: bash
         run: |
           set -euo pipefail
@@ -309,12 +309,15 @@ if 'vitest' not in rd:
             exit 0
           fi
 
-          hits=$(grep -rn 'console\.log' "$js_dir" --include='*.js' \
+          hits=$(grep -Prn 'console\.log' "$js_dir" --include='*.js' \
             --exclude='*.map' 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            echo "::error::JS-CONSOLE-001: console.log found in production build output:"
-            echo "$hits"
-            exit 1
+            msg=$'JS-CONSOLE-001: console.log found in production build output:\n'"$hits"
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::$msg"; exit 1
+            else
+              echo "::warning::$msg"
+            fi
           fi
 
       - name: JS-A11Y-001 — accessibility scan (axe-core via Playwright)

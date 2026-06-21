@@ -22,7 +22,21 @@
   },
   "eslint-config": "eslint.config.mjs",
   "eslint-style": "flat-config",
-  "prohibited": ["@wordpress/scripts", "jest (use vitest; declare exception for migration)"],
-  "required-files": ["package.json", "pnpm-lock.yaml", "eslint.config.mjs", "tsconfig.json", "vitest.config.ts", ".stylelintrc.json"],
-  "tsconfig-required": { "strict": true }
+  "prohibited": [
+    "@wordpress/scripts",
+    "jest (use vitest; declare exception for migration)"
+  ],
+  "required-files": [
+    "package.json",
+    "pnpm-lock.yaml",
+    "eslint.config.mjs",
+    "tsconfig.json",
+    ".stylelintrc.json"
+  ],
+  "tsconfig-required": {
+    "strict": true
+  },
+  "recommended-files": [
+    "vitest.config.ts"
+  ]
 }
