@@ -1,0 +1,210 @@
+# Reusable workflow: enforce JavaScript/React standards (javascript-react-standard.md) in any consuming repo.
+#
+# Backs rule IDs in CI-Enforcement-Matrix.md § 2. JavaScript Enforcement.
+# Mode-aware: draft warns; development + production block.
+# Assumes pnpm (per ADR-017). Call pnpm-enforcement.yml first.
+#
+# Caller example (.github/workflows/standards.yml in a consuming repo):
+#
+#   name: Standards
+#   on: [pull_request, push]
+#   jobs:
+#     pnpm:
+#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@main
+#       with:
+#         mode: development
+#     react:
+#       needs: pnpm
+#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/react-enforcement.yml@main
+#       with:
+#         mode: development           # draft | development | production
+#         node-version: '22'          # optional, defaults to 22
+#         bundle-size-limit-kb: 150   # optional, max gzipped JS bundle KB (default 150)
+
+name: React enforcement (javascript-react-standard)
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: 'System mode (draft warns; development/production block).'
+        required: false
+        type: string
+        default: development
+      node-version:
+        description: 'Node.js version to use.'
+        required: false
+        type: string
+        default: '22'
+      bundle-size-limit-kb:
+        description: 'Max gzipped JS bundle size in KB (JS-BUNDLE-001, default 150).'
+        required: false
+        type: number
+        default: 150
+
+jobs:
+  enforce:
+    name: React/JS standards conformance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Enable corepack (pnpm)
+        shell: bash
+        run: corepack enable
+
+      - name: Install dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile
+
+      - name: Determine block behavior
+        id: mode
+        shell: bash
+        run: |
+          case "${{ inputs.mode }}" in
+            draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
+            development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::Unknown mode '${{ inputs.mode }}' — expected draft | development | production"
+              exit 1
+              ;;
+          esac
+
+      - name: JS-LINT-001 — ESLint
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! pnpm exec eslint . --max-warnings=0 2>&1; then
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::JS-LINT-001: ESLint violations found"
+              exit 1
+            else
+              pnpm exec eslint . || true
+              echo "::warning::JS-LINT-001: ESLint violations found (non-blocking in ${{ inputs.mode }} mode)"
+            fi
+          fi
+
+      - name: JS-TYPE-001 — TypeScript strict check
+        if: hashFiles('tsconfig.json') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! pnpm exec tsc --noEmit 2>&1; then
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::JS-TYPE-001: TypeScript type errors found (noImplicitAny / strict)"
+              exit 1
+            else
+              pnpm exec tsc --noEmit || true
+              echo "::warning::JS-TYPE-001: TypeScript errors found (non-blocking in ${{ inputs.mode }} mode)"
+            fi
+          fi
+
+      - name: JS-TEST-001 — Jest unit tests
+        if: hashFiles('jest.config.*') != '' || hashFiles('jest.config.js') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! pnpm exec jest --ci --passWithNoTests 2>&1; then
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::JS-TEST-001: Jest test suite failed"
+              exit 1
+            else
+              pnpm exec jest --ci --passWithNoTests || true
+              echo "::warning::JS-TEST-001: Jest failures found (non-blocking in ${{ inputs.mode }} mode)"
+            fi
+          fi
+
+      - name: JS-BUILD-001 — production build
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! pnpm run build 2>&1; then
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::JS-BUILD-001: Production build failed"
+              exit 1
+            else
+              echo "::warning::JS-BUILD-001: Production build failed (non-blocking in ${{ inputs.mode }} mode)"
+            fi
+          fi
+
+      - name: JS-BUNDLE-001 — bundle size ≤ ${{ inputs.bundle-size-limit-kb }} KB gzipped
+        shell: bash
+        run: |
+          set -euo pipefail
+          limit_kb="${{ inputs.bundle-size-limit-kb }}"
+          limit_bytes=$(( limit_kb * 1024 ))
+
+          # Locate JS output directory (dist/build/public/out)
+          js_dir=""
+          for candidate in dist build public out; do
+            if [ -d "$candidate" ]; then js_dir="$candidate"; break; fi
+          done
+
+          if [ -z "$js_dir" ]; then
+            echo "::notice::JS-BUNDLE-001: no dist/build/public/out directory found — skipping bundle size check"
+            exit 0
+          fi
+
+          exceeded=()
+          while IFS= read -r -d '' file; do
+            size=$(gzip -c "$file" | wc -c)
+            if [ "$size" -gt "$limit_bytes" ]; then
+              size_kb=$(( size / 1024 ))
+              exceeded+=("$file (${size_kb} KB gzipped, limit ${limit_kb} KB)")
+            fi
+          done < <(find "$js_dir" -name '*.js' -not -name '*.map' -print0)
+
+          if [ ${#exceeded[@]} -gt 0 ]; then
+            msg="JS-BUNDLE-001: bundle(s) exceed ${limit_kb} KB gzipped limit: ${exceeded[*]}"
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::$msg"
+              exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
+
+      - name: JS-CONSOLE-001 — no console.log in production build output
+        if: inputs.mode == 'production'
+        shell: bash
+        run: |
+          set -euo pipefail
+          js_dir=""
+          for candidate in dist build public out; do
+            if [ -d "$candidate" ]; then js_dir="$candidate"; break; fi
+          done
+
+          if [ -z "$js_dir" ]; then
+            echo "::notice::JS-CONSOLE-001: no build output directory found — skipping"
+            exit 0
+          fi
+
+          hits=$(grep -rn 'console\.log' "$js_dir" --include='*.js' \
+            --exclude='*.map' 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "::error::JS-CONSOLE-001: console.log found in production build output (ESLint no-console rule):"
+            echo "$hits"
+            exit 1
+          fi
+
+      - name: JS-A11Y-001 — accessibility scan (axe-core via Playwright)
+        if: hashFiles('playwright.config.*') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! pnpm exec playwright test --reporter=github 2>&1; then
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::JS-A11Y-001: Playwright / axe-core accessibility tests failed"
+              exit 1
+            else
+              pnpm exec playwright test || true
+              echo "::warning::JS-A11Y-001: Playwright accessibility failures found (non-blocking in ${{ inputs.mode }} mode)"
+            fi
+          fi

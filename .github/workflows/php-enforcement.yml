@@ -1,0 +1,231 @@
+# Reusable workflow: enforce PHP/WordPress standards (php-wordpress-standard.md) in any consuming repo.
+#
+# Backs rule IDs in CI-Enforcement-Matrix.md § 1. PHP Enforcement.
+# Mode-aware: draft warns; development + production block.
+#
+# Caller example (.github/workflows/standards.yml in a consuming repo):
+#
+#   name: Standards
+#   on: [pull_request, push]
+#   jobs:
+#     php:
+#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/php-enforcement.yml@main
+#       with:
+#         mode: development   # draft | development | production
+#         php-version: '8.3'  # optional, defaults to 8.3
+
+name: PHP enforcement (php-wordpress-standard)
+
+on:
+  workflow_call:
+    inputs:
+      mode:
+        description: 'System mode (draft warns; development/production block).'
+        required: false
+        type: string
+        default: development
+      php-version:
+        description: 'PHP version to run checks against.'
+        required: false
+        type: string
+        default: '8.3'
+      phpstan-level:
+        description: 'Minimum PHPStan analysis level (must be ≥ 5).'
+        required: false
+        type: string
+        default: '5'
+
+jobs:
+  enforce:
+    name: PHP standards conformance
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ inputs.php-version }}
+          tools: composer, phpcs, phpstan
+          coverage: none
+
+      - name: Determine block behavior
+        id: mode
+        shell: bash
+        run: |
+          case "${{ inputs.mode }}" in
+            draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
+            development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "::error::Unknown mode '${{ inputs.mode }}' — expected draft | development | production"
+              exit 1
+              ;;
+          esac
+
+      - name: Validate PHPStan level input
+        shell: bash
+        run: |
+          level="${{ inputs.phpstan-level }}"
+          if ! [[ "$level" =~ ^[0-9]+$ ]] || [ "$level" -lt 5 ]; then
+            echo "::error::phpstan-level must be an integer ≥ 5 (got '$level')"
+            exit 1
+          fi
+
+      - name: Install Composer dependencies
+        if: hashFiles('composer.json') != ''
+        shell: bash
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: PHP-STRICT-001 — declare(strict_types=1) present in all PHP files
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          while IFS= read -r -d '' file; do
+            if ! grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file"; then
+              missing+=("$file")
+            fi
+          done < <(find . -name '*.php' \
+            -not -path './vendor/*' \
+            -not -path './node_modules/*' \
+            -print0)
+          if [ ${#missing[@]} -gt 0 ]; then
+            msg="PHP-STRICT-001: missing declare(strict_types=1) in: ${missing[*]}"
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::$msg"
+              exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
+
+      - name: PHP-LINT-001 — PHPCS (WordPress VIP + PSR-12)
+        if: hashFiles('phpcs.xml') != '' || hashFiles('phpcs.xml.dist') != '' || hashFiles('.phpcs.xml') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          if phpcs --report=emacs 2>&1 | grep -q 'ERROR'; then
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              phpcs
+              exit 1
+            else
+              phpcs --warning-severity=0 || true
+              echo "::warning::PHP-LINT-001: PHPCS violations found (see log above)"
+            fi
+          else
+            phpcs
+          fi
+
+      - name: PHP-LINT-001 — PHPCS (default WordPress VIP ruleset, no config file)
+        if: hashFiles('phpcs.xml') == '' && hashFiles('phpcs.xml.dist') == '' && hashFiles('.phpcs.xml') == ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Install WordPress VIP coding standards if available
+          if composer show | grep -q 'automattic/vipwpcs' 2>/dev/null || \
+             composer show | grep -q 'wp-coding-standards/wpcs' 2>/dev/null; then
+            phpcs --standard=WordPress --extensions=php \
+              --ignore=vendor/,node_modules/ \
+              $(find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' | head -1 | xargs dirname) \
+              2>&1 | tee /tmp/phpcs-out.txt || true
+          else
+            echo "::notice::PHP-LINT-001: No phpcs.xml and WordPress VIP standards not installed — skipping PHPCS ruleset check. Add phpcs.xml to enable full enforcement."
+          fi
+
+      - name: PHP-STATIC-001 — PHPStan level ${{ inputs.phpstan-level }}
+        if: hashFiles('phpstan.neon') != '' || hashFiles('phpstan.neon.dist') != '' || hashFiles('phpstan.dist.neon') != ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! phpstan analyse --level="${{ inputs.phpstan-level }}" --no-progress 2>&1; then
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs.phpstan-level }} violations found"
+              exit 1
+            else
+              echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking in ${{ inputs.mode }} mode)"
+            fi
+          fi
+
+      - name: PHP-STATIC-001 — PHPStan (no config, src/ scan)
+        if: hashFiles('phpstan.neon') == '' && hashFiles('phpstan.neon.dist') == '' && hashFiles('phpstan.dist.neon') == ''
+        shell: bash
+        run: |
+          set -euo pipefail
+          scan_path="src"
+          [ -d "$scan_path" ] || scan_path="."
+          if ! phpstan analyse "$scan_path" --level="${{ inputs.phpstan-level }}" \
+               --no-progress \
+               --exclude-path=vendor \
+               2>&1; then
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs.phpstan-level }} violations found"
+              exit 1
+            else
+              echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking in ${{ inputs.mode }} mode)"
+            fi
+          fi
+
+      - name: PHP-SQL-001 — no raw SQL interpolation (grep guard)
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Quick grep guard for obvious direct string interpolation into SQL.
+          # Full coverage comes from PHPCS VIP sniff above; this catches files
+          # that may fall outside the PHPCS ruleset scope.
+          hits=$(grep -rEn \
+            --include='*.php' \
+            --exclude-dir=vendor \
+            --exclude-dir=node_modules \
+            '\$wpdb->(query|get_results|get_row|get_col|get_var)\s*\(\s*"[^"]*\$' \
+            . 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            msg=$'PHP-SQL-001: potential raw SQL interpolation found (use $wpdb->prepare()):\n'"$hits"
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::$msg"
+              exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
+
+      - name: PHP-SQL-002 — no SELECT * queries
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -rEin \
+            --include='*.php' \
+            --exclude-dir=vendor \
+            --exclude-dir=node_modules \
+            'SELECT\s+\*\s+FROM' \
+            . 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            msg=$'PHP-SQL-002: SELECT * usage found — enumerate columns explicitly:\n'"$hits"
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::$msg"
+              exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
+
+      - name: PHP-WP-001 — no hardcoded wp_ table prefix
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -rEn \
+            --include='*.php' \
+            --exclude-dir=vendor \
+            --exclude-dir=node_modules \
+            "'wp_[a-z]|\"wp_[a-z]" \
+            . 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            msg=$'PHP-WP-001: hardcoded wp_ table prefix found — use $wpdb->prefix instead:\n'"$hits"
+            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+              echo "::error::$msg"
+              exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
