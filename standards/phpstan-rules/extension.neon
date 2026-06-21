@@ -1,5 +1,5 @@
 services:
   -
-    class: Starisian\Standards\PHPStan\Rules\GovernedActionGateRule
+    class: Starisian\Standards\PhpStan\GovernedActionGateRule
     tags:
       - phpstan.rules.rule

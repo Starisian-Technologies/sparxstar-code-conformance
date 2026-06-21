@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Starisian\Standards\PHPStan\Rules;
+namespace Starisian\Standards\PhpStan;
 
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Function_;

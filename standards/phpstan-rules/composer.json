@@ -7,12 +7,14 @@
   },
   "autoload": {
     "psr-4": {
-      "Starisian\\Standards\\PHPStan\\Rules\\": "."
+      "Starisian\\Standards\\PhpStan\\": "."
     }
   },
   "extra": {
     "phpstan": {
-      "includes": ["extension.neon"]
+      "includes": [
+        "extension.neon"
+      ]
     }
   }
 }
