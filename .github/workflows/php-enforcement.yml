@@ -172,8 +172,10 @@ rd = {**c.get('require-dev',{}), **c.get('require',{})}
 missing = []
 if 'squizlabs/php_codesniffer' not in rd:
     missing.append('squizlabs/php_codesniffer')
-if 'automattic/vipwpcs' not in rd and 'wp-coding-standards/wpcs' not in rd:
-    missing.append('automattic/vipwpcs OR wp-coding-standards/wpcs')
+if 'automattic/vipwpcs' not in rd:
+    missing.append('automattic/vipwpcs')
+if 'wp-coding-standards/wpcs' not in rd:
+    missing.append('wp-coding-standards/wpcs')
 if missing:
     for m in missing:
         print(f'::warning::PRESENCE: composer.json missing required dep: {m}')
