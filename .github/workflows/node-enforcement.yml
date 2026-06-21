@@ -1,31 +1,59 @@
-# Reusable workflow: enforce Node.js / server-side TypeScript standards (node-standard.md) in any consuming repo.
+# ============================================================
+# STD-TOOLCHAIN-001 v1.3 — standalone-node Ecosystem Enforcement
+# Workflow ref: see caller for pin; never use @main in production.
+# Profile: standalone-node
+# ============================================================
 #
-# Backs rule IDs in CI-Enforcement-Matrix.md § 3. TypeScript / Node.js Enforcement.
-# Mode-aware: draft warns; development + production block.
-# Assumes pnpm (per ADR-017). Call pnpm-enforcement.yml first.
+# STATICALLY ENFORCED HERE:
+#   - NODE-TYPE-001: TypeScript strict check (noEmit) + strict: true in tsconfig
+#   - NODE-LINT-001: ESLint with typescript-eslint flat config
+#   - NODE-EVAL-001: no eval() or new Function() in source
+#   - NODE-SQL-001: no raw SQL string interpolation
+#   - NODE-SQL-002: no SELECT *
+#   - NODE-ENV-001: no process.env outside config module
+#   - NODE-LOG-001: no console.* in production source
+#   - NODE-ESM-001: package.json "type": "module"
+#   - NODE-TEST-001: Jest test suite (if configured)
+#   - NODE-AUDIT-001: pnpm vulnerability audit
 #
-# Caller example (.github/workflows/standards.yml in a consuming repo):
+# VERIFIED VIA PRESENCE VALIDATION (warn-only pending §4 fixtures):
+#   - package.json and pnpm-lock.yaml present
+#   - eslint.config.mjs present
+#   - tsconfig.json present
+#   - typescript-eslint declared
+#   - eslint-plugin-n declared (NOT eslint-plugin-node)
+#   - eslint-plugin-node absent (unmaintained — prohibited)
+#   - @wordpress/scripts absent (prohibited)
 #
-#   name: Standards
-#   on: [pull_request, push]
-#   jobs:
-#     pnpm:
-#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@main
-#       with:
-#         mode: development
-#     node:
-#       needs: pnpm
-#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/node-enforcement.yml@main
-#       with:
-#         mode: development
+# NOT MACHINE-CHECKED (requires conformance test suite — §6):
+#   - vitest.config.ts present (vitest preferred; jest needs §8 exception)
+#   - tsconfig.json strict: true enforced at build time
+#
+# Caller example: see caller-templates/standards-node.yml
+# ============================================================
 
-name: Node.js enforcement (node-standard)
+name: Node.js enforcement (STD-TOOLCHAIN-001 v1.3)
 
 on:
   workflow_call:
     inputs:
+      repo_type:
+        description: 'Repo type: standalone-node'
+        required: false
+        type: string
+        default: standalone-node
+      profile_version:
+        description: 'Profile version to validate against (e.g. v1).'
+        required: false
+        type: string
+        default: v1
+      enforcement_mode:
+        description: 'required (fail-closed, default) | advisory (requires exception record)'
+        required: false
+        type: string
+        default: required
       mode:
-        description: 'System mode (draft warns; development/production block).'
+        description: 'DEPRECATED: use enforcement_mode.'
         required: false
         type: string
         default: development
@@ -44,6 +72,92 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+        id: exceptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+            echo "active_exceptions=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 - <<'PYEOF'
+import sys
+from datetime import date
+
+try:
+    import yaml
+except ImportError:
+    print("::notice::PyYAML not available — exceptions file not parsed.")
+    sys.exit(0)
+
+today = date.today().isoformat()
+active = []
+expired = []
+malformed = []
+
+try:
+    with open(".sparxstar/standards-exceptions.yml") as f:
+        data = yaml.safe_load(f)
+except Exception as e:
+    print(f"::error::standards-exceptions.yml malformed — {e}")
+    sys.exit(1)
+
+exceptions = data.get("exceptions", [])
+for exc in exceptions:
+    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+    missing = [f for f in required_fields if f not in exc]
+    if missing:
+        malformed.append(exc.get("id", "<no-id>"))
+        continue
+    if exc["expires"] < today:
+        expired.append(exc["id"])
+    else:
+        active.append(exc["id"])
+        print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {exc['expires']} — {exc['reason']}")
+
+if expired:
+    print(f"::error::Expired exceptions (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
+    sys.exit(1)
+
+if malformed:
+    print(f"::error::Malformed exception entries: {', '.join(malformed)}")
+    sys.exit(1)
+
+with open("$GITHUB_OUTPUT", "a") as out:
+    out.write(f"active_exceptions={','.join(active)}\n")
+PYEOF
+
+      - name: Presence validation — standalone-node profile
+        # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail() { echo "::warning::PRESENCE: $1"; }
+
+          [ -f "package.json" ]      || fail "package.json missing"
+          [ -f "pnpm-lock.yaml" ]   || fail "pnpm-lock.yaml missing — lockfile must be committed"
+          [ -f "eslint.config.mjs" ] || fail "eslint.config.mjs missing — ESLint 9 flat config required"
+          [ -f "tsconfig.json" ]    || fail "tsconfig.json missing"
+
+          if [ -f "package.json" ]; then
+            python3 -c "
+import json
+with open('package.json') as f:
+    p = json.load(f)
+rd = {**p.get('devDependencies',{}), **p.get('dependencies',{})}
+
+if 'typescript-eslint' not in rd:
+    print('::warning::PRESENCE: package.json missing typescript-eslint')
+if 'eslint-plugin-n' not in rd:
+    print('::warning::PRESENCE: package.json missing eslint-plugin-n (use eslint-plugin-n, not eslint-plugin-node)')
+if 'eslint-plugin-node' in rd:
+    print('::warning::PRESENCE: eslint-plugin-node is PROHIBITED (unmaintained for ESLint 9) — use eslint-plugin-n')
+if '@wordpress/scripts' in rd:
+    print('::warning::PRESENCE: @wordpress/scripts is PROHIBITED in standalone-node repos')
+" 2>&1 || echo "::warning::PRESENCE: package.json parse error"
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -61,14 +175,21 @@ jobs:
         id: mode
         shell: bash
         run: |
-          case "${{ inputs.mode }}" in
-            draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
-            development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
-            *)
-              echo "::error::Unknown mode '${{ inputs.mode }}' — expected draft | development | production"
-              exit 1
-              ;;
-          esac
+          em="${{ inputs.enforcement_mode }}"
+          lm="${{ inputs.mode }}"
+          if [ "$em" = "required" ]; then
+            echo "block=true" >> "$GITHUB_OUTPUT"
+          elif [ "$em" = "advisory" ]; then
+            echo "block=false" >> "$GITHUB_OUTPUT"
+          else
+            case "$lm" in
+              draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
+              development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
+              *)
+                echo "::error::Unknown enforcement_mode '$em' — expected required | advisory"
+                exit 1 ;;
+            esac
+          fi
 
       - name: NODE-TYPE-001 — TypeScript strict check (noEmit)
         if: hashFiles('tsconfig.json') != ''
@@ -77,11 +198,11 @@ jobs:
           set -euo pipefail
           if ! pnpm exec tsc --noEmit 2>&1; then
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
-              echo "::error::NODE-TYPE-001: TypeScript violations found (noImplicitAny / strict)"
+              echo "::error::NODE-TYPE-001: TypeScript violations found"
               exit 1
             else
               pnpm exec tsc --noEmit || true
-              echo "::warning::NODE-TYPE-001: TypeScript errors (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::NODE-TYPE-001: TypeScript errors (non-blocking)"
             fi
           fi
 
@@ -116,7 +237,7 @@ jobs:
               exit 1
             else
               pnpm exec eslint . || true
-              echo "::warning::NODE-LINT-001: ESLint violations (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::NODE-LINT-001: ESLint violations (non-blocking)"
             fi
           fi
 
@@ -130,7 +251,7 @@ jobs:
             '\beval\s*\(|new\s+Function\s*\(' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'NODE-EVAL-001: eval() or new Function() found — arbitrary code execution is forbidden:\n'"$hits"
+            msg=$'NODE-EVAL-001: eval() or new Function() found:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -148,7 +269,7 @@ jobs:
             '\.(query|raw)\s*\(`[^`]*\$\{' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'NODE-SQL-001: raw SQL string interpolation found — use parameterized queries:\n'"$hits"
+            msg=$'NODE-SQL-001: raw SQL string interpolation found:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -178,9 +299,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Flag process.env access outside of a config module.
-          # Heuristic: any TS/JS file not named config.* or env.* that references process.env
-          hits=$(grep -rEln \
+          hits=$(grep -Prln \
             --include='*.ts' --include='*.js' \
             --exclude-dir=node_modules --exclude-dir=dist \
             'process\.env\.' \
@@ -189,7 +308,7 @@ jobs:
             | grep -vE '__tests__|\.test\.|\.spec\.' \
             || true)
           if [ -n "$hits" ]; then
-            msg=$'NODE-ENV-001: process.env accessed outside config module in:\n'"$hits"$'\nMove all env reads to a dedicated config module.'
+            msg=$'NODE-ENV-001: process.env accessed outside config module in:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -209,7 +328,7 @@ jobs:
             'console\.(log|warn|error|debug|info)\s*\(' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            echo "::error::NODE-LOG-001: console.* found in production source — use structured logger:"
+            echo "::error::NODE-LOG-001: console.* found in production source:"
             echo "$hits"
             exit 1
           fi
@@ -226,7 +345,7 @@ jobs:
             } catch { process.stdout.write(''); }
           ")
           if [ "$pkg_type" != "module" ]; then
-            msg='NODE-ESM-001: package.json missing "type": "module" — ESM required for new services'
+            msg='NODE-ESM-001: package.json missing "type": "module" — ESM required'
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -245,7 +364,7 @@ jobs:
               exit 1
             else
               pnpm exec jest --ci --passWithNoTests || true
-              echo "::warning::NODE-TEST-001: Jest failures (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::NODE-TEST-001: Jest failures (non-blocking)"
             fi
           fi
 
@@ -254,7 +373,7 @@ jobs:
         run: |
           set -euo pipefail
           if ! pnpm audit --audit-level=high 2>&1; then
-            msg='NODE-AUDIT-001: high or critical CVEs found in dependencies — review pnpm audit output'
+            msg='NODE-AUDIT-001: high or critical CVEs found in dependencies'
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else

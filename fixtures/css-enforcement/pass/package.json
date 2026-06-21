@@ -1,0 +1,12 @@
+{
+  "name": "example-css-pass",
+  "version": "1.0.0",
+  "description": "Fixture: valid CSS package.json with stylelint",
+  "devDependencies": {
+    "stylelint": "^16.0.0",
+    "stylelint-config-standard": "^36.0.0"
+  },
+  "scripts": {
+    "lint:css": "stylelint '**/*.css'"
+  }
+}

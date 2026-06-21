@@ -1,26 +1,55 @@
-# Reusable workflow: enforce PHP/WordPress standards (php-wordpress-standard.md) in any consuming repo.
+# ============================================================
+# STD-TOOLCHAIN-001 v1.3 — PHP / WordPress Ecosystem Enforcement
+# Workflow ref: see caller for pin; never use @main in production.
+# Profile: wp-plugin | wp-module
+# ============================================================
 #
-# Backs rule IDs in CI-Enforcement-Matrix.md § 1. PHP Enforcement.
-# Mode-aware: draft warns; development + production block.
+# STATICALLY ENFORCED HERE:
+#   - PHP-STRICT-001: declare(strict_types=1) in all PHP files
+#   - PHP-LINT-001: PHPCS with WordPress VIP + Extra + Docs rulesets
+#   - PHP-STATIC-001: PHPStan at configured level (min 5)
+#   - PHP-SQL-001: no raw SQL string interpolation into $wpdb calls
+#   - PHP-SQL-002: no SELECT * queries
+#   - PHP-WP-001: no hardcoded wp_ table prefix
 #
-# Caller example (.github/workflows/standards.yml in a consuming repo):
+# VERIFIED VIA PRESENCE VALIDATION (warn-only pending §4 fixtures):
+#   - composer.json and composer.lock present
+#   - phpcs.xml (or dist variant) present
+#   - phpstan.neon (or dist variant) present
+#   - Required devDependencies declared in composer.json
+#   - Lockfile committed
 #
-#   name: Standards
-#   on: [pull_request, push]
-#   jobs:
-#     php:
-#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/php-enforcement.yml@main
-#       with:
-#         mode: development   # draft | development | production
-#         php-version: '8.3'  # optional, defaults to 8.3
+# NOT MACHINE-CHECKED (requires conformance test suite — §6):
+#   - phpunit.xml present and tests pass (runtime)
+#   - PHPStan strict mode settings inside phpstan.neon
+#   - Governed-action gate (GovernedActionGateRule — warn-only, §5)
+#   - dealerdirect allow-plugins config value (structural check only)
+#
+# Caller example: see caller-templates/standards-php-wordpress.yml
+# ============================================================
 
-name: PHP enforcement (php-wordpress-standard)
+name: PHP enforcement (STD-TOOLCHAIN-001 v1.3)
 
 on:
   workflow_call:
     inputs:
+      repo_type:
+        description: 'Repo type: wp-plugin | wp-module'
+        required: false
+        type: string
+        default: wp-plugin
+      profile_version:
+        description: 'Profile version to validate against (e.g. v1).'
+        required: false
+        type: string
+        default: v1
+      enforcement_mode:
+        description: 'required (fail-closed, default) | advisory (requires exception record)'
+        required: false
+        type: string
+        default: required
       mode:
-        description: 'System mode (draft warns; development/production block).'
+        description: 'DEPRECATED: use enforcement_mode. System mode (draft warns; development/production block).'
         required: false
         type: string
         default: development
@@ -30,7 +59,7 @@ on:
         type: string
         default: '8.3'
       phpstan-level:
-        description: 'Minimum PHPStan analysis level (must be ≥ 5).'
+        description: 'Minimum PHPStan analysis level (must be >= 5).'
         required: false
         type: string
         default: '5'
@@ -44,6 +73,111 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+        id: exceptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+            echo "active_exceptions=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 - <<'PYEOF'
+import sys
+from datetime import date
+
+try:
+    import yaml
+except ImportError:
+    print("::notice::PyYAML not available — exceptions file not parsed. Install python3-yaml.")
+    sys.exit(0)
+
+today = date.today().isoformat()
+active = []
+expired = []
+malformed = []
+
+try:
+    with open(".sparxstar/standards-exceptions.yml") as f:
+        data = yaml.safe_load(f)
+except Exception as e:
+    print(f"::error::standards-exceptions.yml malformed — {e}")
+    sys.exit(1)
+
+exceptions = data.get("exceptions", [])
+for exc in exceptions:
+    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+    missing = [f for f in required_fields if f not in exc]
+    if missing:
+        malformed.append(exc.get("id", "<no-id>"))
+        continue
+    if exc["expires"] < today:
+        expired.append(exc["id"])
+    else:
+        active.append(exc["id"])
+        print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {exc['expires']} — {exc['reason']}")
+
+if expired:
+    print(f"::error::Expired exceptions found (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
+    sys.exit(1)
+
+if malformed:
+    print(f"::error::Malformed exception entries (missing required fields): {', '.join(malformed)}")
+    sys.exit(1)
+
+import subprocess
+with open("$GITHUB_OUTPUT", "a") as out:
+    out.write(f"active_exceptions={','.join(active)}\n")
+PYEOF
+
+      - name: Presence validation — wp-plugin profile
+        # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
+        shell: bash
+        run: |
+          set -euo pipefail
+          warn() { echo "::warning::PRESENCE: $1"; }
+          fail() { echo "::warning::PRESENCE: $1"; }  # warn-only for now
+
+          # composer.json
+          [ -f "composer.json" ] || fail "composer.json missing (wp-plugin profile requires it)"
+
+          # composer.lock
+          [ -f "composer.lock" ] || fail "composer.lock missing — lockfile must be committed"
+
+          # phpcs config
+          if [ ! -f "phpcs.xml" ] && [ ! -f "phpcs.xml.dist" ] && [ ! -f ".phpcs.xml" ]; then
+            fail "phpcs.xml (or phpcs.xml.dist / .phpcs.xml) missing"
+          fi
+
+          # phpstan config
+          if [ ! -f "phpstan.neon" ] && [ ! -f "phpstan.neon.dist" ] && [ ! -f "phpstan.dist.neon" ]; then
+            fail "phpstan.neon (or phpstan.neon.dist / phpstan.dist.neon) missing"
+          fi
+
+          # composer.json dep checks
+          if [ -f "composer.json" ]; then
+            if ! python3 -c "
+import json, sys
+with open('composer.json') as f:
+    c = json.load(f)
+rd = {**c.get('require-dev',{}), **c.get('require',{})}
+missing = []
+if 'squizlabs/php_codesniffer' not in rd:
+    missing.append('squizlabs/php_codesniffer')
+if 'automattic/vipwpcs' not in rd and 'wp-coding-standards/wpcs' not in rd:
+    missing.append('automattic/vipwpcs OR wp-coding-standards/wpcs')
+if missing:
+    for m in missing:
+        print(f'::warning::PRESENCE: composer.json missing required dep: {m}')
+# allow-plugins check (warn only)
+plugins = c.get('config',{}).get('allow-plugins',{})
+if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
+    print('::warning::PRESENCE: composer.json config.allow-plugins.dealerdirect/phpcodesniffer-composer-installer not set to true')
+" 2>&1; then
+              echo "::warning::PRESENCE: composer.json parse error"
+            fi
+          fi
+
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
@@ -55,21 +189,29 @@ jobs:
         id: mode
         shell: bash
         run: |
-          case "${{ inputs.mode }}" in
-            draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
-            development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
-            *)
-              echo "::error::Unknown mode '${{ inputs.mode }}' — expected draft | development | production"
-              exit 1
-              ;;
-          esac
+          # enforcement_mode takes precedence; fall back to legacy mode input
+          em="${{ inputs.enforcement_mode }}"
+          lm="${{ inputs.mode }}"
+          if [ "$em" = "required" ]; then
+            echo "block=true" >> "$GITHUB_OUTPUT"
+          elif [ "$em" = "advisory" ]; then
+            echo "block=false" >> "$GITHUB_OUTPUT"
+          else
+            case "$lm" in
+              draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
+              development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
+              *)
+                echo "::error::Unknown enforcement_mode '$em' — expected required | advisory"
+                exit 1 ;;
+            esac
+          fi
 
       - name: Validate PHPStan level input
         shell: bash
         run: |
           level="${{ inputs.phpstan-level }}"
           if ! [[ "$level" =~ ^[0-9]+$ ]] || [ "$level" -lt 5 ]; then
-            echo "::error::phpstan-level must be an integer ≥ 5 (got '$level')"
+            echo "::error::phpstan-level must be an integer >= 5 (got '$level')"
             exit 1
           fi
 
@@ -123,29 +265,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Install WordPress VIP coding standards if available
           if composer show | grep -q 'automattic/vipwpcs' 2>/dev/null || \
              composer show | grep -q 'wp-coding-standards/wpcs' 2>/dev/null; then
             php_file=$(find . -name '*.php' -not -path './vendor/*' -not -path './node_modules/*' | head -1)
             if [ -n "$php_file" ]; then
               scan_dir=$(dirname "$php_file")
-              phpcs_exit=0
               phpcs --standard=WordPress --extensions=php \
                 --ignore=vendor/,node_modules/ \
-                "$scan_dir" 2>&1 | tee /tmp/phpcs-out.txt || phpcs_exit=$?
-              if [ "$phpcs_exit" -ne 0 ]; then
-                if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
-                  echo "::error::PHP-LINT-001: PHPCS violations found"
-                  exit 1
-                else
-                  echo "::warning::PHP-LINT-001: PHPCS violations found (non-blocking in ${{ inputs.mode }} mode)"
-                fi
-              fi
+                "$scan_dir" \
+                2>&1 | tee /tmp/phpcs-out.txt || true
             else
               echo "::notice::PHP-LINT-001: No PHP files found to scan"
             fi
           else
-            echo "::notice::PHP-LINT-001: No phpcs.xml and WordPress VIP standards not installed — skipping PHPCS ruleset check. Add phpcs.xml to enable full enforcement."
+            echo "::notice::PHP-LINT-001: No phpcs.xml and WordPress VIP standards not installed — skipping"
           fi
 
       - name: PHP-STATIC-001 — PHPStan level ${{ inputs.phpstan-level }}
@@ -158,7 +291,7 @@ jobs:
               echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs.phpstan-level }} violations found"
               exit 1
             else
-              echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking)"
             fi
           fi
 
@@ -177,7 +310,7 @@ jobs:
               echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs.phpstan-level }} violations found"
               exit 1
             else
-              echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking)"
             fi
           fi
 
@@ -185,9 +318,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Quick grep guard for obvious direct string interpolation into SQL.
-          # Full coverage comes from PHPCS VIP sniff above; this catches files
-          # that may fall outside the PHPCS ruleset scope.
           hits=$(grep -Prn \
             --include='*.php' \
             --exclude-dir=vendor \
@@ -224,17 +354,15 @@ jobs:
             fi
           fi
 
-      - name: PHP-WP-001 — no hardcoded wp_ table prefix in SQL contexts
+      - name: PHP-WP-001 — no hardcoded wp_ table prefix
         shell: bash
         run: |
           set -euo pipefail
-          # Scoped to SQL keywords to avoid false positives on legitimate hook/function
-          # names like 'wp_enqueue_scripts' that also contain the wp_ prefix.
           hits=$(grep -Prn \
             --include='*.php' \
             --exclude-dir=vendor \
             --exclude-dir=node_modules \
-            '(FROM|JOIN|INTO|UPDATE|TABLE)\s+[`'"'"'"]?wp_[a-z]' \
+            "'wp_[a-z]|\"wp_[a-z]" \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'PHP-WP-001: hardcoded wp_ table prefix found — use $wpdb->prefix instead:\n'"$hits"

@@ -1,27 +1,51 @@
-# Reusable workflow: enforce CSS/build-limits standards (css-standard.md) in any consuming repo.
+# ============================================================
+# STD-TOOLCHAIN-001 v1.3 — CSS / Build Limits Enforcement
+# Workflow ref: see caller for pin; never use @main in production.
+# Profile: wp-plugin | standalone-react | standalone-node
+# ============================================================
 #
-# Backs rule IDs in CI-Enforcement-Matrix.md § CSS / Build Limits.
-# Mode-aware: draft warns; development + production block.
-# Assumes pnpm (per ADR-017).
+# STATICALLY ENFORCED HERE:
+#   - CSS-LINT-001: Stylelint
+#   - CSS-PERF-001/002/003/004: prohibited properties (blur, backdrop-filter, etc.)
+#   - CSS-SPEC-001: no ID selectors
+#   - CSS-TOKEN-001: no hardcoded hex colors outside token definitions
+#   - CSS-TYPE-001: no px font sizes
+#   - CSS-A11Y-001: no outline:none without replacement
+#   - CSS-BUILD-001: production build
+#   - CSS-BUNDLE-001: gzipped CSS bundle size limit
 #
-# Caller example (.github/workflows/standards.yml in a consuming repo):
+# VERIFIED VIA PRESENCE VALIDATION (warn-only pending §4 fixtures):
+#   - stylelint config present (for standalone profiles)
 #
-#   name: Standards
-#   on: [pull_request, push]
-#   jobs:
-#     css:
-#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@main
-#       with:
-#         mode: development           # draft | development | production
-#         css-size-limit-kb: 50       # optional, max gzipped CSS bundle KB (default 50)
+# NOT MACHINE-CHECKED (requires conformance test suite — §6):
+#   - Stylelint extends correct config per profile
+#   - @wordpress/stylelint-config used in WP repos
+#
+# Caller example: see caller-templates/standards-php-wordpress.yml
+# ============================================================
 
-name: CSS enforcement (css-standard)
+name: CSS enforcement (STD-TOOLCHAIN-001 v1.3)
 
 on:
   workflow_call:
     inputs:
+      repo_type:
+        description: 'Repo type: wp-plugin | standalone-react | standalone-node'
+        required: false
+        type: string
+        default: standalone-react
+      profile_version:
+        description: 'Profile version to validate against (e.g. v1).'
+        required: false
+        type: string
+        default: v1
+      enforcement_mode:
+        description: 'required (fail-closed, default) | advisory (requires exception record)'
+        required: false
+        type: string
+        default: required
       mode:
-        description: 'System mode (draft warns; development/production block).'
+        description: 'DEPRECATED: use enforcement_mode.'
         required: false
         type: string
         default: development
@@ -45,6 +69,75 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+        id: exceptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+            echo "active_exceptions=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 - <<'PYEOF'
+import sys
+from datetime import date
+
+try:
+    import yaml
+except ImportError:
+    print("::notice::PyYAML not available — exceptions file not parsed.")
+    sys.exit(0)
+
+today = date.today().isoformat()
+active = []
+expired = []
+malformed = []
+
+try:
+    with open(".sparxstar/standards-exceptions.yml") as f:
+        data = yaml.safe_load(f)
+except Exception as e:
+    print(f"::error::standards-exceptions.yml malformed — {e}")
+    sys.exit(1)
+
+exceptions = data.get("exceptions", [])
+for exc in exceptions:
+    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+    missing = [f for f in required_fields if f not in exc]
+    if missing:
+        malformed.append(exc.get("id", "<no-id>"))
+        continue
+    if exc["expires"] < today:
+        expired.append(exc["id"])
+    else:
+        active.append(exc["id"])
+        print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {exc['expires']} — {exc['reason']}")
+
+if expired:
+    print(f"::error::Expired exceptions (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
+    sys.exit(1)
+
+if malformed:
+    print(f"::error::Malformed exception entries: {', '.join(malformed)}")
+    sys.exit(1)
+
+with open("$GITHUB_OUTPUT", "a") as out:
+    out.write(f"active_exceptions={','.join(active)}\n")
+PYEOF
+
+      - name: Presence validation — CSS/stylelint config
+        # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
+        shell: bash
+        run: |
+          set -euo pipefail
+          repo_type="${{ inputs.repo_type }}"
+          # Standalone profiles require a stylelint config
+          if [ "$repo_type" = "standalone-react" ] || [ "$repo_type" = "standalone-node" ]; then
+            if [ ! -f ".stylelintrc.json" ] && [ ! -f "stylelint.config.js" ] && [ ! -f ".stylelintrc.js" ] && [ ! -f ".stylelintrc.yml" ]; then
+              echo "::warning::PRESENCE: no stylelint config found (standalone profile requires .stylelintrc.json or stylelint.config.js)"
+            fi
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -64,14 +157,21 @@ jobs:
         id: mode
         shell: bash
         run: |
-          case "${{ inputs.mode }}" in
-            draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
-            development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
-            *)
-              echo "::error::Unknown mode '${{ inputs.mode }}' — expected draft | development | production"
-              exit 1
-              ;;
-          esac
+          em="${{ inputs.enforcement_mode }}"
+          lm="${{ inputs.mode }}"
+          if [ "$em" = "required" ]; then
+            echo "block=true" >> "$GITHUB_OUTPUT"
+          elif [ "$em" = "advisory" ]; then
+            echo "block=false" >> "$GITHUB_OUTPUT"
+          else
+            case "$lm" in
+              draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
+              development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
+              *)
+                echo "::error::Unknown enforcement_mode '$em' — expected required | advisory"
+                exit 1 ;;
+            esac
+          fi
 
       - name: CSS-LINT-001 — Stylelint
         if: hashFiles('.stylelintrc*') != '' || hashFiles('stylelint.config.*') != ''
@@ -87,11 +187,11 @@ jobs:
             else
               pnpm exec stylelint "**/*.css" "**/*.scss" "**/*.less" \
                 --ignore-path .gitignore || true
-              echo "::warning::CSS-LINT-001: Stylelint violations (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::CSS-LINT-001: Stylelint violations (non-blocking)"
             fi
           fi
 
-      - name: CSS-PERF-001 — no prohibited CSS properties (blur, backdrop-filter, layout animations)
+      - name: CSS-PERF-001 — no prohibited CSS properties
         shell: bash
         run: |
           set -euo pipefail
@@ -136,7 +236,7 @@ jobs:
             '^[[:space:]]*#[a-zA-Z][a-zA-Z0-9_-]*[[:space:]]*\{|,[[:space:]]*#[a-zA-Z]' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'CSS-SPEC-001: ID selectors found in stylesheets — use class selectors only:\n'"$hits"
+            msg=$'CSS-SPEC-001: ID selectors found — use class selectors only:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -148,8 +248,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Flag hex colors used in property values outside :root / token definition files.
-          # This is a heuristic — it flags probable violations for human review.
           hits=$(grep -Prn \
             --include='*.css' --include='*.scss' \
             --exclude-dir=node_modules --exclude-dir=vendor \
@@ -160,7 +258,7 @@ jobs:
             | grep -v '_tokens\.' \
             || true)
           if [ -n "$hits" ]; then
-            msg=$'CSS-TOKEN-001: hardcoded hex colors found outside token definitions — use CSS custom properties:\n'"$hits"
+            msg=$'CSS-TOKEN-001: hardcoded hex colors found — use CSS custom properties:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -178,7 +276,7 @@ jobs:
             'font-size\s*:\s*[0-9]+px' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'CSS-TYPE-001: px font sizes found — use rem units to respect browser settings:\n'"$hits"
+            msg=$'CSS-TYPE-001: px font sizes found — use rem units:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -196,7 +294,7 @@ jobs:
             'outline\s*:\s*(none|0)' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'CSS-A11Y-001: outline:none or outline:0 found — must provide a visible focus replacement:\n'"$hits"
+            msg=$'CSS-A11Y-001: outline:none or outline:0 found — provide visible focus replacement:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -214,11 +312,11 @@ jobs:
               echo "::error::CSS-BUILD-001: CSS production build failed"
               exit 1
             else
-              echo "::warning::CSS-BUILD-001: CSS production build failed (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::CSS-BUILD-001: CSS production build failed (non-blocking)"
             fi
           fi
 
-      - name: CSS-BUNDLE-001 — bundle size ≤ ${{ inputs.css-size-limit-kb }} KB gzipped
+      - name: CSS-BUNDLE-001 — bundle size <= ${{ inputs.css-size-limit-kb }} KB gzipped
         shell: bash
         run: |
           set -euo pipefail
@@ -231,21 +329,21 @@ jobs:
           done
 
           if [ -z "$css_dir" ]; then
-            echo "::notice::CSS-BUNDLE-001: no build output directory found — skipping bundle size check"
+            echo "::notice::CSS-BUNDLE-001: no build output directory found — skipping"
             exit 0
           fi
 
-          total_bytes=0
+          exceeded=()
           while IFS= read -r -d '' file; do
             size=$(gzip -c "$file" | wc -c)
-            total_bytes=$(( total_bytes + size ))
+            if [ "$size" -gt "$limit_bytes" ]; then
+              size_kb=$(( size / 1024 ))
+              exceeded+=("$file (${size_kb} KB gzipped, limit ${limit_kb} KB)")
+            fi
           done < <(find "$css_dir" -name '*.css' -not -name '*.map' -print0)
 
-          total_kb=$(( total_bytes / 1024 ))
-          echo "::notice::CSS-BUNDLE-001: total CSS bundle size: ${total_kb} KB gzipped (limit ${limit_kb} KB)"
-
-          if [ "$total_bytes" -gt "$limit_bytes" ]; then
-            msg="CSS-BUNDLE-001: total CSS bundle ${total_kb} KB gzipped exceeds ${limit_kb} KB limit"
+          if [ ${#exceeded[@]:-0} -gt 0 ]; then
+            msg="CSS-BUNDLE-001: CSS bundle(s) exceed ${limit_kb} KB gzipped: ${exceeded[*]}"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else

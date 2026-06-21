@@ -1,0 +1,19 @@
+{
+  "profile": "standalone-node",
+  "version": "v1",
+  "std": "STD-TOOLCHAIN-001",
+  "require-dev": {
+    "eslint": "^9",
+    "@eslint/js": "^9",
+    "typescript": "^5",
+    "typescript-eslint": "^8",
+    "eslint-plugin-n": "^17",
+    "vitest": "^2"
+  },
+  "eslint-config": "eslint.config.mjs",
+  "eslint-style": "flat-config",
+  "eslint-plugin-note": "Use eslint-plugin-n (maintained, flat-config-ready). Do NOT use eslint-plugin-node (unmaintained for ESLint 9).",
+  "prohibited": ["@wordpress/scripts", "eslint-plugin-node (unmaintained)"],
+  "required-files": ["package.json", "pnpm-lock.yaml", "eslint.config.mjs", "tsconfig.json", "vitest.config.ts"],
+  "tsconfig-required": { "strict": true, "type": "module" }
+}

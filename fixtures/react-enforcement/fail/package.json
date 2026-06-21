@@ -1,0 +1,13 @@
+{
+  "name": "example-react-fail",
+  "version": "1.0.0",
+  "description": "Fixture: FAIL — missing typescript-eslint, has @wordpress/scripts (prohibited)",
+  "scripts": {
+    "build": "wp-scripts build",
+    "lint": "wp-scripts lint-js"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.0.0",
+    "eslint": "^9.0.0"
+  }
+}

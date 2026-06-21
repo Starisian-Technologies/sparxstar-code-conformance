@@ -1,0 +1,20 @@
+{
+  "name": "example-node-pass",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Fixture: valid standalone-node package.json for STD-TOOLCHAIN-001 presence validation",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "@eslint/js": "^9.0.0",
+    "typescript": "^5.4.0",
+    "typescript-eslint": "^8.0.0",
+    "eslint-plugin-n": "^17.0.0",
+    "vitest": "^2.0.0"
+  }
+}

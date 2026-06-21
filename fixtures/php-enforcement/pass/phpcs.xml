@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<ruleset name="ExamplePlugin">
+  <description>PHPCS ruleset for example WP plugin — extends WordPressVIPMinimum per STD-TOOLCHAIN-001</description>
+
+  <file>src</file>
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+  <rule ref="WordPressVIPMinimum"/>
+  <rule ref="WordPress-Extra"/>
+  <rule ref="WordPress-Docs"/>
+  <rule ref="PHPCompatibilityWP"/>
+
+  <config name="minimum_supported_wp_version" value="6.4"/>
+  <config name="testVersion" value="8.1-8.3"/>
+</ruleset>

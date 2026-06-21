@@ -1,8 +1,11 @@
 # Drop this file into a WordPress/PHP consuming repo at:
 #   .github/workflows/standards.yml
 #
-# Then set the `mode` input to match the repo's lifecycle stage.
-# All enforcement logic lives in starisian-coding-standards — no rules here.
+# Pin the workflow ref to a release tag (@v1.x.x), never @main in production.
+# Three independent axes — move them independently:
+#   1. Workflow ref  (@v1.x.x)     — the executable. Bugfixes bump this only.
+#   2. profile_version (v1)         — the dependency/config contract. Bump to adopt new required surface.
+#   3. enforcement_mode (required)  — fail-closed. advisory requires a .sparxstar/standards-exceptions.yml entry.
 
 name: Starisian Standards
 
@@ -13,27 +16,30 @@ on:
 
 jobs:
   pnpm:
-    # Skip if repo has no package.json (pure PHP repos). Remove this job if so.
     if: ${{ hashFiles('package.json') != '' }}
-    uses: starisian-technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@main
     with:
-      mode: development   # draft | development | production
+      mode: required
+      profile_version: v1
 
   php:
-    uses: starisian-technologies/starisian-coding-standards/.github/workflows/php-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/php-enforcement.yml@main
     with:
-      mode: development
+      repo_type: wp-plugin
+      profile_version: v1
+      enforcement_mode: required
       php-version: '8.3'
       phpstan-level: '5'
 
   css:
-    # Remove if repo has no stylesheets.
-    uses: starisian-technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@main
     with:
-      mode: development
+      repo_type: wp-plugin
+      profile_version: v1
+      enforcement_mode: required
 
   media:
-    # Remove if repo has no audio/video/upload features.
-    uses: starisian-technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@main
     with:
-      mode: development
+      enforcement_mode: required
+      profile_version: v1

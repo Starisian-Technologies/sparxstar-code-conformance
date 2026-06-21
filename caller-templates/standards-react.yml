@@ -1,8 +1,7 @@
-# Drop this file into a React consuming repo at:
+# Drop this file into a standalone-react consuming repo at:
 #   .github/workflows/standards.yml
 #
-# Then set the `mode` input to match the repo's lifecycle stage.
-# All enforcement logic lives in starisian-coding-standards — no rules here.
+# Pin the workflow ref to a release tag (@v1.x.x), never @main in production.
 
 name: Starisian Standards
 
@@ -13,27 +12,31 @@ on:
 
 jobs:
   pnpm:
-    uses: starisian-technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@main
     with:
-      mode: development   # draft | development | production
+      mode: required
+      profile_version: v1
 
   react:
     needs: pnpm
-    uses: starisian-technologies/starisian-coding-standards/.github/workflows/react-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/react-enforcement.yml@main
     with:
-      mode: development
+      repo_type: standalone-react
+      profile_version: v1
+      enforcement_mode: required
       node-version: '22'
       bundle-size-limit-kb: 150
 
   css:
-    # Remove if repo has no stylesheets.
     needs: pnpm
-    uses: starisian-technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@main
     with:
-      mode: development
+      repo_type: standalone-react
+      profile_version: v1
+      enforcement_mode: required
 
   media:
-    # Remove if repo has no audio/video/upload features.
-    uses: starisian-technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@main
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@main
     with:
-      mode: development
+      enforcement_mode: required
+      profile_version: v1

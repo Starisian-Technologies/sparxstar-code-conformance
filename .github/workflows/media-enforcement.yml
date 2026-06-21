@@ -1,26 +1,50 @@
-# Reusable workflow: enforce media/upload standards (media-upload-standard.md) in any consuming repo.
+# ============================================================
+# STD-TOOLCHAIN-001 v1.3 — Media / Upload Enforcement
+# Workflow ref: see caller for pin; never use @main in production.
+# Profile: wp-plugin | standalone-react | standalone-node
+# ============================================================
 #
-# Backs rule IDs in CI-Enforcement-Matrix.md § Media / Audio / TUS.
-# Mode-aware: draft warns; development + production block.
-# Performs static analysis on JS/TS source — runtime codec checks require Jest tests in the consuming repo.
+# STATICALLY ENFORCED HERE:
+#   - MEDIA-RECORDER-001: no direct new MediaRecorder() in product code
+#   - MEDIA-CONSTRAINTS-001: getUserMedia constraints enforce sampleRate <= 16000
+#   - MEDIA-AUTOSTART-001: no auto-start capture on DOMContentLoaded/load
+#   - MEDIA-TUS-001: no full-file upload (no FormData without TUS)
+#   - MEDIA-CHUNK-001: TUS chunk size <= 512 KB
+#   - MEDIA-FFMPEG-001: no user-supplied FFmpeg arguments (server-side)
+#   - MEDIA-WAV-001: no WAV or uncompressed PCM upload/output
 #
-# Caller example (.github/workflows/standards.yml in a consuming repo):
+# VERIFIED VIA PRESENCE VALIDATION (warn-only pending §4 fixtures):
+#   - (no file-presence requirements for media enforcement — cross-cutting)
 #
-#   name: Standards
-#   on: [pull_request, push]
-#   jobs:
-#     media:
-#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@main
-#       with:
-#         mode: development   # draft | development | production
+# NOT MACHINE-CHECKED (requires conformance test suite — §6):
+#   - Runtime codec verification (requires E2E tests in consuming repo)
+#   - Actual MediaRecorder API usage through approved SDK
+#
+# Caller example: see caller-templates/standards-php-wordpress.yml
+# ============================================================
 
-name: Media/upload enforcement (media-upload-standard)
+name: Media/upload enforcement (STD-TOOLCHAIN-001 v1.3)
 
 on:
   workflow_call:
     inputs:
+      repo_type:
+        description: 'Repo type: wp-plugin | standalone-react | standalone-node'
+        required: false
+        type: string
+        default: standalone-react
+      profile_version:
+        description: 'Profile version to validate against (e.g. v1).'
+        required: false
+        type: string
+        default: v1
+      enforcement_mode:
+        description: 'required (fail-closed, default) | advisory (requires exception record)'
+        required: false
+        type: string
+        default: required
       mode:
-        description: 'System mode (draft warns; development/production block).'
+        description: 'DEPRECATED: use enforcement_mode.'
         required: false
         type: string
         default: development
@@ -34,18 +58,81 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+        id: exceptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+            echo "active_exceptions=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 - <<'PYEOF'
+import sys
+from datetime import date
+
+try:
+    import yaml
+except ImportError:
+    print("::notice::PyYAML not available — exceptions file not parsed.")
+    sys.exit(0)
+
+today = date.today().isoformat()
+active = []
+expired = []
+malformed = []
+
+try:
+    with open(".sparxstar/standards-exceptions.yml") as f:
+        data = yaml.safe_load(f)
+except Exception as e:
+    print(f"::error::standards-exceptions.yml malformed — {e}")
+    sys.exit(1)
+
+exceptions = data.get("exceptions", [])
+for exc in exceptions:
+    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+    missing = [f for f in required_fields if f not in exc]
+    if missing:
+        malformed.append(exc.get("id", "<no-id>"))
+        continue
+    if exc["expires"] < today:
+        expired.append(exc["id"])
+    else:
+        active.append(exc["id"])
+        print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {exc['expires']} — {exc['reason']}")
+
+if expired:
+    print(f"::error::Expired exceptions (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
+    sys.exit(1)
+
+if malformed:
+    print(f"::error::Malformed exception entries: {', '.join(malformed)}")
+    sys.exit(1)
+
+with open("$GITHUB_OUTPUT", "a") as out:
+    out.write(f"active_exceptions={','.join(active)}\n")
+PYEOF
+
       - name: Determine block behavior
         id: mode
         shell: bash
         run: |
-          case "${{ inputs.mode }}" in
-            draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
-            development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
-            *)
-              echo "::error::Unknown mode '${{ inputs.mode }}' — expected draft | development | production"
-              exit 1
-              ;;
-          esac
+          em="${{ inputs.enforcement_mode }}"
+          lm="${{ inputs.mode }}"
+          if [ "$em" = "required" ]; then
+            echo "block=true" >> "$GITHUB_OUTPUT"
+          elif [ "$em" = "advisory" ]; then
+            echo "block=false" >> "$GITHUB_OUTPUT"
+          else
+            case "$lm" in
+              draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
+              development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
+              *)
+                echo "::error::Unknown enforcement_mode '$em' — expected required | advisory"
+                exit 1 ;;
+            esac
+          fi
 
       - name: MEDIA-RECORDER-001 — no direct new MediaRecorder() in product code
         shell: bash
@@ -58,7 +145,7 @@ jobs:
             'new\s+MediaRecorder\s*\(' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'MEDIA-RECORDER-001: direct new MediaRecorder() found — all recording must go through the approved SDK:\n'"$hits"
+            msg=$'MEDIA-RECORDER-001: direct new MediaRecorder() found — use approved SDK:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -66,12 +153,10 @@ jobs:
             fi
           fi
 
-      - name: MEDIA-CONSTRAINTS-001 — getUserMedia constraints enforce sampleRate ≤ 16000
+      - name: MEDIA-CONSTRAINTS-001 — getUserMedia constraints enforce sampleRate <= 16000
         shell: bash
         run: |
           set -euo pipefail
-          # Grep for getUserMedia calls and check for missing or over-limit sampleRate.
-          # Heuristic: flag files that call getUserMedia without an explicit sampleRate constraint.
           files_without_sr=$(grep -Prln \
             --include='*.ts' --include='*.js' --include='*.tsx' --include='*.jsx' \
             --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=vendor \
@@ -81,7 +166,7 @@ jobs:
             | xargs grep -L 'sampleRate' 2>/dev/null \
             || true)
           if [ -n "$files_without_sr" ]; then
-            msg=$'MEDIA-CONSTRAINTS-001: getUserMedia() called without sampleRate constraint — max 16000 Hz required:\n'"$files_without_sr"
+            msg=$'MEDIA-CONSTRAINTS-001: getUserMedia() called without sampleRate constraint:\n'"$files_without_sr"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -89,12 +174,10 @@ jobs:
             fi
           fi
 
-      - name: MEDIA-AUTOSTART-001 — no auto-start capture (getUserMedia not in DOMContentLoaded / load handlers)
+      - name: MEDIA-AUTOSTART-001 — no auto-start capture on load events
         shell: bash
         run: |
           set -euo pipefail
-          # Flag getUserMedia called directly at module scope or in load/DOMContentLoaded without user gesture guard.
-          # This is a heuristic static check — full enforcement requires E2E tests.
           hits=$(grep -Prn \
             --include='*.ts' --include='*.js' --include='*.tsx' --include='*.jsx' \
             --exclude-dir=node_modules --exclude-dir=dist \
@@ -102,7 +185,7 @@ jobs:
             "addEventListener\s*\(\s*['\"]DOMContentLoaded['\"].*getUserMedia|addEventListener\s*\(\s*['\"]load['\"].*getUserMedia" \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'MEDIA-AUTOSTART-001: getUserMedia() may be called on page load — capture must only start on explicit user action:\n'"$hits"
+            msg=$'MEDIA-AUTOSTART-001: getUserMedia() may be called on page load — require explicit user action:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -110,11 +193,10 @@ jobs:
             fi
           fi
 
-      - name: MEDIA-TUS-001 — no full-file upload endpoints (no multipart/form-data without TUS)
+      - name: MEDIA-TUS-001 — no full-file upload endpoints (no FormData without TUS)
         shell: bash
         run: |
           set -euo pipefail
-          # Flag fetch/axios POSTs with FormData that are not TUS PATCH requests.
           hits=$(grep -Prn \
             --include='*.ts' --include='*.js' --include='*.tsx' --include='*.jsx' \
             --exclude-dir=node_modules --exclude-dir=dist \
@@ -122,7 +204,7 @@ jobs:
             "new\s+FormData\s*\(\s*\)" \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'MEDIA-TUS-001: FormData usage found — all uploads must use TUS chunked protocol, not full-file POST:\n'"$hits"
+            msg=$'MEDIA-TUS-001: FormData usage found — use TUS chunked protocol, not full-file POST:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -130,11 +212,10 @@ jobs:
             fi
           fi
 
-      - name: MEDIA-CHUNK-001 — TUS chunk size ≤ 512 KB in source constants
+      - name: MEDIA-CHUNK-001 — TUS chunk size <= 512 KB in source constants
         shell: bash
         run: |
           set -euo pipefail
-          # Flag chunk size constants > 524288 bytes (512 KB).
           hits=$(grep -Prn \
             --include='*.ts' --include='*.js' --include='*.tsx' --include='*.jsx' \
             --exclude-dir=node_modules --exclude-dir=dist \
@@ -153,7 +234,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          # Flag FFmpeg invocations that interpolate request/user variables into argument strings.
           hits=$(grep -Prn \
             --include='*.ts' --include='*.js' --include='*.php' \
             --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=vendor \
@@ -161,7 +241,7 @@ jobs:
             'ffmpeg[^`"'"'"']*\$\{?(req|body|params|query|user|input)\b' \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'MEDIA-FFMPEG-001: possible user-supplied argument interpolated into FFmpeg command — server must define all output parameters:\n'"$hits"
+            msg=$'MEDIA-FFMPEG-001: user-supplied argument interpolated into FFmpeg command:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
@@ -180,7 +260,7 @@ jobs:
             "['\"]audio/wav['\"]|['\"]audio/x-wav['\"]|['\"]audio/pcm['\"]|\\.wav['\"]" \
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            msg=$'MEDIA-WAV-001: WAV or uncompressed PCM format reference found — use Opus or AAC-LC only:\n'"$hits"
+            msg=$'MEDIA-WAV-001: WAV or uncompressed PCM format reference found — use Opus or AAC-LC:\n'"$hits"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"; exit 1
             else

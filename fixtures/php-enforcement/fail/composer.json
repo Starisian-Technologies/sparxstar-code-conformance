@@ -1,0 +1,14 @@
+{
+  "name": "example/wp-plugin-fail",
+  "description": "Fixture: FAIL — missing vipwpcs, triggers presence validation warning",
+  "type": "wordpress-plugin",
+  "require": {
+    "php": ">=8.1"
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.9"
+  },
+  "config": {
+    "allow-plugins": {}
+  }
+}

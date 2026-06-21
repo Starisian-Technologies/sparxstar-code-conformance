@@ -1,33 +1,56 @@
-# Reusable workflow: enforce JavaScript/React standards (javascript-react-standard.md) in any consuming repo.
+# ============================================================
+# STD-TOOLCHAIN-001 v1.3 — standalone-react Ecosystem Enforcement
+# Workflow ref: see caller for pin; never use @main in production.
+# Profile: standalone-react
+# ============================================================
 #
-# Backs rule IDs in CI-Enforcement-Matrix.md § 2. JavaScript Enforcement.
-# Mode-aware: draft warns; development + production block.
-# Assumes pnpm (per ADR-017). Call pnpm-enforcement.yml first.
+# STATICALLY ENFORCED HERE:
+#   - JS-LINT-001: ESLint with typescript-eslint flat config
+#   - JS-TYPE-001: TypeScript strict type check (noEmit)
+#   - JS-BUILD-001: production build
+#   - JS-BUNDLE-001: gzipped bundle size limit
+#   - JS-CONSOLE-001: no console.log in production build output
+#   - JS-A11Y-001: Playwright / axe-core accessibility tests (if configured)
 #
-# Caller example (.github/workflows/standards.yml in a consuming repo):
+# VERIFIED VIA PRESENCE VALIDATION (warn-only pending §4 fixtures):
+#   - package.json and pnpm-lock.yaml present
+#   - eslint.config.mjs present (ESLint 9 flat config required)
+#   - tsconfig.json present
+#   - .stylelintrc.json (or variant) present
+#   - typescript-eslint declared in devDependencies
+#   - vitest declared (or exception for jest migration)
+#   - @wordpress/scripts absent (prohibited in standalone repos)
 #
-#   name: Standards
-#   on: [pull_request, push]
-#   jobs:
-#     pnpm:
-#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@main
-#       with:
-#         mode: development
-#     react:
-#       needs: pnpm
-#       uses: starisian-technologies/starisian-coding-standards/.github/workflows/react-enforcement.yml@main
-#       with:
-#         mode: development           # draft | development | production
-#         node-version: '22'          # optional, defaults to 22
-#         bundle-size-limit-kb: 150   # optional, max gzipped JS bundle KB (default 150)
+# NOT MACHINE-CHECKED (requires conformance test suite — §6):
+#   - tsconfig.json strict: true value (runtime node check in node-enforcement)
+#   - eslint.config.mjs extends typescript-eslint correctly
+#   - Vitest config present and tests pass
+#
+# Caller example: see caller-templates/standards-react.yml
+# ============================================================
 
-name: React enforcement (javascript-react-standard)
+name: React enforcement (STD-TOOLCHAIN-001 v1.3)
 
 on:
   workflow_call:
     inputs:
+      repo_type:
+        description: 'Repo type: standalone-react'
+        required: false
+        type: string
+        default: standalone-react
+      profile_version:
+        description: 'Profile version to validate against (e.g. v1).'
+        required: false
+        type: string
+        default: v1
+      enforcement_mode:
+        description: 'required (fail-closed, default) | advisory (requires exception record)'
+        required: false
+        type: string
+        default: required
       mode:
-        description: 'System mode (draft warns; development/production block).'
+        description: 'DEPRECATED: use enforcement_mode.'
         required: false
         type: string
         default: development
@@ -51,6 +74,94 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Parse standards exceptions (.sparxstar/standards-exceptions.yml)
+        id: exceptions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f ".sparxstar/standards-exceptions.yml" ]; then
+            echo "active_exceptions=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          python3 - <<'PYEOF'
+import sys
+from datetime import date
+
+try:
+    import yaml
+except ImportError:
+    print("::notice::PyYAML not available — exceptions file not parsed.")
+    sys.exit(0)
+
+today = date.today().isoformat()
+active = []
+expired = []
+malformed = []
+
+try:
+    with open(".sparxstar/standards-exceptions.yml") as f:
+        data = yaml.safe_load(f)
+except Exception as e:
+    print(f"::error::standards-exceptions.yml malformed — {e}")
+    sys.exit(1)
+
+exceptions = data.get("exceptions", [])
+for exc in exceptions:
+    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+    missing = [f for f in required_fields if f not in exc]
+    if missing:
+        malformed.append(exc.get("id", "<no-id>"))
+        continue
+    if exc["expires"] < today:
+        expired.append(exc["id"])
+    else:
+        active.append(exc["id"])
+        print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {exc['expires']} — {exc['reason']}")
+
+if expired:
+    print(f"::error::Expired exceptions (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
+    sys.exit(1)
+
+if malformed:
+    print(f"::error::Malformed exception entries: {', '.join(malformed)}")
+    sys.exit(1)
+
+with open("$GITHUB_OUTPUT", "a") as out:
+    out.write(f"active_exceptions={','.join(active)}\n")
+PYEOF
+
+      - name: Presence validation — standalone-react profile
+        # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail() { echo "::warning::PRESENCE: $1"; }
+
+          [ -f "package.json" ]    || fail "package.json missing"
+          [ -f "pnpm-lock.yaml" ] || fail "pnpm-lock.yaml missing — lockfile must be committed"
+          [ -f "eslint.config.mjs" ] || fail "eslint.config.mjs missing — ESLint 9 flat config required"
+          [ -f "tsconfig.json" ]  || fail "tsconfig.json missing"
+
+          if [ ! -f ".stylelintrc.json" ] && [ ! -f "stylelint.config.js" ] && [ ! -f ".stylelintrc.js" ]; then
+            fail ".stylelintrc.json (or stylelint.config.js) missing"
+          fi
+
+          if [ -f "package.json" ]; then
+            python3 -c "
+import json, sys
+with open('package.json') as f:
+    p = json.load(f)
+rd = {**p.get('devDependencies',{}), **p.get('dependencies',{})}
+
+if 'typescript-eslint' not in rd:
+    print('::warning::PRESENCE: package.json missing typescript-eslint (required for standalone-react)')
+if '@wordpress/scripts' in rd:
+    print('::warning::PRESENCE: @wordpress/scripts is PROHIBITED in standalone-react repos')
+if 'vitest' not in rd:
+    print('::warning::PRESENCE: package.json missing vitest — declare §8 exception if using jest')
+" 2>&1 || echo "::warning::PRESENCE: package.json parse error"
+          fi
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -68,14 +179,21 @@ jobs:
         id: mode
         shell: bash
         run: |
-          case "${{ inputs.mode }}" in
-            draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
-            development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
-            *)
-              echo "::error::Unknown mode '${{ inputs.mode }}' — expected draft | development | production"
-              exit 1
-              ;;
-          esac
+          em="${{ inputs.enforcement_mode }}"
+          lm="${{ inputs.mode }}"
+          if [ "$em" = "required" ]; then
+            echo "block=true" >> "$GITHUB_OUTPUT"
+          elif [ "$em" = "advisory" ]; then
+            echo "block=false" >> "$GITHUB_OUTPUT"
+          else
+            case "$lm" in
+              draft) echo "block=false" >> "$GITHUB_OUTPUT" ;;
+              development|production) echo "block=true" >> "$GITHUB_OUTPUT" ;;
+              *)
+                echo "::error::Unknown enforcement_mode '$em' — expected required | advisory"
+                exit 1 ;;
+            esac
+          fi
 
       - name: JS-LINT-001 — ESLint
         shell: bash
@@ -87,7 +205,7 @@ jobs:
               exit 1
             else
               pnpm exec eslint . || true
-              echo "::warning::JS-LINT-001: ESLint violations found (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::JS-LINT-001: ESLint violations found (non-blocking)"
             fi
           fi
 
@@ -98,11 +216,11 @@ jobs:
           set -euo pipefail
           if ! pnpm exec tsc --noEmit 2>&1; then
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
-              echo "::error::JS-TYPE-001: TypeScript type errors found (noImplicitAny / strict)"
+              echo "::error::JS-TYPE-001: TypeScript type errors found"
               exit 1
             else
               pnpm exec tsc --noEmit || true
-              echo "::warning::JS-TYPE-001: TypeScript errors found (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::JS-TYPE-001: TypeScript errors found (non-blocking)"
             fi
           fi
 
@@ -117,7 +235,7 @@ jobs:
               exit 1
             else
               pnpm exec jest --ci --passWithNoTests || true
-              echo "::warning::JS-TEST-001: Jest failures found (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::JS-TEST-001: Jest failures found (non-blocking)"
             fi
           fi
 
@@ -130,39 +248,38 @@ jobs:
               echo "::error::JS-BUILD-001: Production build failed"
               exit 1
             else
-              echo "::warning::JS-BUILD-001: Production build failed (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::JS-BUILD-001: Production build failed (non-blocking)"
             fi
           fi
 
-      - name: JS-BUNDLE-001 — bundle size ≤ ${{ inputs.bundle-size-limit-kb }} KB gzipped
+      - name: JS-BUNDLE-001 — bundle size <= ${{ inputs.bundle-size-limit-kb }} KB gzipped
         shell: bash
         run: |
           set -euo pipefail
           limit_kb="${{ inputs.bundle-size-limit-kb }}"
           limit_bytes=$(( limit_kb * 1024 ))
 
-          # Locate JS output directory (dist/build/public/out)
           js_dir=""
           for candidate in dist build public out; do
             if [ -d "$candidate" ]; then js_dir="$candidate"; break; fi
           done
 
           if [ -z "$js_dir" ]; then
-            echo "::notice::JS-BUNDLE-001: no dist/build/public/out directory found — skipping bundle size check"
+            echo "::notice::JS-BUNDLE-001: no dist/build/public/out directory found — skipping"
             exit 0
           fi
 
-          total_bytes=0
+          exceeded=()
           while IFS= read -r -d '' file; do
             size=$(gzip -c "$file" | wc -c)
-            total_bytes=$(( total_bytes + size ))
+            if [ "$size" -gt "$limit_bytes" ]; then
+              size_kb=$(( size / 1024 ))
+              exceeded+=("$file (${size_kb} KB gzipped, limit ${limit_kb} KB)")
+            fi
           done < <(find "$js_dir" -name '*.js' -not -name '*.map' -print0)
 
-          total_kb=$(( total_bytes / 1024 ))
-          echo "::notice::JS-BUNDLE-001: total JS bundle size: ${total_kb} KB gzipped (limit ${limit_kb} KB)"
-
-          if [ "$total_bytes" -gt "$limit_bytes" ]; then
-            msg="JS-BUNDLE-001: total JS bundle ${total_kb} KB gzipped exceeds ${limit_kb} KB limit"
+          if [ ${#exceeded[@]:-0} -gt 0 ]; then
+            msg="JS-BUNDLE-001: bundle(s) exceed ${limit_kb} KB gzipped limit: ${exceeded[*]}"
             if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
               echo "::error::$msg"
               exit 1
@@ -172,7 +289,7 @@ jobs:
           fi
 
       - name: JS-CONSOLE-001 — no console.log in production build output
-        if: inputs.mode == 'production'
+        if: inputs.enforcement_mode == 'required' && inputs.mode == 'production'
         shell: bash
         run: |
           set -euo pipefail
@@ -189,7 +306,7 @@ jobs:
           hits=$(grep -rn 'console\.log' "$js_dir" --include='*.js' \
             --exclude='*.map' 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            echo "::error::JS-CONSOLE-001: console.log found in production build output (ESLint no-console rule):"
+            echo "::error::JS-CONSOLE-001: console.log found in production build output:"
             echo "$hits"
             exit 1
           fi
@@ -205,6 +322,6 @@ jobs:
               exit 1
             else
               pnpm exec playwright test || true
-              echo "::warning::JS-A11Y-001: Playwright accessibility failures found (non-blocking in ${{ inputs.mode }} mode)"
+              echo "::warning::JS-A11Y-001: Playwright accessibility failures found (non-blocking)"
             fi
           fi

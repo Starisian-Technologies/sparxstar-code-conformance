@@ -1,0 +1,11 @@
+{
+  "name": "example-node-fail",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Fixture: FAIL — uses eslint-plugin-node (unmaintained, prohibited) instead of eslint-plugin-n",
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "typescript-eslint": "^8.0.0",
+    "eslint-plugin-node": "^11.0.0"
+  }
+}

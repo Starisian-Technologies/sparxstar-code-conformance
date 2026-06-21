@@ -1,0 +1,43 @@
+/* Valid CSS — no violations for STD-TOOLCHAIN-001 CSS enforcement */
+
+:root {
+  --color-primary: #0066cc;
+  --color-text: #1a1a1a;
+  --font-size-base: 1rem;
+  --font-size-lg: 1.25rem;
+  --spacing-md: 1rem;
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--spacing-md) calc(var(--spacing-md) * 2);
+  background-color: var(--color-primary);
+  color: #fff;
+  font-size: var(--font-size-base);
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+.card {
+  padding: var(--spacing-md);
+  border: 1px solid currentColor;
+  border-radius: 0.5rem;
+}
+
+.heading {
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  color: var(--color-text);
+}
