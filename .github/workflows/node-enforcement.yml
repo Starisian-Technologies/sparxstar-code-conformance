@@ -13,7 +13,7 @@
 #   - NODE-ENV-001: no process.env outside config module
 #   - NODE-LOG-001: no console.* in production source
 #   - NODE-ESM-001: package.json "type": "module"
-#   - NODE-TEST-001: Jest test suite (if configured)
+#   - NODE-TEST-001: Vitest test suite (Jest fallback, if configured)
 #   - NODE-AUDIT-001: pnpm vulnerability audit
 #
 # VERIFIED VIA PRESENCE VALIDATION (warn-only pending §4 fixtures):
@@ -48,7 +48,7 @@ on:
         type: string
         default: v1
       enforcement_mode:
-        description: 'required (fail-closed) | advisory (requires exception record) | (empty = legacy mode fallback)'
+        description: 'required (fail-closed) | advisory (warn-only) | (empty = legacy mode fallback)'
         required: false
         type: string
         default: ''

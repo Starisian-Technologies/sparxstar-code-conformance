@@ -39,7 +39,7 @@ on:
         type: string
         default: v1
       enforcement_mode:
-        description: 'required (fail-closed) | advisory (requires exception record) | (empty = legacy mode fallback)'
+        description: 'required (fail-closed) | advisory (warn-only) | (empty = legacy mode fallback)'
         required: false
         type: string
         default: ''

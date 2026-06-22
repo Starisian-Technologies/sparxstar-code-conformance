@@ -29,7 +29,7 @@ jobs:
   pnpm:
     uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
     with:
-      mode: development
+      enforcement_mode: required
 
   # Additional domain workflows (PHP, JS, CSS, formatting, etc.) will be added
   # to this repository over time. Add their jobs here once they exist under
@@ -64,7 +64,7 @@ jobs:
   pnpm:
     uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
     with:
-      mode: development
+      enforcement_mode: required
   php:
     uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/php-enforcement.yml@v1
     with:
@@ -86,7 +86,7 @@ jobs:
   pnpm:
     uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
     with:
-      mode: development
+      enforcement_mode: required
   react:
     uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/react-enforcement.yml@v1
     with:
@@ -118,7 +118,7 @@ jobs:
   pnpm:
     uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
     with:
-      mode: development
+      enforcement_mode: required
   node:
     uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/node-enforcement.yml@v1
     with:

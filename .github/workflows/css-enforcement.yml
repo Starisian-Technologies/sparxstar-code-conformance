@@ -10,7 +10,7 @@
 #   - CSS-SPEC-001: no ID selectors
 #   - CSS-TOKEN-001: no hardcoded hex colors outside token definitions
 #   - CSS-TYPE-001: no px font sizes
-#   - CSS-A11Y-001: no outline:none without replacement
+#   - CSS-A11Y-001: no outline:none or outline:0
 #   - CSS-BUILD-001: production build
 #   - CSS-BUNDLE-001: gzipped CSS bundle size limit
 #
@@ -40,7 +40,7 @@ on:
         type: string
         default: v1
       enforcement_mode:
-        description: 'required (fail-closed) | advisory (requires exception record) | (empty = legacy mode fallback)'
+        description: 'required (fail-closed) | advisory (warn-only) | (empty = legacy mode fallback)'
         required: false
         type: string
         default: ''
