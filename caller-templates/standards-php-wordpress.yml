@@ -17,12 +17,12 @@ on:
 jobs:
   pnpm:
     if: ${{ hashFiles('package.json') != '' }}
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
       enforcement_mode: required
 
   php:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/php-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
     with:
       repo_type: wp-plugin
       profile_version: v1
@@ -31,14 +31,14 @@ jobs:
       phpstan-level: '5'
 
   css:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1
     with:
       repo_type: wp-plugin
       profile_version: v1
       enforcement_mode: required
 
   media:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
     with:
       enforcement_mode: required
       profile_version: v1

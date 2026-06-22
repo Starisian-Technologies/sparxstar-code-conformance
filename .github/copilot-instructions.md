@@ -10,7 +10,7 @@ Before reviewing any PR in this repo, read these two internal repos:
 
 -   **ADR Registry:** `Starisian-Technologies/sparxstar-architecture-decision-record` --- decisions, invariants, open questions. Every standard must trace to a decision here. If a standard has no ADR source, flag it.
 -   **Product Specs:** `Starisian-Technologies/sparxstar-product-technical--specifications` --- what each product does. Standards must not contradict how products are specced. If a standard conflicts with a spec, flag both.
--   **This repo:** `Starisian-Technologies/starisian-technologies-coding-standards` --- you are here. Standards, configs, workflows, matrices.
+-   **This repo:** `Starisian-Technologies/sparxstar-code-conformance` --- you are here. Standards, configs, workflows, matrices.
 
 Mission
 -------

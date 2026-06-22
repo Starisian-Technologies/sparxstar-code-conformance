@@ -12,13 +12,13 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
       enforcement_mode: required
 
   node:
     needs: pnpm
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/node-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@v1
     with:
       repo_type: standalone-node
       profile_version: v1
@@ -26,7 +26,7 @@ jobs:
       node-version: '22'
 
   media:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
     with:
       enforcement_mode: required
       profile_version: v1

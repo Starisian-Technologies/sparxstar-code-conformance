@@ -11,7 +11,7 @@
 #   on: [pull_request, push]
 #   jobs:
 #     pnpm:
-#       uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
+#       uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
 #       with:
 #         enforcement_mode: required   # required | advisory
 
