@@ -6,7 +6,7 @@ and means a standard update fixes every repo at once.
 
 ## Source repo
 
-`Starisian-Technologies/starisian-coding-standards`
+`Starisian-Technologies/sparxstar-code-conformance`
 (public — no auth needed to call reusable workflows)
 
 ## How to add a reusable workflow
@@ -27,7 +27,7 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
       enforcement_mode: required
 
@@ -68,7 +68,7 @@ Confirm two things:
   - `wp-plugin` — a WordPress plugin or mu-plugin (PHP).
   - `standalone-react` — a React app or component library (TypeScript/JS).
   - `standalone-node` — a Node service or library, no React (TypeScript/JS).
-- The **`v1` tag exists** on `starisian-coding-standards`. You pin to it in
+- The **`v1` tag exists** on `sparxstar-code-conformance`. You pin to it in
   step 2. If `v1` has not been tagged yet, stop — adoption is not yet possible
   and pinning to `@main` is not allowed (see "Why you pin to a tag" below).
 
@@ -153,19 +153,19 @@ on:
     branches: [main]
 jobs:
   php:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/php-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
     with:
       repo_type: wp-plugin
       enforcement_mode: required
     secrets: inherit
   css:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1
     with:
       repo_type: wp-plugin
       enforcement_mode: required
     secrets: inherit
   media:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
     with:
       repo_type: wp-plugin
       enforcement_mode: required
@@ -210,11 +210,11 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
       enforcement_mode: required
   php:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/php-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
     with:
       repo_type: wp-plugin
       profile_version: v1
@@ -232,23 +232,23 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
       enforcement_mode: required
   react:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/react-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/react-enforcement.yml@v1
     with:
       repo_type: standalone-react
       profile_version: v1
       enforcement_mode: required
   css:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/css-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1
     with:
       repo_type: standalone-react
       profile_version: v1
       enforcement_mode: required
   media:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
     with:
       enforcement_mode: required
       profile_version: v1
@@ -264,17 +264,17 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
       enforcement_mode: required
   node:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/node-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@v1
     with:
       repo_type: standalone-node
       profile_version: v1
       enforcement_mode: required
   media:
-    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
     with:
       enforcement_mode: required
       profile_version: v1
