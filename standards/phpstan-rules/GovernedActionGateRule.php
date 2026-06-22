@@ -25,7 +25,10 @@ use PHPStan\Rules\RuleErrorBuilder;
  * REST handlers, WP-CLI commands, and other entry points require explicit
  * @governed-mutation annotation for the rule to fire on them.
  *
- * STATUS: warn-only — not required until backing ADR is ratified (STD-TOOLCHAIN-001 §5).
+ * STATUS: warn-only in CI — the php-enforcement.yml workflow runs PHPStan in advisory
+ * (non-blocking) mode until the backing ADR is ratified (STD-TOOLCHAIN-001 §5).
+ * PHPStan itself always emits an error when this rule fires; "warn-only" refers to
+ * the CI enforcement_mode, not PHPStan's output level.
  *
  * SCOPE: Entry points only — not every function that writes. The gate is asserted
  * at the entry point; internal helpers below it are out of scope.

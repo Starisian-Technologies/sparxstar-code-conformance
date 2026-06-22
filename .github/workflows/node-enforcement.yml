@@ -185,7 +185,9 @@ if '@wordpress/scripts' in rd:
         if: hashFiles('package.json') != ''
         shell: bash
         run: |
-          if [ "${{ inputs.enforcement_mode }}" = "required" ]; then
+          em="${{ inputs.enforcement_mode }}"
+          lm="${{ inputs.mode }}"
+          if [ "$em" = "required" ] || { [ -z "$em" ] && { [ "$lm" = "development" ] || [ "$lm" = "production" ]; }; }; then
             pnpm install --frozen-lockfile
           else
             pnpm install

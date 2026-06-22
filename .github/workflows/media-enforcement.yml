@@ -167,7 +167,7 @@ PYEOF
             fi
           fi
 
-      - name: MEDIA-CONSTRAINTS-001 — getUserMedia constraints enforce sampleRate <= 16000
+      - name: MEDIA-CONSTRAINTS-001 — getUserMedia calls include sampleRate constraint
         shell: bash
         run: |
           set -euo pipefail

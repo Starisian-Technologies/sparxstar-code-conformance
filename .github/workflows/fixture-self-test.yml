@@ -497,9 +497,10 @@ PYEOF
         shell: bash
         run: |
           set -euo pipefail
-          hits=$(grep -n 'pin to.*@main\|@main' REUSABLE-WORKFLOWS.md 2>/dev/null | grep -v '# ' || true)
+          # Check for uses: lines pinned to @main — prose that *mentions* @main (e.g. "Never use @main") is fine.
+          hits=$(grep -n 'uses:.*@main' REUSABLE-WORKFLOWS.md 2>/dev/null || true)
           if [ -n "$hits" ]; then
-            echo "SELF-TEST FAIL: @main pin guidance found in REUSABLE-WORKFLOWS.md:"$'\n'"$hits"
+            echo "SELF-TEST FAIL: uses: pinned to @main in REUSABLE-WORKFLOWS.md:"$'\n'"$hits"
             exit 1
           fi
-          echo "OK: REUSABLE-WORKFLOWS.md does not instruct @main pinning"
+          echo "OK: REUSABLE-WORKFLOWS.md contains no uses: lines pinned to @main"

@@ -74,7 +74,11 @@ Presence-validation steps and Bucket-3 grep guards start **WARN-ONLY** until sel
 
 ## 5. Governed-Action Gate (§5)
 
-REST route handlers, admin-post handlers, AJAX handlers, WP-CLI mutation commands, and service methods annotated `@governed-mutation` must call `assert_governed_action()` before mutating state.
+Mutation entry points must call `assert_governed_action()` before mutating state.
+
+**Auto-detected entry points** (no annotation required): top-level functions whose names match `wp_ajax_*`, `wp_ajax_nopriv_*`, `admin_post_*`, or `admin_post_nopriv_*`.
+
+**Annotation-gated entry points**: REST route callbacks, WP-CLI mutation commands, and any other entry point may be brought under the gate by adding `@governed-mutation` to the function or method docblock. Without this annotation those entry points are out of scope for the current rule.
 
 Enforced by: `GovernedActionGateRule` PHPStan rule (see `standards/phpstan-rules/`). Status: warn-only until backing ADR is ratified.
 
