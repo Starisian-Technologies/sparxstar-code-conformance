@@ -1,0 +1,13 @@
+{
+  "profile": "python-service",
+  "version": "v1",
+  "std": "STD-TOOLCHAIN-001",
+  "require-dev": ["ruff", "mypy", "pytest", "pytest-cov"],
+  "tool-config": {
+    "ruff": "pyproject.toml [tool.ruff]",
+    "mypy": "pyproject.toml [tool.mypy] strict = true",
+    "pytest": "pyproject.toml [tool.pytest.ini_options]"
+  },
+  "required-files": ["pyproject.toml"],
+  "mypy-required": { "strict": true }
+}

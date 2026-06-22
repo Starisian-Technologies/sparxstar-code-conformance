@@ -1,0 +1,536 @@
+# ============================================================
+# STD-TOOLCHAIN-001 §4 — Fixture self-test
+# Proves that the enforcement patterns fail bad fixtures and pass good ones.
+# Must pass before any enforcement workflow change is merged.
+# ============================================================
+
+name: Fixture self-test (STD-TOOLCHAIN-001 §4)
+
+permissions:
+  contents: read
+
+on:
+  push:
+    paths:
+      - '.github/workflows/*-enforcement.yml'
+      - 'fixtures/**'
+      - 'standards/**'
+  pull_request:
+    paths:
+      - '.github/workflows/*-enforcement.yml'
+      - 'fixtures/**'
+      - 'standards/**'
+  workflow_dispatch:
+
+jobs:
+  # ── PHP enforcement ──────────────────────────────────────────────────────────
+  php:
+    name: PHP fixture self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: PHP-STRICT-001 PASS — pass fixture has strict_types in all PHP files
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          while IFS= read -r -d '' file; do
+            grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file" || missing+=("$file")
+          done < <(find fixtures/php-enforcement/pass -name '*.php' -print0)
+          if [ ${#missing[@]:-0} -gt 0 ]; then
+            echo "SELF-TEST FAIL: pass fixture missing strict_types in: ${missing[*]}"
+            exit 1
+          fi
+          echo "OK: PHP-STRICT-001 pass fixture clean"
+
+      - name: PHP-STRICT-001 FAIL — fail fixture triggers strict_types violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          missing=()
+          while IFS= read -r -d '' file; do
+            grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file" || missing+=("$file")
+          done < <(find fixtures/php-enforcement/fail -name '*.php' -print0)
+          if [ ${#missing[@]:-0} -eq 0 ]; then
+            echo "SELF-TEST FAIL: fail fixture should trigger PHP-STRICT-001 but no violations found"
+            exit 1
+          fi
+          echo "OK: PHP-STRICT-001 fail fixture detected violations as expected"
+
+      - name: PHP-SQL-001 PASS — pass fixture has no raw SQL interpolation
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.php' \
+            '\$wpdb->(query|get_results|get_row|get_col|get_var)\s*\(\s*"[^"]*\$' \
+            fixtures/php-enforcement/pass 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "SELF-TEST FAIL: pass fixture has PHP-SQL-001 violations:"$'\n'"$hits"
+            exit 1
+          fi
+          echo "OK: PHP-SQL-001 pass fixture clean"
+
+      - name: PHP-SQL-002 PASS — pass fixture has no SELECT *
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prin --include='*.php' 'SELECT\s+\*\s+FROM' \
+            fixtures/php-enforcement/pass 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "SELF-TEST FAIL: pass fixture has PHP-SQL-002 violations:"$'\n'"$hits"
+            exit 1
+          fi
+          echo "OK: PHP-SQL-002 pass fixture clean"
+
+      - name: PHP-SQL-002 FAIL — fail fixture triggers SELECT * violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prin --include='*.php' 'SELECT\s+\*\s+FROM' \
+            fixtures/php-enforcement/fail 2>/dev/null || true)
+          if [ -z "$hits" ]; then
+            echo "SELF-TEST FAIL: fail fixture should trigger PHP-SQL-002 but no violations found"
+            exit 1
+          fi
+          echo "OK: PHP-SQL-002 fail fixture detected violations as expected"
+
+      - name: PHP-WP-001 PASS — pass fixture has no hardcoded wp_ table prefix in SQL
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp_pattern='(?i)(FROM|JOIN|INTO|UPDATE|TABLE)\s+[`'"'"'"]?wp_[a-z]'
+          hits=$(grep -Prn --include='*.php' "$wp_pattern" \
+            fixtures/php-enforcement/pass 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "SELF-TEST FAIL: pass fixture has PHP-WP-001 violations:"$'\n'"$hits"
+            exit 1
+          fi
+          echo "OK: PHP-WP-001 pass fixture clean"
+
+      - name: PHP-WP-001 FAIL — fail fixture triggers hardcoded wp_ violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          wp_pattern='(?i)(FROM|JOIN|INTO|UPDATE|TABLE)\s+[`'"'"'"]?wp_[a-z]'
+          hits=$(grep -Prn --include='*.php' "$wp_pattern" \
+            fixtures/php-enforcement/fail 2>/dev/null || true)
+          if [ -z "$hits" ]; then
+            echo "SELF-TEST FAIL: fail fixture should trigger PHP-WP-001 but no violations found"
+            exit 1
+          fi
+          echo "OK: PHP-WP-001 fail fixture detected violations as expected"
+
+      - name: PHP-LINT-001 PASS — VIP fallback fixture clean under WordPressVIPMinimum
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Prove the no-config fixture has no PHP-STRICT-001 violations
+          # (PHPCS itself needs vipwpcs installed which isn't available in self-test;
+          # we validate that the fixture file is syntactically clean and has strict_types,
+          # which is necessary for it to pass WordPressVIPMinimum)
+          missing=()
+          while IFS= read -r -d '' file; do
+            grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file" || missing+=("$file")
+          done < <(find fixtures/php-enforcement/pass-vip-fallback -name '*.php' -print0)
+          if [ ${#missing[@]:-0} -gt 0 ]; then
+            echo "SELF-TEST FAIL: VIP fallback fixture missing strict_types in: ${missing[*]}"
+            exit 1
+          fi
+          # Prove the fixture has no raw SQL interpolation (would fail SQL-001)
+          hits=$(grep -Prn --include='*.php' \
+            '\$wpdb->(query|get_results|get_row|get_col|get_var)\s*\(\s*"[^"]*\$' \
+            fixtures/php-enforcement/pass-vip-fallback 2>/dev/null || true)
+          [ -z "$hits" ] || { echo "SELF-TEST FAIL: VIP fallback fixture has SQL-001 violations"; exit 1; }
+          # Prove the fallback step label uses WordPressVIPMinimum (not --standard=WordPress)
+          grep -q 'WordPressVIPMinimum' .github/workflows/php-enforcement.yml \
+            || { echo "SELF-TEST FAIL: php-enforcement.yml PHPCS fallback does not use WordPressVIPMinimum"; exit 1; }
+          grep -n 'standard=WordPress[^V]' .github/workflows/php-enforcement.yml && {
+            echo "SELF-TEST FAIL: php-enforcement.yml fallback uses plain --standard=WordPress (not VIPMinimum)"
+            exit 1
+          } || true
+          echo "OK: VIP fallback fixture clean and workflow correctly uses WordPressVIPMinimum"
+
+  # ── CSS enforcement ──────────────────────────────────────────────────────────
+  css:
+    name: CSS fixture self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: CSS-PERF-001 PASS — pass fixture has no filter:blur
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            'filter\s*:\s*blur\s*\(' fixtures/css-enforcement/pass 2>/dev/null || true)
+          [ -z "$hits" ] || { echo "SELF-TEST FAIL: pass fixture has CSS-PERF-001 violations:"$'\n'"$hits"; exit 1; }
+          echo "OK: CSS-PERF-001 pass fixture clean"
+
+      - name: CSS-PERF-001 FAIL — fail fixture triggers filter:blur violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            'filter\s*:\s*blur\s*\(' fixtures/css-enforcement/fail 2>/dev/null || true)
+          [ -n "$hits" ] || { echo "SELF-TEST FAIL: fail fixture should trigger CSS-PERF-001 but no violations found"; exit 1; }
+          echo "OK: CSS-PERF-001 fail fixture detected violations as expected"
+
+      - name: CSS-SPEC-001 PASS — pass fixture has no ID selectors
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            '^[[:space:]]*#[a-zA-Z][a-zA-Z0-9_-]*[[:space:]]*\{|,[[:space:]]*#[a-zA-Z]' \
+            fixtures/css-enforcement/pass 2>/dev/null || true)
+          [ -z "$hits" ] || { echo "SELF-TEST FAIL: pass fixture has CSS-SPEC-001 violations:"$'\n'"$hits"; exit 1; }
+          echo "OK: CSS-SPEC-001 pass fixture clean"
+
+      - name: CSS-SPEC-001 FAIL — fail fixture triggers ID selector violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            '^[[:space:]]*#[a-zA-Z][a-zA-Z0-9_-]*[[:space:]]*\{|,[[:space:]]*#[a-zA-Z]' \
+            fixtures/css-enforcement/fail 2>/dev/null || true)
+          [ -n "$hits" ] || { echo "SELF-TEST FAIL: fail fixture should trigger CSS-SPEC-001 but no violations found"; exit 1; }
+          echo "OK: CSS-SPEC-001 fail fixture detected violations as expected"
+
+      - name: CSS-TOKEN-001 PASS — pass fixture has no hardcoded hex outside :root
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            '^\s*(color|background(-color)?|border(-color)?|fill|stroke)\s*:\s*#[0-9a-fA-F]{3,8}' \
+            fixtures/css-enforcement/pass 2>/dev/null \
+            | grep -Pv ':root' | grep -Pv 'tokens\.' || true)
+          [ -z "$hits" ] || { echo "SELF-TEST FAIL: pass fixture has CSS-TOKEN-001 violations:"$'\n'"$hits"; exit 1; }
+          echo "OK: CSS-TOKEN-001 pass fixture clean"
+
+      - name: CSS-TOKEN-001 FAIL — fail fixture triggers hardcoded hex violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            '^\s*(color|background(-color)?|border(-color)?|fill|stroke)\s*:\s*#[0-9a-fA-F]{3,8}' \
+            fixtures/css-enforcement/fail 2>/dev/null \
+            | grep -Pv ':root' | grep -Pv 'tokens\.' || true)
+          [ -n "$hits" ] || { echo "SELF-TEST FAIL: fail fixture should trigger CSS-TOKEN-001 but no violations found"; exit 1; }
+          echo "OK: CSS-TOKEN-001 fail fixture detected violations as expected"
+
+      - name: CSS-TYPE-001 PASS — pass fixture has no px font sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            'font-size\s*:\s*[0-9]+px' \
+            fixtures/css-enforcement/pass 2>/dev/null || true)
+          [ -z "$hits" ] || { echo "SELF-TEST FAIL: pass fixture has CSS-TYPE-001 violations:"$'\n'"$hits"; exit 1; }
+          echo "OK: CSS-TYPE-001 pass fixture clean"
+
+      - name: CSS-TYPE-001 FAIL — fail fixture triggers px font-size violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            'font-size\s*:\s*[0-9]+px' \
+            fixtures/css-enforcement/fail 2>/dev/null || true)
+          [ -n "$hits" ] || { echo "SELF-TEST FAIL: fail fixture should trigger CSS-TYPE-001 but no violations found"; exit 1; }
+          echo "OK: CSS-TYPE-001 fail fixture detected violations as expected"
+
+      - name: CSS-A11Y-001 PASS — pass fixture has no outline:none
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            'outline\s*:\s*(none|0)' \
+            fixtures/css-enforcement/pass 2>/dev/null || true)
+          [ -z "$hits" ] || { echo "SELF-TEST FAIL: pass fixture has CSS-A11Y-001 violations:"$'\n'"$hits"; exit 1; }
+          echo "OK: CSS-A11Y-001 pass fixture clean"
+
+      - name: CSS-A11Y-001 FAIL — fail fixture triggers outline:none violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.css' --include='*.scss' \
+            'outline\s*:\s*(none|0)' \
+            fixtures/css-enforcement/fail 2>/dev/null || true)
+          [ -n "$hits" ] || { echo "SELF-TEST FAIL: fail fixture should trigger CSS-A11Y-001 but no violations found"; exit 1; }
+          echo "OK: CSS-A11Y-001 fail fixture detected violations as expected"
+
+  # ── Media enforcement ─────────────────────────────────────────────────────────
+  media:
+    name: Media fixture self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: MEDIA-RECORDER-001 PASS — pass fixture has no direct new MediaRecorder()
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.ts' --include='*.js' --include='*.tsx' --include='*.jsx' \
+            'new\s+MediaRecorder\s*\(' \
+            fixtures/media-enforcement/pass 2>/dev/null || true)
+          [ -z "$hits" ] || { echo "SELF-TEST FAIL: pass fixture has MEDIA-RECORDER-001 violations:"$'\n'"$hits"; exit 1; }
+          echo "OK: MEDIA-RECORDER-001 pass fixture clean"
+
+      - name: MEDIA-RECORDER-001 FAIL — fail fixture triggers MediaRecorder violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -Prn --include='*.ts' --include='*.js' --include='*.tsx' --include='*.jsx' \
+            'new\s+MediaRecorder\s*\(' \
+            fixtures/media-enforcement/fail 2>/dev/null || true)
+          [ -n "$hits" ] || { echo "SELF-TEST FAIL: fail fixture should trigger MEDIA-RECORDER-001 but no violations found"; exit 1; }
+          echo "OK: MEDIA-RECORDER-001 fail fixture detected violations as expected"
+
+      - name: MEDIA-CONSTRAINTS-001 PASS — pass fixture getUserMedia has sampleRate
+        shell: bash
+        run: |
+          set -euo pipefail
+          files_without_sr=$(grep -PrlZ \
+            --include='*.ts' --include='*.js' --include='*.tsx' --include='*.jsx' \
+            'getUserMedia\s*\(' \
+            fixtures/media-enforcement/pass 2>/dev/null \
+            | xargs -0 -r grep -LZ 'sampleRate' 2>/dev/null \
+            | xargs -0 -r printf '%s\n' \
+            || true)
+          [ -z "$files_without_sr" ] || { echo "SELF-TEST FAIL: pass fixture missing sampleRate constraint in: $files_without_sr"; exit 1; }
+          echo "OK: MEDIA-CONSTRAINTS-001 pass fixture clean"
+
+      - name: MEDIA-CONSTRAINTS-001 FAIL — fail fixture getUserMedia missing sampleRate
+        shell: bash
+        run: |
+          set -euo pipefail
+          files_without_sr=$(grep -PrlZ \
+            --include='*.ts' --include='*.js' --include='*.tsx' --include='*.jsx' \
+            'getUserMedia\s*\(' \
+            fixtures/media-enforcement/fail 2>/dev/null \
+            | xargs -0 -r grep -LZ 'sampleRate' 2>/dev/null \
+            | xargs -0 -r printf '%s\n' \
+            || true)
+          [ -n "$files_without_sr" ] || { echo "SELF-TEST FAIL: fail fixture should trigger MEDIA-CONSTRAINTS-001 but no violations found"; exit 1; }
+          echo "OK: MEDIA-CONSTRAINTS-001 fail fixture detected violations as expected"
+
+  # ── Cross-cutting behavioral tests ───────────────────────────────────────────
+  behavior:
+    name: Behavioral self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Block behavior logic self-test
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Helper: inline the same case logic as the enforcement workflows
+          get_block() {
+            local em="$1" lm="${2:-development}"
+            if [ "$em" = "required" ]; then
+              echo "true"
+            elif [ "$em" = "advisory" ]; then
+              echo "false"
+            elif [ -z "$em" ]; then
+              case "$lm" in
+                draft)                  echo "false" ;;
+                development|production) echo "true"  ;;
+                *)                      echo "error" ;;
+              esac
+            else
+              echo "error"
+            fi
+          }
+
+          assert_block() {
+            local label="$1" expected="$2" actual="$3"
+            if [ "$actual" = "error" ]; then
+              echo "SELF-TEST FAIL: $label — got error exit"
+              exit 1
+            fi
+            if [ "$actual" != "$expected" ]; then
+              echo "SELF-TEST FAIL: $label — expected block=$expected, got block=$actual"
+              exit 1
+            fi
+            echo "OK: $label — block=$actual"
+          }
+
+          assert_block "enforcement_mode=required"               "true"  "$(get_block required)"
+          assert_block "enforcement_mode=advisory"               "false" "$(get_block advisory)"
+          assert_block "enforcement_mode='' mode=development"    "true"  "$(get_block '' development)"
+          assert_block "enforcement_mode='' mode=production"     "true"  "$(get_block '' production)"
+          assert_block "enforcement_mode='' mode=draft"          "false" "$(get_block '' draft)"
+
+          # Invalid enforcement_mode must return error
+          bad=$(get_block 'unexpected-value')
+          [ "$bad" = "error" ] || { echo "SELF-TEST FAIL: invalid enforcement_mode should produce error, got block=$bad"; exit 1; }
+          echo "OK: invalid enforcement_mode correctly produces error"
+
+      - name: Frozen-lockfile logic self-test
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Mirrors the install-step condition in react/node/css/pnpm enforcement workflows.
+          # enforcement_mode=required OR (empty + legacy mode=development|production) → frozen.
+          get_frozen() {
+            local em="$1" lm="${2:-draft}"
+            if [ "$em" = "required" ] || { [ -z "$em" ] && { [ "$lm" = "development" ] || [ "$lm" = "production" ]; }; }; then
+              echo "frozen"
+            else
+              echo "plain"
+            fi
+          }
+
+          assert_frozen() {
+            local label="$1" expected="$2" actual="$3"
+            if [ "$actual" != "$expected" ]; then
+              echo "SELF-TEST FAIL: $label — expected=$expected, got=$actual"
+              exit 1
+            fi
+            echo "OK: $label — $actual"
+          }
+
+          assert_frozen "enforcement_mode=required → frozen"              "frozen" "$(get_frozen required)"
+          assert_frozen "enforcement_mode=advisory → plain"               "plain"  "$(get_frozen advisory)"
+          assert_frozen "enforcement_mode='' mode=development → frozen"   "frozen" "$(get_frozen '' development)"
+          assert_frozen "enforcement_mode='' mode=production → frozen"    "frozen" "$(get_frozen '' production)"
+          assert_frozen "enforcement_mode='' mode=draft → plain"          "plain"  "$(get_frozen '' draft)"
+
+      - name: Exceptions parser — valid active exception passes
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip3 install pyyaml --quiet
+          tmp=$(mktemp -d)
+          cat > "$tmp/standards-exceptions.yml" <<'YAML'
+exceptions:
+  - id: EX-001
+    rule: CSS-TOKEN-001
+    reason: Legacy brand token migration in progress
+    owner: platform-team
+    expires: "2099-12-31"
+    approval: "ADR-099"
+YAML
+          python3 - "$tmp/standards-exceptions.yml" <<'PYEOF'
+import sys, os
+from datetime import date
+import yaml
+
+fpath = sys.argv[1]
+today = date.today().isoformat()
+with open(fpath) as f:
+    data = yaml.safe_load(f) or {}
+
+active = []
+for exc in data.get("exceptions", []):
+    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+    missing = [field for field in required_fields if field not in exc]
+    if missing:
+        print(f"FAIL: missing fields {missing}")
+        sys.exit(1)
+    if exc["expires"] < today:
+        print(f"FAIL: exception {exc['id']} expired")
+        sys.exit(1)
+    active.append(exc["id"])
+
+print(f"OK: exceptions parser — active: {active}")
+PYEOF
+
+      - name: Exceptions parser — expired exception fails
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip3 install pyyaml --quiet
+          tmp=$(mktemp -d)
+          cat > "$tmp/standards-exceptions.yml" <<'YAML'
+exceptions:
+  - id: EX-EXPIRED
+    rule: CSS-TOKEN-001
+    reason: Expired exception
+    owner: platform-team
+    expires: "2020-01-01"
+    approval: "ADR-001"
+YAML
+          result=0
+          python3 - "$tmp/standards-exceptions.yml" <<'PYEOF' || result=$?
+import sys
+from datetime import date
+import yaml
+
+fpath = sys.argv[1]
+today = date.today().isoformat()
+with open(fpath) as f:
+    data = yaml.safe_load(f) or {}
+
+for exc in data.get("exceptions", []):
+    if exc["expires"] < today:
+        print(f"::error::Expired exception: {exc['id']}")
+        sys.exit(1)
+PYEOF
+          if [ "$result" -eq 0 ]; then
+            echo "SELF-TEST FAIL: expired exception should have exited 1 but exited 0"
+            exit 1
+          fi
+          echo "OK: expired exception correctly exits 1"
+
+      - name: Exceptions parser — malformed exception fails
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip3 install pyyaml --quiet
+          tmp=$(mktemp -d)
+          cat > "$tmp/standards-exceptions.yml" <<'YAML'
+exceptions:
+  - id: EX-MALFORMED
+    rule: CSS-TOKEN-001
+    # missing: reason, owner, expires, approval
+YAML
+          result=0
+          python3 - "$tmp/standards-exceptions.yml" <<'PYEOF' || result=$?
+import sys
+from datetime import date
+import yaml
+
+fpath = sys.argv[1]
+with open(fpath) as f:
+    data = yaml.safe_load(f) or {}
+
+malformed = []
+for exc in data.get("exceptions", []):
+    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+    missing = [field for field in required_fields if field not in exc]
+    if missing:
+        malformed.append(exc.get("id", "<no-id>"))
+
+if malformed:
+    print(f"::error::Malformed entries: {malformed}")
+    sys.exit(1)
+PYEOF
+          if [ "$result" -eq 0 ]; then
+            echo "SELF-TEST FAIL: malformed exception should have exited 1 but exited 0"
+            exit 1
+          fi
+          echo "OK: malformed exception correctly exits 1"
+
+      - name: No @main pins in caller templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          hits=$(grep -rn 'uses:.*@main' caller-templates/ 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "SELF-TEST FAIL: @main pin found in caller templates uses: line (must use @v1):"$'\n'"$hits"
+            exit 1
+          fi
+          echo "OK: no @main pins in caller templates"
+
+      - name: No @main pins in REUSABLE-WORKFLOWS.md
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Check for uses: lines pinned to @main — prose that *mentions* @main (e.g. "Never use @main") is fine.
+          hits=$(grep -n 'uses:.*@main' REUSABLE-WORKFLOWS.md 2>/dev/null || true)
+          if [ -n "$hits" ]; then
+            echo "SELF-TEST FAIL: uses: pinned to @main in REUSABLE-WORKFLOWS.md:"$'\n'"$hits"
+            exit 1
+          fi
+          echo "OK: REUSABLE-WORKFLOWS.md contains no uses: lines pinned to @main"

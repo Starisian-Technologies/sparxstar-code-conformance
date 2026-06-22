@@ -1,0 +1,31 @@
+/* FAIL fixture — triggers multiple CSS enforcement checks */
+
+/* CSS-PERF-001: filter:blur — GPU-compositing required but causes repaint */
+.blurred-overlay {
+  filter: blur(4px);
+}
+
+/* CSS-PERF-002: backdrop-filter — triggers layer promotion without explicit contain */
+.modal-backdrop {
+  backdrop-filter: blur(8px);
+}
+
+/* CSS-SPEC-001: ID selector — prohibited, use class selectors */
+#main-header {
+  background: #003366;
+}
+
+/* CSS-TYPE-001: px font size — use rem for accessibility */
+.body-text {
+  font-size: 16px;
+}
+
+/* CSS-A11Y-001: outline:none without replacement — breaks keyboard navigation */
+.input:focus {
+  outline: none;
+}
+
+/* CSS-TOKEN-001: hardcoded hex color outside :root tokens */
+.accent {
+  color: #ff6600;
+}

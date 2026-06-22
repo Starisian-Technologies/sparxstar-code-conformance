@@ -1,0 +1,42 @@
+{
+  "profile": "standalone-react",
+  "version": "v1",
+  "std": "STD-TOOLCHAIN-001",
+  "require-dev": {
+    "eslint": "^9",
+    "@eslint/js": "^9",
+    "typescript": "^5",
+    "typescript-eslint": "^8",
+    "eslint-plugin-react": "^7",
+    "eslint-plugin-react-hooks": "^5",
+    "eslint-plugin-jsx-a11y": "^6",
+    "eslint-plugin-import": "^2",
+    "vitest": "^2",
+    "@testing-library/react": "^16",
+    "@testing-library/jest-dom": "^6",
+    "jsdom": "^25",
+    "stylelint": "^16",
+    "stylelint-config-standard": "^36",
+    "@playwright/test": "^1",
+    "@axe-core/playwright": "^4"
+  },
+  "eslint-config": "eslint.config.mjs",
+  "eslint-style": "flat-config",
+  "prohibited": [
+    "@wordpress/scripts",
+    "jest (use vitest; declare exception for migration)"
+  ],
+  "required-files": [
+    "package.json",
+    "pnpm-lock.yaml",
+    "eslint.config.mjs",
+    "tsconfig.json",
+    ".stylelintrc.json"
+  ],
+  "tsconfig-required": {
+    "strict": true
+  },
+  "recommended-files": [
+    "vitest.config.ts"
+  ]
+}

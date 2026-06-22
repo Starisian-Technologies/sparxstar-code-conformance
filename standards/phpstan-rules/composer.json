@@ -1,0 +1,20 @@
+{
+  "name": "starisian/standards-phpstan-rules",
+  "description": "PHPStan rule enforcing governed-action gate calls — STD-TOOLCHAIN-001 §5",
+  "type": "phpstan-extension",
+  "require": {
+    "phpstan/phpstan": "^2"
+  },
+  "autoload": {
+    "psr-4": {
+      "Starisian\\Standards\\PhpStan\\": "."
+    }
+  },
+  "extra": {
+    "phpstan": {
+      "includes": [
+        "extension.neon"
+      ]
+    }
+  }
+}

@@ -1,0 +1,5 @@
+services:
+  -
+    class: Starisian\Standards\PhpStan\GovernedActionGateRule
+    tags:
+      - phpstan.rules.rule

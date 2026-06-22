@@ -1,0 +1,32 @@
+# Drop this file into a standalone-node consuming repo at:
+#   .github/workflows/standards.yml
+#
+# Pin the workflow ref to a major release tag (e.g. @v1), never @main in production.
+
+name: Starisian Standards
+
+on:
+  pull_request:
+  push:
+    branches: [main, develop]
+
+jobs:
+  pnpm:
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/pnpm-enforcement.yml@v1
+    with:
+      enforcement_mode: required
+
+  node:
+    needs: pnpm
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/node-enforcement.yml@v1
+    with:
+      repo_type: standalone-node
+      profile_version: v1
+      enforcement_mode: required
+      node-version: '22'
+
+  media:
+    uses: Starisian-Technologies/starisian-coding-standards/.github/workflows/media-enforcement.yml@v1
+    with:
+      enforcement_mode: required
+      profile_version: v1

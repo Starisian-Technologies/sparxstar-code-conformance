@@ -1,0 +1,63 @@
+{
+  "profile": "wp-plugin",
+  "version": "v1",
+  "std": "STD-TOOLCHAIN-001",
+  "php": {
+    "require-dev": {
+      "squizlabs/php_codesniffer": "^3.9",
+      "wp-coding-standards/wpcs": "^3",
+      "automattic/vipwpcs": "^3",
+      "phpcompatibility/phpcompatibility-wp": "^2.1",
+      "phpstan/phpstan": "^2",
+      "szepeviktor/phpstan-wordpress": "^2",
+      "php-stubs/wordpress-stubs": "^6",
+      "brain/monkey": "^2"
+    },
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    },
+    "required-rulesets": [
+      "WordPressVIPMinimum",
+      "WordPress-Extra",
+      "WordPress-Docs",
+      "PHPCompatibilityWP"
+    ],
+    "required-files": [
+      "composer.json",
+      "composer.lock",
+      "phpcs.xml",
+      "phpstan.neon"
+    ],
+    "recommended-files": [
+      "phpunit.xml"
+    ]
+  },
+  "js": {
+    "require-dev": {
+      "@wordpress/scripts": "^30.0.0",
+      "@wordpress/stylelint-config": "^11.0.0"
+    },
+    "eslint-extends": "plugin:@wordpress/eslint-plugin/recommended",
+    "stylelint-extends": "@wordpress/stylelint-config",
+    "scripts": {
+      "lint:js": "wp-scripts lint-js",
+      "lint:css": "wp-scripts lint-css",
+      "test": "wp-scripts test-unit-js"
+    },
+    "prohibited": [
+      "typescript-eslint",
+      "eslint (hand-pinned)",
+      "stylelint (hand-pinned)"
+    ],
+    "note": "@wordpress/scripts owns eslint/stylelint versions \u2014 do not hand-pin in WP repos",
+    "required-files": [
+      "package.json",
+      "pnpm-lock.yaml"
+    ]
+  },
+  "e2e": {
+    "framework": "@playwright/test",
+    "wp-utils": "@wordpress/e2e-test-utils-playwright",
+    "a11y": "@axe-core/playwright"
+  }
+}
