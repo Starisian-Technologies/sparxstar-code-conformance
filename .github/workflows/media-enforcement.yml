@@ -61,7 +61,7 @@ jobs:
 
       - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
-        # YAML heredocs (<<) break GitHub's workflow parser when the body is at column 0.
+        # GitHub's YAML parser breaks on Python heredoc syntax when code is at column 0.
         # Script is stored in an env var; textwrap.dedent strips the YAML-induced indentation.
         env:
           PARSE_SCRIPT: |

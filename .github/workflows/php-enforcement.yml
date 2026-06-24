@@ -135,6 +135,26 @@ jobs:
 
       - name: Presence validation — wp-plugin profile
         # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
+        env:
+          PRESENCE_CHECK_PHP: |
+            import json, sys
+            with open('composer.json') as f:
+                c = json.load(f)
+            rd = {**c.get('require-dev',{}), **c.get('require',{})}
+            missing = []
+            if 'squizlabs/php_codesniffer' not in rd:
+                missing.append('squizlabs/php_codesniffer')
+            if 'automattic/vipwpcs' not in rd:
+                missing.append('automattic/vipwpcs')
+            if 'wp-coding-standards/wpcs' not in rd:
+                missing.append('wp-coding-standards/wpcs')
+            if missing:
+                for m in missing:
+                    print(f'::warning::PRESENCE: composer.json missing required dep: {m}')
+            # allow-plugins check (warn only)
+            plugins = c.get('config',{}).get('allow-plugins',{})
+            if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
+                print('::warning::PRESENCE: composer.json config.allow-plugins.dealerdirect/phpcodesniffer-composer-installer not set to true')
         shell: bash
         run: |
           set -euo pipefail
@@ -159,26 +179,7 @@ jobs:
 
           # composer.json dep checks
           if [ -f "composer.json" ]; then
-            if ! python3 -c "
-import json, sys
-with open('composer.json') as f:
-    c = json.load(f)
-rd = {**c.get('require-dev',{}), **c.get('require',{})}
-missing = []
-if 'squizlabs/php_codesniffer' not in rd:
-    missing.append('squizlabs/php_codesniffer')
-if 'automattic/vipwpcs' not in rd:
-    missing.append('automattic/vipwpcs')
-if 'wp-coding-standards/wpcs' not in rd:
-    missing.append('wp-coding-standards/wpcs')
-if missing:
-    for m in missing:
-        print(f'::warning::PRESENCE: composer.json missing required dep: {m}')
-# allow-plugins check (warn only)
-plugins = c.get('config',{}).get('allow-plugins',{})
-if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
-    print('::warning::PRESENCE: composer.json config.allow-plugins.dealerdirect/phpcodesniffer-composer-installer not set to true')
-" 2>&1; then
+            if ! python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['PRESENCE_CHECK_PHP']))" 2>&1; then
               echo "::warning::PRESENCE: composer.json parse error"
             fi
           fi

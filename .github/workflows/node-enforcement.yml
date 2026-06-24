@@ -135,6 +135,21 @@ jobs:
       - name: Presence validation — standalone-node profile
         # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
         # Exception: package.json is fail-closed for typed standalone repos regardless of §4 status.
+        env:
+          PRESENCE_CHECK_NODE: |
+            import json
+            with open('package.json') as f:
+                p = json.load(f)
+            rd = {**p.get('devDependencies',{}), **p.get('dependencies',{})}
+
+            if 'typescript-eslint' not in rd:
+                print('::warning::PRESENCE: package.json missing typescript-eslint')
+            if 'eslint-plugin-n' not in rd:
+                print('::warning::PRESENCE: package.json missing eslint-plugin-n (use eslint-plugin-n, not eslint-plugin-node)')
+            if 'eslint-plugin-node' in rd:
+                print('::warning::PRESENCE: eslint-plugin-node is PROHIBITED (unmaintained for ESLint 9) — use eslint-plugin-n')
+            if '@wordpress/scripts' in rd:
+                print('::warning::PRESENCE: @wordpress/scripts is PROHIBITED in standalone-node repos')
         shell: bash
         run: |
           set -euo pipefail
@@ -150,21 +165,7 @@ jobs:
           [ -f "tsconfig.json" ]    || fail "tsconfig.json missing"
 
           if [ -f "package.json" ]; then
-            python3 -c "
-import json
-with open('package.json') as f:
-    p = json.load(f)
-rd = {**p.get('devDependencies',{}), **p.get('dependencies',{})}
-
-if 'typescript-eslint' not in rd:
-    print('::warning::PRESENCE: package.json missing typescript-eslint')
-if 'eslint-plugin-n' not in rd:
-    print('::warning::PRESENCE: package.json missing eslint-plugin-n (use eslint-plugin-n, not eslint-plugin-node)')
-if 'eslint-plugin-node' in rd:
-    print('::warning::PRESENCE: eslint-plugin-node is PROHIBITED (unmaintained for ESLint 9) — use eslint-plugin-n')
-if '@wordpress/scripts' in rd:
-    print('::warning::PRESENCE: @wordpress/scripts is PROHIBITED in standalone-node repos')
-" 2>&1 || echo "::warning::PRESENCE: package.json parse error"
+            python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['PRESENCE_CHECK_NODE']))" 2>&1 || echo "::warning::PRESENCE: package.json parse error"
           fi
 
       - name: Setup Node.js
@@ -363,7 +364,7 @@ if '@wordpress/scripts' in rd:
             fi
           fi
 
-      - name: NODE-ESM-001 — package.json declares "type": "module"
+      - name: 'NODE-ESM-001 — package.json declares "type": "module"'
         if: hashFiles('package.json') != ''
         shell: bash
         run: |
