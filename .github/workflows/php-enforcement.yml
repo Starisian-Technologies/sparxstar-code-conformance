@@ -381,7 +381,7 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
         shell: bash
         run: |
           set -euo pipefail
-          wp_pattern='(?i)(FROM|JOIN|INTO|UPDATE|TABLE)\s+[`'"'"'"']?wp_[a-z]'
+          wp_pattern='(?i)(FROM|JOIN|INTO|UPDATE|TABLE)\s+[`'"'"'"]?wp_[a-z]'
           hits=$(grep -Prn \
             --include='*.php' \
             --exclude-dir=vendor \
