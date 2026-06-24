@@ -6,6 +6,12 @@
 #   1. Workflow ref  (@v1)           — the executable. Bugfixes bump this only.
 #   2. profile_version (v1)         — the dependency/config contract. Bump to adopt new required surface.
 #   3. enforcement_mode (required)  — fail-closed. advisory = warn-only (exceptions file is optional in both modes).
+#
+# Secrets required in the consuming repo (Settings → Secrets → Actions):
+#   ANTHROPIC_API_KEY        — Anthropic API key for claude-pr-review
+#   ADR_REGISTRY_READ_TOKEN  — Read-only PAT (or App token) for sparxstar-architecture-governance-registry
+#   STANDARDS_READ_TOKEN     — Read-only PAT (or App token) for sparxstar-code-conformance
+# Both ADR/STANDARDS tokens are optional — if absent the review still runs (those context blocks are skipped).
 
 name: Starisian Standards
 
@@ -46,3 +52,14 @@ jobs:
       enforcement_mode: required
       profile_version: v1
     secrets: inherit
+
+  review:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: write
+    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@main
+    secrets:
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      ADR_REGISTRY_READ_TOKEN: ${{ secrets.ADR_REGISTRY_READ_TOKEN }}
+      STANDARDS_READ_TOKEN: ${{ secrets.STANDARDS_READ_TOKEN }}
