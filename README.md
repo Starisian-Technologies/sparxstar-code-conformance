@@ -18,11 +18,11 @@ Every product repo enforces these standards by calling the reusable workflows in
 
 **Step 2.** Copy the template verbatim into `.github/workflows/standards.yml` in your product repo.
 
-**Step 3.** Set `enforcement_mode: required` to fail-close the checks, or `enforcement_mode: advisory` for warn-only while onboarding.
+**Step 3.** Set `enforcement_mode: gate` to fail-close the checks, or `enforcement_mode: advisory` for warn-only while onboarding.
 
 Full adoption guide: **[REUSABLE-WORKFLOWS.md](REUSABLE-WORKFLOWS.md)**
 
-Pin strategy: `@v1` (recommended) tracks the latest compatible v1 release. `@v1.x.x` pins to an exact immutable release. Never use `@main`.
+Pin strategy: `@v1.0.0` (recommended) pins to an exact immutable release. `@v1` tracks the latest compatible v1 release but advances automatically. Never use `@main`.
 
 ---
 
@@ -54,6 +54,7 @@ The standards are split into a language-agnostic handbook and per-language imple
 | [QUESTIONS.md](QUESTIONS.md) | Open clarification questions and review notes |
 | [SECURITY.md](SECURITY.md) | Security policy |
 | [REUSABLE-WORKFLOWS.md](REUSABLE-WORKFLOWS.md) | Full adoption guide — which workflows to call, example `standards.yml` files, pin strategy, mode inputs |
+| [docs/setup-and-install.md](docs/setup-and-install.md) | Setup & Install for `version-drift-enforcement` — prerequisites, inputs, secrets, copy-paste caller block |
 | [AGENTS.md](AGENTS.md) | Cross-agent maintenance guide for keeping standards code-agnostic, enforceable, and complete |
 | [.github/copilot-instructions.md](.github/copilot-instructions.md) | Copilot-facing repository law and maintenance guardrails |
 | [CODEOWNERS](CODEOWNERS) | Owner approval gate for all standards changes |
