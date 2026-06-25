@@ -16,10 +16,11 @@ on:
 
 jobs:
   pnpm:
-    if: ${{ hashFiles('package.json') != '' }}
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
     with:
       enforcement_mode: gate
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   php:
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
@@ -29,6 +30,8 @@ jobs:
       enforcement_mode: gate
       php-version: '8.3'
       phpstan-level: '5'
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   css:
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1
@@ -36,6 +39,8 @@ jobs:
       repo_type: wp-plugin
       profile_version: v1
       enforcement_mode: gate
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   media:
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1

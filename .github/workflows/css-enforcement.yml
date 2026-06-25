@@ -60,6 +60,9 @@ on:
         required: false
         type: number
         default: 50
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY:
+        required: true
 
 jobs:
   enforce:
@@ -167,6 +170,23 @@ jobs:
         if: hashFiles('package.json') != ''
         shell: bash
         run: corepack enable
+
+      - name: Mint read token (composer-resolver)
+        if: hashFiles('package.json') != ''
+        id: read-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.COMPOSER_RESOLVER_CLIENT_ID }}
+          private-key: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+          owner: Starisian-Technologies
+
+      - name: Configure Git auth for private dependencies
+        if: hashFiles('package.json') != ''
+        env:
+          GH_TOKEN: ${{ steps.read-token.outputs.token }}
+        shell: bash
+        run: |
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
 
       - name: Install dependencies
         if: hashFiles('package.json') != ''

@@ -64,6 +64,9 @@ on:
         required: false
         type: string
         default: '5'
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY:
+        required: true
 
 jobs:
   enforce:
@@ -206,6 +209,24 @@ jobs:
           php-version: ${{ inputs['php-version'] }}
           tools: composer, phpcs, phpstan
           coverage: none
+
+      - name: Mint read token (composer-resolver)
+        if: hashFiles('composer.json') != ''
+        id: read-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.COMPOSER_RESOLVER_CLIENT_ID }}
+          private-key: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+          owner: Starisian-Technologies
+
+      - name: Configure Composer auth for private dependencies
+        if: hashFiles('composer.json') != ''
+        env:
+          GH_TOKEN: ${{ steps.read-token.outputs.token }}
+        shell: bash
+        run: |
+          composer config --global --auth github-oauth.github.com "$GH_TOKEN"
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
 
       - name: Determine block behavior
         id: mode
