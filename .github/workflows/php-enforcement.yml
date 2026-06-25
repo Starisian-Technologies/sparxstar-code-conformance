@@ -76,6 +76,63 @@ jobs:
 
       - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
+        # GitHub's YAML parser breaks on Python heredoc syntax when code is at column 0.
+        # Script is stored in an env var; textwrap.dedent strips the YAML-induced indentation.
+        env:
+          PARSE_SCRIPT: |
+            import sys, os, textwrap
+            from datetime import date
+            try:
+                import yaml
+            except ImportError:
+                print("::error::PyYAML not available after install attempt — cannot parse exceptions file")
+                sys.exit(1)
+            today = date.today().isoformat()
+            active = []
+            expired = []
+            malformed = []
+            try:
+                with open(".standards/standards-exceptions.yml") as f:
+                    data = yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"::error::standards-exceptions.yml malformed — {e}")
+                sys.exit(1)
+            exceptions = data.get("exceptions", [])
+            if not isinstance(exceptions, list):
+                print("::error::standards-exceptions.yml malformed — 'exceptions' must be a list")
+                sys.exit(1)
+            for exc in exceptions:
+                if not isinstance(exc, dict):
+                    malformed.append("<no-id>")
+                    continue
+                required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+                missing = [f for f in required_fields if f not in exc]
+                if missing:
+                    malformed.append(exc.get("id", "<no-id>"))
+                    continue
+                expires = exc["expires"]
+                if expires is None:
+                    malformed.append(exc.get("id", "<no-id>"))
+                    continue
+                if not isinstance(expires, str):
+                    if hasattr(expires, "isoformat"):
+                        expires = expires.isoformat()
+                    else:
+                        malformed.append(exc.get("id", "<no-id>"))
+                        continue
+                if expires < today:
+                    expired.append(exc["id"])
+                else:
+                    active.append(exc["id"])
+                    print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {expires} — {exc['reason']}")
+            if expired:
+                print(f"::error::Expired exceptions found (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
+                sys.exit(1)
+            if malformed:
+                print(f"::error::Malformed exception entries (missing required fields or invalid expires): {', '.join(malformed)}")
+                sys.exit(1)
+            with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                out.write(f"active_exceptions={','.join(active)}\n")
         shell: bash
         run: |
           set -euo pipefail
@@ -84,53 +141,7 @@ jobs:
             exit 0
           fi
           pip3 install pyyaml --quiet
-          python3 - <<'PYEOF'
-import sys
-import os
-from datetime import date
-
-try:
-    import yaml
-except ImportError:
-    print("::error::PyYAML not available after install attempt — cannot parse exceptions file")
-    sys.exit(1)
-
-today = date.today().isoformat()
-active = []
-expired = []
-malformed = []
-
-try:
-    with open(".standards/standards-exceptions.yml") as f:
-        data = yaml.safe_load(f) or {}
-except Exception as e:
-    print(f"::error::standards-exceptions.yml malformed — {e}")
-    sys.exit(1)
-
-exceptions = data.get("exceptions", [])
-for exc in exceptions:
-    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
-    missing = [f for f in required_fields if f not in exc]
-    if missing:
-        malformed.append(exc.get("id", "<no-id>"))
-        continue
-    if exc["expires"] < today:
-        expired.append(exc["id"])
-    else:
-        active.append(exc["id"])
-        print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {exc['expires']} — {exc['reason']}")
-
-if expired:
-    print(f"::error::Expired exceptions found (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
-    sys.exit(1)
-
-if malformed:
-    print(f"::error::Malformed exception entries (missing required fields): {', '.join(malformed)}")
-    sys.exit(1)
-
-with open(os.environ["GITHUB_OUTPUT"], "a") as out:
-    out.write(f"active_exceptions={','.join(active)}\n")
-PYEOF
+          python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['PARSE_SCRIPT']))"
 
       - name: Warn on deprecated 'mode' input
         if: inputs.enforcement_mode == ''
@@ -140,6 +151,26 @@ PYEOF
 
       - name: Presence validation — wp-plugin profile
         # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
+        env:
+          PRESENCE_CHECK_PHP: |
+            import json, sys
+            with open('composer.json') as f:
+                c = json.load(f)
+            rd = {**c.get('require-dev',{}), **c.get('require',{})}
+            missing = []
+            if 'squizlabs/php_codesniffer' not in rd:
+                missing.append('squizlabs/php_codesniffer')
+            if 'automattic/vipwpcs' not in rd:
+                missing.append('automattic/vipwpcs')
+            if 'wp-coding-standards/wpcs' not in rd:
+                missing.append('wp-coding-standards/wpcs')
+            if missing:
+                for m in missing:
+                    print(f'::warning::PRESENCE: composer.json missing required dep: {m}')
+            # allow-plugins check (warn only)
+            plugins = c.get('config',{}).get('allow-plugins',{})
+            if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
+                print('::warning::PRESENCE: composer.json config.allow-plugins.dealerdirect/phpcodesniffer-composer-installer not set to true')
         shell: bash
         run: |
           set -euo pipefail
@@ -164,26 +195,7 @@ PYEOF
 
           # composer.json dep checks
           if [ -f "composer.json" ]; then
-            if ! python3 -c "
-import json, sys
-with open('composer.json') as f:
-    c = json.load(f)
-rd = {**c.get('require-dev',{}), **c.get('require',{})}
-missing = []
-if 'squizlabs/php_codesniffer' not in rd:
-    missing.append('squizlabs/php_codesniffer')
-if 'automattic/vipwpcs' not in rd:
-    missing.append('automattic/vipwpcs')
-if 'wp-coding-standards/wpcs' not in rd:
-    missing.append('wp-coding-standards/wpcs')
-if missing:
-    for m in missing:
-        print(f'::warning::PRESENCE: composer.json missing required dep: {m}')
-# allow-plugins check (warn only)
-plugins = c.get('config',{}).get('allow-plugins',{})
-if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
-    print('::warning::PRESENCE: composer.json config.allow-plugins.dealerdirect/phpcodesniffer-composer-installer not set to true')
-" 2>&1; then
+            if ! python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['PRESENCE_CHECK_PHP']))" 2>&1; then
               echo "::warning::PRESENCE: composer.json parse error"
             fi
           fi
@@ -197,11 +209,14 @@ if not plugins.get('dealerdirect/phpcodesniffer-composer-installer'):
 
       - name: Determine block behavior
         id: mode
+        env:
+          INPUT_EM: ${{ inputs.enforcement_mode }}
+          INPUT_LM: ${{ inputs.mode }}
         shell: bash
         run: |
-          # enforcement_mode takes precedence; fall back to legacy mode input when empty
-          em="${{ inputs.enforcement_mode }}"
-          lm="${{ inputs.mode }}"
+          set -euo pipefail
+          em="$INPUT_EM"
+          lm="$INPUT_LM"
           if [ "$em" = "required" ]; then
             echo "block=true" >> "$GITHUB_OUTPUT"
           elif [ "$em" = "advisory" ]; then

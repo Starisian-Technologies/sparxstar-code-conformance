@@ -38,7 +38,7 @@ jobs:
           while IFS= read -r -d '' file; do
             grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file" || missing+=("$file")
           done < <(find fixtures/php-enforcement/pass -name '*.php' -print0)
-          if [ ${#missing[@]:-0} -gt 0 ]; then
+          if [ ${#missing[@]} -gt 0 ]; then
             echo "SELF-TEST FAIL: pass fixture missing strict_types in: ${missing[*]}"
             exit 1
           fi
@@ -52,7 +52,7 @@ jobs:
           while IFS= read -r -d '' file; do
             grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file" || missing+=("$file")
           done < <(find fixtures/php-enforcement/fail -name '*.php' -print0)
-          if [ ${#missing[@]:-0} -eq 0 ]; then
+          if [ ${#missing[@]} -eq 0 ]; then
             echo "SELF-TEST FAIL: fail fixture should trigger PHP-STRICT-001 but no violations found"
             exit 1
           fi
@@ -133,7 +133,7 @@ jobs:
           while IFS= read -r -d '' file; do
             grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file" || missing+=("$file")
           done < <(find fixtures/php-enforcement/pass-vip-fallback -name '*.php' -print0)
-          if [ ${#missing[@]:-0} -gt 0 ]; then
+          if [ ${#missing[@]} -gt 0 ]; then
             echo "SELF-TEST FAIL: VIP fallback fixture missing strict_types in: ${missing[*]}"
             exit 1
           fi
@@ -397,76 +397,59 @@ jobs:
           assert_frozen "enforcement_mode='' mode=draft → plain"          "plain"  "$(get_frozen '' draft)"
 
       - name: Exceptions parser — valid active exception passes
+        # GitHub's YAML parser breaks on Python heredoc syntax when code is at column 0.
+        # Use printf for fixture files; store Python in env var and exec via textwrap.dedent.
+        env:
+          TEST_SCRIPT_VALID: |
+            import sys, os, textwrap
+            from datetime import date
+            import yaml
+            fpath = os.environ["FIXTURE_FILE"]
+            today = date.today().isoformat()
+            with open(fpath) as f:
+                data = yaml.safe_load(f) or {}
+            active = []
+            for exc in data.get("exceptions", []):
+                required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+                missing = [field for field in required_fields if field not in exc]
+                if missing:
+                    print(f"FAIL: missing fields {missing}")
+                    sys.exit(1)
+                if exc["expires"] < today:
+                    print(f"FAIL: exception {exc['id']} expired")
+                    sys.exit(1)
+                active.append(exc["id"])
+            print(f"OK: exceptions parser — active: {active}")
         shell: bash
         run: |
           set -euo pipefail
           pip3 install pyyaml --quiet
           tmp=$(mktemp -d)
-          cat > "$tmp/standards-exceptions.yml" <<'YAML'
-exceptions:
-  - id: EX-001
-    rule: CSS-TOKEN-001
-    reason: Legacy brand token migration in progress
-    owner: platform-team
-    expires: "2099-12-31"
-    approval: "ADR-099"
-YAML
-          python3 - "$tmp/standards-exceptions.yml" <<'PYEOF'
-import sys, os
-from datetime import date
-import yaml
-
-fpath = sys.argv[1]
-today = date.today().isoformat()
-with open(fpath) as f:
-    data = yaml.safe_load(f) or {}
-
-active = []
-for exc in data.get("exceptions", []):
-    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
-    missing = [field for field in required_fields if field not in exc]
-    if missing:
-        print(f"FAIL: missing fields {missing}")
-        sys.exit(1)
-    if exc["expires"] < today:
-        print(f"FAIL: exception {exc['id']} expired")
-        sys.exit(1)
-    active.append(exc["id"])
-
-print(f"OK: exceptions parser — active: {active}")
-PYEOF
+          printf 'exceptions:\n  - id: EX-001\n    rule: CSS-TOKEN-001\n    reason: Legacy brand token migration in progress\n    owner: platform-team\n    expires: "2099-12-31"\n    approval: "ADR-099"\n' > "$tmp/standards-exceptions.yml"
+          FIXTURE_FILE="$tmp/standards-exceptions.yml" python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['TEST_SCRIPT_VALID']))"
 
       - name: Exceptions parser — expired exception fails
+        env:
+          TEST_SCRIPT_EXPIRED: |
+            import sys, os, textwrap
+            from datetime import date
+            import yaml
+            fpath = os.environ["FIXTURE_FILE"]
+            today = date.today().isoformat()
+            with open(fpath) as f:
+                data = yaml.safe_load(f) or {}
+            for exc in data.get("exceptions", []):
+                if exc["expires"] < today:
+                    print(f"::error::Expired exception: {exc['id']}")
+                    sys.exit(1)
         shell: bash
         run: |
           set -euo pipefail
           pip3 install pyyaml --quiet
           tmp=$(mktemp -d)
-          cat > "$tmp/standards-exceptions.yml" <<'YAML'
-exceptions:
-  - id: EX-EXPIRED
-    rule: CSS-TOKEN-001
-    reason: Expired exception
-    owner: platform-team
-    expires: "2020-01-01"
-    approval: "ADR-001"
-YAML
+          printf 'exceptions:\n  - id: EX-EXPIRED\n    rule: CSS-TOKEN-001\n    reason: Expired exception\n    owner: platform-team\n    expires: "2020-01-01"\n    approval: "ADR-001"\n' > "$tmp/standards-exceptions.yml"
           result=0
-          python3 - "$tmp/standards-exceptions.yml" <<'PYEOF' || result=$?
-import sys
-from datetime import date
-import yaml
-
-fpath = sys.argv[1]
-today = date.today().isoformat()
-with open(fpath) as f:
-    data = yaml.safe_load(f) or {}
-
-for exc in data.get("exceptions", []):
-    if exc["expires"] < today:
-        print(f"::error::Expired exception: {exc['id']}")
-        sys.exit(1)
-PYEOF
+          FIXTURE_FILE="$tmp/standards-exceptions.yml" python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['TEST_SCRIPT_EXPIRED']))" || result=$?
           if [ "$result" -eq 0 ]; then
             echo "SELF-TEST FAIL: expired exception should have exited 1 but exited 0"
             exit 1
@@ -474,38 +457,30 @@ PYEOF
           echo "OK: expired exception correctly exits 1"
 
       - name: Exceptions parser — malformed exception fails
+        env:
+          TEST_SCRIPT_MALFORMED: |
+            import sys, os, textwrap
+            import yaml
+            fpath = os.environ["FIXTURE_FILE"]
+            with open(fpath) as f:
+                data = yaml.safe_load(f) or {}
+            malformed = []
+            for exc in data.get("exceptions", []):
+                required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+                missing = [field for field in required_fields if field not in exc]
+                if missing:
+                    malformed.append(exc.get("id", "<no-id>"))
+            if malformed:
+                print(f"::error::Malformed entries: {malformed}")
+                sys.exit(1)
         shell: bash
         run: |
           set -euo pipefail
           pip3 install pyyaml --quiet
           tmp=$(mktemp -d)
-          cat > "$tmp/standards-exceptions.yml" <<'YAML'
-exceptions:
-  - id: EX-MALFORMED
-    rule: CSS-TOKEN-001
-    # missing: reason, owner, expires, approval
-YAML
+          printf 'exceptions:\n  - id: EX-MALFORMED\n    rule: CSS-TOKEN-001\n' > "$tmp/standards-exceptions.yml"
           result=0
-          python3 - "$tmp/standards-exceptions.yml" <<'PYEOF' || result=$?
-import sys
-from datetime import date
-import yaml
-
-fpath = sys.argv[1]
-with open(fpath) as f:
-    data = yaml.safe_load(f) or {}
-
-malformed = []
-for exc in data.get("exceptions", []):
-    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
-    missing = [field for field in required_fields if field not in exc]
-    if missing:
-        malformed.append(exc.get("id", "<no-id>"))
-
-if malformed:
-    print(f"::error::Malformed entries: {malformed}")
-    sys.exit(1)
-PYEOF
+          FIXTURE_FILE="$tmp/standards-exceptions.yml" python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['TEST_SCRIPT_MALFORMED']))" || result=$?
           if [ "$result" -eq 0 ]; then
             echo "SELF-TEST FAIL: malformed exception should have exited 1 but exited 0"
             exit 1
@@ -528,7 +503,7 @@ PYEOF
         run: |
           set -euo pipefail
           # Check for uses: lines pinned to @main — prose that *mentions* @main (e.g. "Never use @main") is fine.
-          hits=$(grep -n 'uses:.*@main' REUSABLE-WORKFLOWS.md 2>/dev/null || true)
+          hits=$(grep -n '^ *uses:.*@main' REUSABLE-WORKFLOWS.md 2>/dev/null || true)
           if [ -n "$hits" ]; then
             echo "SELF-TEST FAIL: uses: pinned to @main in REUSABLE-WORKFLOWS.md:"$'\n'"$hits"
             exit 1

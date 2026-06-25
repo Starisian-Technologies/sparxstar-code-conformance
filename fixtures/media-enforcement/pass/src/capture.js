@@ -3,7 +3,7 @@
  *
  * Demonstrates:
  * - sampleRate constraint set (<= 16000)
- * - No direct new MediaRecorder()
+ * - Uses approved SDK wrapper instead of instantiating the recorder directly
  * - Capture initiated only on user gesture (button click)
  * - No FormData full-file upload
  * - No WAV format references

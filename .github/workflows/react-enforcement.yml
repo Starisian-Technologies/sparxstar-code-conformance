@@ -77,6 +77,63 @@ jobs:
 
       - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
+        # GitHub's YAML parser breaks on Python heredoc syntax when code is at column 0.
+        # Script is stored in an env var; textwrap.dedent strips the YAML-induced indentation.
+        env:
+          PARSE_SCRIPT: |
+            import sys, os, textwrap
+            from datetime import date
+            try:
+                import yaml
+            except ImportError:
+                print("::error::PyYAML not available after install attempt — cannot parse exceptions file")
+                sys.exit(1)
+            today = date.today().isoformat()
+            active = []
+            expired = []
+            malformed = []
+            try:
+                with open(".standards/standards-exceptions.yml") as f:
+                    data = yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"::error::standards-exceptions.yml malformed — {e}")
+                sys.exit(1)
+            exceptions = data.get("exceptions", [])
+            if not isinstance(exceptions, list):
+                print("::error::standards-exceptions.yml malformed — 'exceptions' must be a list")
+                sys.exit(1)
+            for exc in exceptions:
+                if not isinstance(exc, dict):
+                    malformed.append("<no-id>")
+                    continue
+                required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+                missing = [f for f in required_fields if f not in exc]
+                if missing:
+                    malformed.append(exc.get("id", "<no-id>"))
+                    continue
+                expires = exc["expires"]
+                if expires is None:
+                    malformed.append(exc.get("id", "<no-id>"))
+                    continue
+                if not isinstance(expires, str):
+                    if hasattr(expires, "isoformat"):
+                        expires = expires.isoformat()
+                    else:
+                        malformed.append(exc.get("id", "<no-id>"))
+                        continue
+                if expires < today:
+                    expired.append(exc["id"])
+                else:
+                    active.append(exc["id"])
+                    print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {expires} — {exc['reason']}")
+            if expired:
+                print(f"::error::Expired exceptions (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
+                sys.exit(1)
+            if malformed:
+                print(f"::error::Malformed exception entries: {', '.join(malformed)}")
+                sys.exit(1)
+            with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                out.write(f"active_exceptions={','.join(active)}\n")
         shell: bash
         run: |
           set -euo pipefail
@@ -85,53 +142,7 @@ jobs:
             exit 0
           fi
           pip3 install pyyaml --quiet
-          python3 - <<'PYEOF'
-import sys
-import os
-from datetime import date
-
-try:
-    import yaml
-except ImportError:
-    print("::error::PyYAML not available after install attempt — cannot parse exceptions file")
-    sys.exit(1)
-
-today = date.today().isoformat()
-active = []
-expired = []
-malformed = []
-
-try:
-    with open(".standards/standards-exceptions.yml") as f:
-        data = yaml.safe_load(f) or {}
-except Exception as e:
-    print(f"::error::standards-exceptions.yml malformed — {e}")
-    sys.exit(1)
-
-exceptions = data.get("exceptions", [])
-for exc in exceptions:
-    required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
-    missing = [f for f in required_fields if f not in exc]
-    if missing:
-        malformed.append(exc.get("id", "<no-id>"))
-        continue
-    if exc["expires"] < today:
-        expired.append(exc["id"])
-    else:
-        active.append(exc["id"])
-        print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {exc['expires']} — {exc['reason']}")
-
-if expired:
-    print(f"::error::Expired exceptions (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
-    sys.exit(1)
-
-if malformed:
-    print(f"::error::Malformed exception entries: {', '.join(malformed)}")
-    sys.exit(1)
-
-with open(os.environ["GITHUB_OUTPUT"], "a") as out:
-    out.write(f"active_exceptions={','.join(active)}\n")
-PYEOF
+          python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['PARSE_SCRIPT']))"
 
       - name: Warn on deprecated 'mode' input
         if: inputs.enforcement_mode == ''
@@ -142,16 +153,24 @@ PYEOF
       - name: Presence validation — standalone-react profile
         # WARN-ONLY — flips to required after self-test fixtures authored (STD-TOOLCHAIN-001 §4)
         # Exception: package.json is fail-closed for typed standalone repos regardless of §4 status.
+        env:
+          PRESENCE_CHECK_REACT: |
+            import json
+            with open('package.json') as f:
+                p = json.load(f)
+            rd = {**p.get('devDependencies',{}), **p.get('dependencies',{})}
+
+            if 'typescript-eslint' not in rd:
+                print('::warning::PRESENCE: package.json missing typescript-eslint (required for standalone-react)')
+            if '@wordpress/scripts' in rd:
+                print('::warning::PRESENCE: @wordpress/scripts is PROHIBITED in standalone-react repos')
+            if 'vitest' not in rd:
+                print('::warning::PRESENCE: package.json missing vitest — declare §8 exception if using jest')
         shell: bash
         run: |
           set -euo pipefail
           fail() { echo "::warning::PRESENCE: $1"; }
-
-          # package.json is non-negotiable for standalone-react — hard fail, not warn
-          if [ ! -f "package.json" ]; then
-            echo "::error::PRESENCE: package.json missing — standalone-react profile requires it (fail-closed)"
-            exit 1
-          fi
+          [ -f "package.json" ] || { echo "::error::PRESENCE: package.json missing — fail-closed"; exit 1; }
           [ -f "pnpm-lock.yaml" ] || fail "pnpm-lock.yaml missing — lockfile must be committed"
           [ -f "eslint.config.mjs" ] || fail "eslint.config.mjs missing — ESLint 9 flat config required"
           [ -f "tsconfig.json" ]  || fail "tsconfig.json missing"
@@ -161,19 +180,7 @@ PYEOF
           fi
 
           if [ -f "package.json" ]; then
-            python3 -c "
-import json, sys
-with open('package.json') as f:
-    p = json.load(f)
-rd = {**p.get('devDependencies',{}), **p.get('dependencies',{})}
-
-if 'typescript-eslint' not in rd:
-    print('::warning::PRESENCE: package.json missing typescript-eslint (required for standalone-react)')
-if '@wordpress/scripts' in rd:
-    print('::warning::PRESENCE: @wordpress/scripts is PROHIBITED in standalone-react repos')
-if 'vitest' not in rd:
-    print('::warning::PRESENCE: package.json missing vitest — declare §8 exception if using jest')
-" 2>&1 || echo "::warning::PRESENCE: package.json parse error"
+            python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['PRESENCE_CHECK_REACT']))" 2>&1 || echo "::warning::PRESENCE: package.json parse error"
           fi
 
       - name: Setup Node.js
