@@ -397,7 +397,7 @@ jobs:
           assert_frozen "enforcement_mode='' mode=draft → plain"          "plain"  "$(get_frozen '' draft)"
 
       - name: Exceptions parser — valid active exception passes
-        # YAML heredocs (<<) break GitHub's workflow parser when the body is at column 0.
+        # GitHub's YAML parser breaks on Python heredoc syntax when code is at column 0.
         # Use printf for fixture files; store Python in env var and exec via textwrap.dedent.
         env:
           TEST_SCRIPT_VALID: |
