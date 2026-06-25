@@ -7,9 +7,6 @@
 #   2. profile_version (v1)         — the dependency/config contract. Bump to adopt new required surface.
 #   3. enforcement_mode (required)  — fail-closed. advisory = warn-only (exceptions file is optional in both modes).
 #
-# Secrets required in the consuming repo (Settings → Secrets → Actions):
-#   ANTHROPIC_API_KEY  — Anthropic API key for claude-pr-review (org secret, already set)
-
 name: Starisian Standards
 
 on:
