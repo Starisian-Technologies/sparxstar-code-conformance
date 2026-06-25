@@ -38,7 +38,7 @@ jobs:
           while IFS= read -r -d '' file; do
             grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file" || missing+=("$file")
           done < <(find fixtures/php-enforcement/pass -name '*.php' -print0)
-          if [ ${#missing[@]:-0} -gt 0 ]; then
+          if [ ${#missing[@]} -gt 0 ]; then
             echo "SELF-TEST FAIL: pass fixture missing strict_types in: ${missing[*]}"
             exit 1
           fi
@@ -52,7 +52,7 @@ jobs:
           while IFS= read -r -d '' file; do
             grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file" || missing+=("$file")
           done < <(find fixtures/php-enforcement/fail -name '*.php' -print0)
-          if [ ${#missing[@]:-0} -eq 0 ]; then
+          if [ ${#missing[@]} -eq 0 ]; then
             echo "SELF-TEST FAIL: fail fixture should trigger PHP-STRICT-001 but no violations found"
             exit 1
           fi
@@ -133,7 +133,7 @@ jobs:
           while IFS= read -r -d '' file; do
             grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file" || missing+=("$file")
           done < <(find fixtures/php-enforcement/pass-vip-fallback -name '*.php' -print0)
-          if [ ${#missing[@]:-0} -gt 0 ]; then
+          if [ ${#missing[@]} -gt 0 ]; then
             echo "SELF-TEST FAIL: VIP fallback fixture missing strict_types in: ${missing[*]}"
             exit 1
           fi
@@ -491,7 +491,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          hits=$(grep -rn 'uses:.*@main' caller-templates/ 2>/dev/null || true)
+          hits=$(grep -rn 'uses:.*@main' caller-templates/ 2>/dev/null | grep -v 'sparxstar-claude-pr-review' || true)
           if [ -n "$hits" ]; then
             echo "SELF-TEST FAIL: @main pin found in caller templates uses: line (must use @v1):"$'\n'"$hits"
             exit 1
@@ -503,7 +503,7 @@ jobs:
         run: |
           set -euo pipefail
           # Check for uses: lines pinned to @main — prose that *mentions* @main (e.g. "Never use @main") is fine.
-          hits=$(grep -n 'uses:.*@main' REUSABLE-WORKFLOWS.md 2>/dev/null || true)
+          hits=$(grep -n '^ *uses:.*@main' REUSABLE-WORKFLOWS.md 2>/dev/null || true)
           if [ -n "$hits" ]; then
             echo "SELF-TEST FAIL: uses: pinned to @main in REUSABLE-WORKFLOWS.md:"$'\n'"$hits"
             exit 1

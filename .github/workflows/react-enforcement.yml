@@ -139,7 +139,7 @@ jobs:
         # Exception: package.json is fail-closed for typed standalone repos regardless of §4 status.
         env:
           PRESENCE_CHECK_REACT: |
-            import json, sys
+            import json
             with open('package.json') as f:
                 p = json.load(f)
             rd = {**p.get('devDependencies',{}), **p.get('dependencies',{})}
@@ -154,12 +154,7 @@ jobs:
         run: |
           set -euo pipefail
           fail() { echo "::warning::PRESENCE: $1"; }
-
-          # package.json is non-negotiable for standalone-react — hard fail, not warn
-          if [ ! -f "package.json" ]; then
-            echo "::error::PRESENCE: package.json missing — standalone-react profile requires it (fail-closed)"
-            exit 1
-          fi
+          [ -f "package.json" ] || { echo "::error::PRESENCE: package.json missing — fail-closed"; exit 1; }
           [ -f "pnpm-lock.yaml" ] || fail "pnpm-lock.yaml missing — lockfile must be committed"
           [ -f "eslint.config.mjs" ] || fail "eslint.config.mjs missing — ESLint 9 flat config required"
           [ -f "tsconfig.json" ]  || fail "tsconfig.json missing"
