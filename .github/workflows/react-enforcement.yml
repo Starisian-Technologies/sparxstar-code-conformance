@@ -99,17 +99,33 @@ jobs:
                 print(f"::error::standards-exceptions.yml malformed — {e}")
                 sys.exit(1)
             exceptions = data.get("exceptions", [])
+            if not isinstance(exceptions, list):
+                print("::error::standards-exceptions.yml malformed — 'exceptions' must be a list")
+                sys.exit(1)
             for exc in exceptions:
+                if not isinstance(exc, dict):
+                    malformed.append("<no-id>")
+                    continue
                 required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
                 missing = [f for f in required_fields if f not in exc]
                 if missing:
                     malformed.append(exc.get("id", "<no-id>"))
                     continue
-                if exc["expires"] < today:
+                expires = exc["expires"]
+                if expires is None:
+                    malformed.append(exc.get("id", "<no-id>"))
+                    continue
+                if not isinstance(expires, str):
+                    if hasattr(expires, "isoformat"):
+                        expires = expires.isoformat()
+                    else:
+                        malformed.append(exc.get("id", "<no-id>"))
+                        continue
+                if expires < today:
                     expired.append(exc["id"])
                 else:
                     active.append(exc["id"])
-                    print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {exc['expires']} — {exc['reason']}")
+                    print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {expires} — {exc['reason']}")
             if expired:
                 print(f"::error::Expired exceptions (fail-closed per STD-TOOLCHAIN-001 §8): {', '.join(expired)}")
                 sys.exit(1)
