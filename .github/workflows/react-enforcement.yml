@@ -195,9 +195,12 @@ jobs:
       - name: Install dependencies
         if: hashFiles('package.json') != ''
         shell: bash
+        env:
+          EM: ${{ inputs.enforcement_mode }}
+          LM: ${{ inputs.mode }}
         run: |
-          em="${{ inputs.enforcement_mode }}"
-          lm="${{ inputs.mode }}"
+          em="${EM}"
+          lm="${LM}"
           if [ "$em" = "gate" ] || { [ -z "$em" ] && { [ "$lm" = "development" ] || [ "$lm" = "production" ]; }; }; then
             pnpm install --frozen-lockfile
           else
