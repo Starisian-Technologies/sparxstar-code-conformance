@@ -238,15 +238,16 @@ jobs:
           set -euo pipefail
           em="$INPUT_EM"
           lm="$INPUT_LM"
+          block=""
           if [ "$em" = "gate" ]; then
-            echo "block=true" >> "$GITHUB_OUTPUT"
+            block="true"
           elif [ "$em" = "advisory" ]; then
-            echo "block=false" >> "$GITHUB_OUTPUT"
+            block="false"
           elif [ -z "$em" ]; then
             # REMOVAL: 2027-01-01 — legacy mode bridge; callers must migrate to enforcement_mode
             case "$lm" in
-              draft)                    echo "block=false" >> "$GITHUB_OUTPUT" ;;
-              development|production)   echo "block=true"  >> "$GITHUB_OUTPUT" ;;
+              draft)                    block="false" ;;
+              development|production)   block="true"  ;;
               *)
                 echo "::error::Unknown mode '$lm' — migrate to enforcement_mode: gate | advisory (STD-TOOLCHAIN-001 §3)"
                 exit 1 ;;
@@ -255,6 +256,8 @@ jobs:
             echo "::error::Unknown enforcement_mode '$em' — expected gate | advisory (STD-TOOLCHAIN-001 §3)"
             exit 1
           fi
+          echo "block=$block" >> "$GITHUB_OUTPUT"
+          echo "MODE_BLOCK=$block" >> "$GITHUB_ENV"
 
       - name: Validate PHPStan level input
         shell: bash
@@ -285,7 +288,7 @@ jobs:
             -print0)
           if [ ${#missing[@]:-0} -gt 0 ]; then
             msg="PHP-STRICT-001: missing declare(strict_types=1) in: ${missing[*]}"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
               echo "::error::$msg"
               exit 1
             else
@@ -295,8 +298,6 @@ jobs:
 
       - name: PHP-LINT-001 — PHPCS (WordPress VIP + PSR-12)
         if: hashFiles('phpcs.xml') != '' || hashFiles('phpcs.xml.dist') != '' || hashFiles('.phpcs.xml') != ''
-        env:
-          MODE_BLOCK: ${{ steps.mode.outputs.block }}
         shell: bash
         run: |
           set -euo pipefail
@@ -330,7 +331,7 @@ jobs:
                 --ignore=vendor/,node_modules/ \
                 "$scan_dir" 2>&1 || phpcs_exit=$?
               if [ "$phpcs_exit" -ne 0 ]; then
-                if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+                if [ "$MODE_BLOCK" = "true" ]; then
                   echo "::error::PHP-LINT-001: PHPCS violations found (exit $phpcs_exit)"
                   exit 1
                 else
@@ -350,7 +351,7 @@ jobs:
         run: |
           set -euo pipefail
           if ! phpstan analyse --level="${{ inputs['phpstan-level'] }}" --no-progress 2>&1; then
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
               echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs['phpstan-level'] }} violations found"
               exit 1
             else
@@ -369,7 +370,7 @@ jobs:
                --no-progress \
                --exclude-path=vendor \
                2>&1; then
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
               echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs['phpstan-level'] }} violations found"
               exit 1
             else
@@ -389,7 +390,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'PHP-SQL-001: potential raw SQL interpolation found (use $wpdb->prepare()):\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
               echo "::error::$msg"
               exit 1
             else
@@ -409,7 +410,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'PHP-SQL-002: SELECT * usage found — enumerate columns explicitly:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
               echo "::error::$msg"
               exit 1
             else
@@ -430,7 +431,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'PHP-WP-001: hardcoded wp_ table prefix in SQL context — use $wpdb->prefix instead:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
               echo "::error::$msg"
               exit 1
             else
