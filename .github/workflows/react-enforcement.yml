@@ -207,10 +207,13 @@ jobs:
       - name: Determine block behavior
         id: mode
         shell: bash
+        env:
+          EM: ${{ inputs.enforcement_mode }}
+          LM: ${{ inputs.mode }}
         run: |
           # enforcement_mode takes precedence; fall back to legacy mode input when empty
-          em="${{ inputs.enforcement_mode }}"
-          lm="${{ inputs.mode }}"
+          em="${EM}"
+          lm="${LM}"
           if [ "$em" = "gate" ]; then
             echo "block=true" >> "$GITHUB_OUTPUT"
           elif [ "$em" = "advisory" ]; then
