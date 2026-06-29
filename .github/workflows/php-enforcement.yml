@@ -260,6 +260,7 @@ jobs:
           echo "MODE_BLOCK=$block" >> "$GITHUB_ENV"
 
       - name: Validate PHPStan level input
+        id: phpstan-level
         env:
           INPUT_PHPSTAN_LEVEL: ${{ inputs['phpstan-level'] }}
         shell: bash
@@ -269,12 +270,7 @@ jobs:
             echo "::error::phpstan-level must be an integer >= 5 (got '$level')"
             exit 1
           fi
-          delim="$(uuidgen)"
-          {
-            echo "PHPSTAN_LEVEL<<$delim"
-            echo "$level"
-            echo "$delim"
-          } >> "$GITHUB_ENV"
+          echo "phpstan_level=$level" >> "$GITHUB_OUTPUT"
 
       - name: Install Composer dependencies
         if: hashFiles('composer.json') != ''
