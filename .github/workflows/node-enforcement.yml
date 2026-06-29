@@ -71,7 +71,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
@@ -185,7 +185,7 @@ jobs:
           fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
         with:
           node-version: ${{ inputs['node-version'] }}
 
@@ -195,10 +195,13 @@ jobs:
 
       - name: Install dependencies
         if: hashFiles('package.json') != ''
+        env:
+          INPUT_EM: ${{ inputs.enforcement_mode }}
+          INPUT_LM: ${{ inputs.mode }}
         shell: bash
         run: |
-          em="${{ inputs.enforcement_mode }}"
-          lm="${{ inputs.mode }}"
+          em="$INPUT_EM"
+          lm="$INPUT_LM"
           if [ "$em" = "gate" ] || { [ -z "$em" ] && { [ "$lm" = "development" ] || [ "$lm" = "production" ]; }; }; then
             pnpm install --frozen-lockfile
           else
@@ -207,20 +210,24 @@ jobs:
 
       - name: Determine block behavior
         id: mode
+        env:
+          INPUT_EM: ${{ inputs.enforcement_mode }}
+          INPUT_LM: ${{ inputs.mode }}
         shell: bash
         run: |
           # enforcement_mode takes precedence; fall back to legacy mode input when empty
-          em="${{ inputs.enforcement_mode }}"
-          lm="${{ inputs.mode }}"
+          em="$INPUT_EM"
+          lm="$INPUT_LM"
+          block=""
           if [ "$em" = "gate" ]; then
-            echo "block=true" >> "$GITHUB_OUTPUT"
+            block="true"
           elif [ "$em" = "advisory" ]; then
-            echo "block=false" >> "$GITHUB_OUTPUT"
+            block="false"
           elif [ -z "$em" ]; then
             # REMOVAL: 2027-01-01 — legacy mode bridge; callers must migrate to enforcement_mode
             case "$lm" in
-              draft)                    echo "block=false" >> "$GITHUB_OUTPUT" ;;
-              development|production)   echo "block=true"  >> "$GITHUB_OUTPUT" ;;
+              draft)                    block="false" ;;
+              development|production)   block="true"  ;;
               *)
                 echo "::error::Unknown mode '$lm' — migrate to enforcement_mode: gate | advisory (STD-TOOLCHAIN-001 §3)"
                 exit 1 ;;
@@ -229,6 +236,8 @@ jobs:
             echo "::error::Unknown enforcement_mode '$em' — expected gate | advisory (STD-TOOLCHAIN-001 §3)"
             exit 1
           fi
+          echo "block=$block" >> "$GITHUB_OUTPUT"
+          echo "BLOCK_MODE=$block" >> "$GITHUB_ENV"
 
       - name: NODE-TYPE-001 — TypeScript strict check (noEmit)
         if: hashFiles('tsconfig.json') != ''
@@ -236,7 +245,7 @@ jobs:
         run: |
           set -euo pipefail
           if ! pnpm exec tsc --noEmit 2>&1; then
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::NODE-TYPE-001: TypeScript violations found"
               exit 1
             else
@@ -264,7 +273,7 @@ jobs:
               " || echo 'parse-error')
           if [ "$strict" != "true" ]; then
             msg='NODE-TYPE-001: tsconfig.json missing "strict": true — strict mode is mandatory'
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -276,7 +285,7 @@ jobs:
         run: |
           set -euo pipefail
           if ! pnpm exec eslint . --max-warnings=0 2>&1; then
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::NODE-LINT-001: ESLint violations found"
               exit 1
             else
@@ -296,7 +305,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'NODE-EVAL-001: eval() or new Function() found:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -314,7 +323,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'NODE-SQL-001: raw SQL string interpolation found:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -332,7 +341,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'NODE-SQL-002: SELECT * found — enumerate columns explicitly:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -353,7 +362,7 @@ jobs:
             || true)
           if [ -n "$hits" ]; then
             msg=$'NODE-ENV-001: process.env accessed outside config module in:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -373,7 +382,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'NODE-LOG-001: console.* found in production source:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -393,7 +402,7 @@ jobs:
           ")
           if [ "$pkg_type" != "module" ]; then
             msg='NODE-ESM-001: package.json missing "type": "module" — ESM required'
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -413,7 +422,7 @@ jobs:
             exit 0
           fi
           if ! pnpm exec $runner 2>&1; then
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::NODE-TEST-001: unit test suite failed"; exit 1
             else
               pnpm exec $runner || true
@@ -426,7 +435,7 @@ jobs:
           set -euo pipefail
           if ! pnpm audit --audit-level=high 2>&1; then
             msg='NODE-AUDIT-001: high or critical CVEs found in dependencies'
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               pnpm audit --audit-level=high || true

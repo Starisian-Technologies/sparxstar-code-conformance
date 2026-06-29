@@ -75,7 +75,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
@@ -204,7 +204,7 @@ jobs:
           fi
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@c541c155eee45413f5b09a52248675b1a2575231 # v2
         with:
           php-version: ${{ inputs['php-version'] }}
           tools: composer, phpcs, phpstan
@@ -213,7 +213,7 @@ jobs:
       - name: Mint read token (composer-resolver)
         if: hashFiles('composer.json') != ''
         id: read-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         with:
           app-id: ${{ vars.COMPOSER_RESOLVER_CLIENT_ID }}
           private-key: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
@@ -260,13 +260,16 @@ jobs:
           echo "MODE_BLOCK=$block" >> "$GITHUB_ENV"
 
       - name: Validate PHPStan level input
+        env:
+          INPUT_PHPSTAN_LEVEL: ${{ inputs['phpstan-level'] }}
         shell: bash
         run: |
-          level="${{ inputs['phpstan-level'] }}"
+          level="$INPUT_PHPSTAN_LEVEL"
           if ! [[ "$level" =~ ^[0-9]+$ ]] || [ "$level" -lt 5 ]; then
             echo "::error::phpstan-level must be an integer >= 5 (got '$level')"
             exit 1
           fi
+          echo "PHPSTAN_LEVEL=$level" >> "$GITHUB_ENV"
 
       - name: Install Composer dependencies
         if: hashFiles('composer.json') != ''
@@ -345,14 +348,14 @@ jobs:
             echo "::notice::PHP-LINT-001: No phpcs.xml and automattic/vipwpcs not installed — skipping"
           fi
 
-      - name: PHP-STATIC-001 — PHPStan level ${{ inputs['phpstan-level'] }}
+      - name: PHP-STATIC-001 — PHPStan static analysis
         if: hashFiles('phpstan.neon') != '' || hashFiles('phpstan.neon.dist') != '' || hashFiles('phpstan.dist.neon') != ''
         shell: bash
         run: |
           set -euo pipefail
-          if ! phpstan analyse --level="${{ inputs['phpstan-level'] }}" --no-progress 2>&1; then
+          if ! phpstan analyse --level="$PHPSTAN_LEVEL" --no-progress 2>&1; then
             if [ "$MODE_BLOCK" = "true" ]; then
-              echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs['phpstan-level'] }} violations found"
+              echo "::error::PHP-STATIC-001: PHPStan violations found"
               exit 1
             else
               echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking)"
@@ -366,12 +369,12 @@ jobs:
           set -euo pipefail
           scan_path="src"
           [ -d "$scan_path" ] || scan_path="."
-          if ! phpstan analyse "$scan_path" --level="${{ inputs['phpstan-level'] }}" \
+          if ! phpstan analyse "$scan_path" --level="$PHPSTAN_LEVEL" \
                --no-progress \
                --exclude-path=vendor \
                2>&1; then
             if [ "$MODE_BLOCK" = "true" ]; then
-              echo "::error::PHP-STATIC-001: PHPStan level ${{ inputs['phpstan-level'] }} violations found"
+              echo "::error::PHP-STATIC-001: PHPStan violations found"
               exit 1
             else
               echo "::warning::PHP-STATIC-001: PHPStan violations found (non-blocking)"

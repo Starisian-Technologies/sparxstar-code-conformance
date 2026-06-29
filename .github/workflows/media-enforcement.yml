@@ -57,7 +57,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
@@ -136,20 +136,24 @@ jobs:
 
       - name: Determine block behavior
         id: mode
+        env:
+          INPUT_EM: ${{ inputs.enforcement_mode }}
+          INPUT_LM: ${{ inputs.mode }}
         shell: bash
         run: |
           # enforcement_mode takes precedence; fall back to legacy mode input when empty
-          em="${{ inputs.enforcement_mode }}"
-          lm="${{ inputs.mode }}"
+          em="$INPUT_EM"
+          lm="$INPUT_LM"
+          block=""
           if [ "$em" = "gate" ]; then
-            echo "block=true" >> "$GITHUB_OUTPUT"
+            block="true"
           elif [ "$em" = "advisory" ]; then
-            echo "block=false" >> "$GITHUB_OUTPUT"
+            block="false"
           elif [ -z "$em" ]; then
             # REMOVAL: 2027-01-01 — legacy mode bridge; callers must migrate to enforcement_mode
             case "$lm" in
-              draft)                    echo "block=false" >> "$GITHUB_OUTPUT" ;;
-              development|production)   echo "block=true"  >> "$GITHUB_OUTPUT" ;;
+              draft)                    block="false" ;;
+              development|production)   block="true"  ;;
               *)
                 echo "::error::Unknown mode '$lm' — migrate to enforcement_mode: gate | advisory (STD-TOOLCHAIN-001 §3)"
                 exit 1 ;;
@@ -158,6 +162,8 @@ jobs:
             echo "::error::Unknown enforcement_mode '$em' — expected gate | advisory (STD-TOOLCHAIN-001 §3)"
             exit 1
           fi
+          echo "block=$block" >> "$GITHUB_OUTPUT"
+          echo "BLOCK_MODE=$block" >> "$GITHUB_ENV"
 
       - name: MEDIA-RECORDER-001 — no direct new MediaRecorder() in product code
         shell: bash
@@ -171,7 +177,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'MEDIA-RECORDER-001: direct new MediaRecorder() found — use approved SDK:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -193,7 +199,7 @@ jobs:
             || true)
           if [ -n "$files_without_sr" ]; then
             msg=$'MEDIA-CONSTRAINTS-001: getUserMedia() called without sampleRate constraint:\n'"$files_without_sr"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -212,7 +218,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'MEDIA-AUTOSTART-001: getUserMedia() may be called on page load — require explicit user action:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -231,7 +237,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'MEDIA-TUS-001: FormData usage found — use TUS chunked protocol, not full-file POST:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -254,7 +260,7 @@ jobs:
             || true)
           if [ -n "$hits" ]; then
             msg=$'MEDIA-CHUNK-001: TUS chunk size constant > 512 KB found:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -273,7 +279,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'MEDIA-FFMPEG-001: user-supplied argument interpolated into FFmpeg command:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
@@ -292,7 +298,7 @@ jobs:
             . 2>/dev/null || true)
           if [ -n "$hits" ]; then
             msg=$'MEDIA-WAV-001: WAV or uncompressed PCM format reference found — use Opus or AAC-LC:\n'"$hits"
-            if [ "${{ steps.mode.outputs.block }}" = "true" ]; then
+            if [ "$BLOCK_MODE" = "true" ]; then
               echo "::error::$msg"; exit 1
             else
               echo "::warning::$msg"
