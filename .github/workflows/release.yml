@@ -54,7 +54,7 @@ jobs:
         id: version
         run: |
           set -euo pipefail
-          latest=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -n1)
+          latest=$(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
           if [ -z "$latest" ]; then
             echo "::error::No existing vX.Y.Z tag found to bump from."
             exit 1
