@@ -1,11 +1,12 @@
 {
   "name": "starisian-technologies/coding-standards",
-  "description": "Starisian Technologies organization-wide PHP/WordPress coding standards (PHP_CodeSniffer ruleset + PHPStan baseline).",
+  "description": "Starisian Technologies organization-wide PHP/WordPress coding standards (PHP_CodeSniffer ruleset + PHPStan baseline + Rector configs + audit scripts).",
   "type": "phpcodesniffer-standard",
   "license": "proprietary",
   "keywords": [
     "phpcs",
     "phpstan",
+    "rector",
     "wordpress",
     "coding-standards",
     "starisian"
@@ -24,14 +25,39 @@
     "szepeviktor/phpstan-wordpress": "^1.3",
     "wp-coding-standards/wpcs": "^3.1"
   },
+  "require-dev": {
+    "rector/rector": "^1.2"
+  },
   "scripts": {
-    "lint": "phpcs .",
-    "lint:fix": "phpcbf .",
-    "analyze": "phpstan analyze"
+    "quality": [
+      "@phpcs",
+      "@phpstan",
+      "@audit"
+    ],
+    "phpcs": "phpcs --standard=config/phpcs/starisian-strict.xml",
+    "phpcbf": "phpcbf --standard=config/phpcs/starisian-autofix.xml",
+    "phpstan": "phpstan analyse --configuration=config/phpstan/phpstan-wordpress.neon --no-progress",
+    "rector:safe": "rector process --config=config/rector/rector-safe.php",
+    "rector:aggressive": "rector process --config=config/rector/rector-aggressive.php",
+    "audit": [
+      "@audit:isset",
+      "@audit:select-star",
+      "@audit:dbdelta",
+      "@audit:index-files",
+      "@audit:governed-actions"
+    ],
+    "audit:isset": "php scripts/audit-no-isset.php",
+    "audit:select-star": "php scripts/audit-no-select-star.php",
+    "audit:dbdelta": "php scripts/audit-no-dbdelta.php",
+    "audit:index-files": "php scripts/audit-required-index-files.php",
+    "audit:governed-actions": "php scripts/audit-governed-actions.php",
+    "lint": "phpcs --standard=config/phpcs/starisian-strict.xml",
+    "lint:fix": "phpcbf --standard=config/phpcs/starisian-autofix.xml",
+    "analyze": "phpstan analyse --configuration=config/phpstan/phpstan-wordpress.neon --no-progress"
   },
   "extra": {
     "starisian-technologies/coding-standards": {
-      "consumer-usage": "Consumers extend ruleset.xml and phpstan.neon from this package. See README.md."
+      "consumer-usage": "Consumers extend ruleset.xml and phpstan.neon from this package. See README.md. Strict/autofix rulesets: config/phpcs/. PHPStan WordPress config: config/phpstan/. Rector configs: config/rector/. Audit scripts: scripts/."
     }
   }
 }

@@ -1,0 +1,122 @@
+<?xml version="1.0"?>
+<!--
+    Starisian Technologies — strict PHPCS ruleset.
+    Ref: docs/php-wordpress-standard.md, CI-Enforcement-Matrix.md PHP-001 – PHP-004.
+
+    Usage (consuming repo's phpcs.xml):
+        <rule ref="vendor/starisian-technologies/coding-standards/config/phpcs/starisian-strict.xml"/>
+        <config name="prefixes" value="yourprefix"/>
+        <file>src</file>
+
+    This ruleset enforces the full standard: PSR-12 + WordPress-Core/Extra + security
+    rules + naming conventions. Do NOT relax the severity of any rule here; override
+    in the consumer's own ruleset with explicit justification.
+-->
+<ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         name="StarisianStrict"
+         xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/squizlabs/PHP_CodeSniffer/master/phpcs.xsd">
+
+    <description>Starisian Technologies — strict PHP/WordPress ruleset. PHP 8.2+. production mode.</description>
+
+    <!-- ── Runtime flags ── -->
+    <arg value="sp"/>
+    <arg name="extensions" value="php"/>
+    <arg name="colors"/>
+    <arg name="parallel" value="8"/>
+
+    <!-- PHP 8.2 minimum -->
+    <config name="php_version" value="80200"/>
+
+    <!-- ── Exclusions: generated / third-party code ── -->
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+    <exclude-pattern>*/build/*</exclude-pattern>
+    <exclude-pattern>*/dist/*</exclude-pattern>
+
+    <!-- ── PHP-001: strict_types required (PSR-12 variant) ── -->
+    <rule ref="PSR12.Files.DeclareStrictTypes">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+
+    <!-- ── PSR-12 baseline ── -->
+    <rule ref="PSR12"/>
+
+    <!-- ── WordPress core + extra ── -->
+    <rule ref="WordPress-Core"/>
+    <rule ref="WordPress-Extra"/>
+
+    <!-- ── PHP-003: DB queries must be prepared ── -->
+    <rule ref="WordPress.DB.PreparedSQL">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+    <rule ref="WordPress.DB.PreparedSQLPlaceholders">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+    <rule ref="WordPress.DB.DirectDatabaseQuery">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+    <rule ref="WordPress.DB.SlowDBQuery">
+        <severity>5</severity>
+        <type>warning</type>
+    </rule>
+
+    <!-- ── PHP-004: WordPress globals must be prefixed ──
+         Consumer MUST set their own prefix:
+         <config name="prefixes" value="myproduct"/> -->
+    <rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+
+    <!-- ── Security defaults ── -->
+    <rule ref="WordPress.Security.EscapeOutput">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+    <rule ref="WordPress.Security.NonceVerification">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+    <rule ref="WordPress.Security.ValidatedSanitizedInput">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+    <rule ref="WordPress.Security.PluginMenuSlug">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+    <rule ref="WordPress.Security.SafeRedirect">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+
+    <!-- ── i18n / text domain ──
+         Consumer MUST override text_domain in their ruleset. -->
+    <rule ref="WordPress.WP.I18n">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+
+    <!-- ── Coding style extras ── -->
+    <rule ref="WordPress.Arrays.MultipleStatementAlignment"/>
+    <rule ref="WordPress.PHP.StrictComparisons">
+        <severity>5</severity>
+        <type>error</type>
+    </rule>
+    <rule ref="WordPress.PHP.DiscouragedPHPFunctions">
+        <severity>5</severity>
+        <type>warning</type>
+    </rule>
+
+    <!-- ── Reasonable WordPress relaxation for modern PHP class naming ── -->
+    <rule ref="WordPress.Files.FileName">
+        <properties>
+            <property name="strict_class_file_names" value="false"/>
+        </properties>
+    </rule>
+
+</ruleset>
