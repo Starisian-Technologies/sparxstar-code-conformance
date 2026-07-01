@@ -72,7 +72,7 @@ jobs:
       # ── READ: check out this repo to read config/version-policy.yml and tags ──
       - name: Mint read token (composer-resolver)
         id: read-token
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         with:
           app-id: ${{ vars.COMPOSER_RESOLVER_CLIENT_ID }}
           private-key: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
@@ -80,7 +80,7 @@ jobs:
           repositories: sparxstar-code-conformance
 
       - name: Checkout sparxstar-code-conformance (tags + config)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           repository: Starisian-Technologies/sparxstar-code-conformance
           token: ${{ steps.read-token.outputs.token }}
@@ -209,7 +209,7 @@ jobs:
       - name: Mint write token (contract-sync)
         id: write-token
         if: inputs.write_drift_record
-        uses: actions/create-github-app-token@v1
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         with:
           app-id: ${{ vars.CONTRACT_SYNC_CLIENT_ID }}
           private-key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}

@@ -28,7 +28,7 @@ jobs:
     name: PHP fixture self-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: PHP-STRICT-001 PASS — pass fixture has strict_types in all PHP files
         shell: bash
@@ -156,7 +156,7 @@ jobs:
     name: CSS fixture self-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: CSS-PERF-001 PASS — pass fixture has no filter:blur
         shell: bash
@@ -263,7 +263,7 @@ jobs:
     name: Media fixture self-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: MEDIA-RECORDER-001 PASS — pass fixture has no direct new MediaRecorder()
         shell: bash
@@ -318,7 +318,7 @@ jobs:
     name: Behavioral self-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Block behavior logic self-test
         shell: bash
