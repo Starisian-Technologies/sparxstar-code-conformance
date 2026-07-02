@@ -307,14 +307,17 @@ jobs:
       # ── PHPStan (PHP-005) ─────────────────────────────────────────────────
       - name: PHP-005 — PHPStan static analysis
         if: inputs.run_phpstan && (hashFiles('phpstan.neon') != '' || hashFiles('phpstan.neon.dist') != '' || hashFiles('phpstan.dist.neon') != '')
+        env:
+          ALLOW_PHPSTAN_BASELINE: ${{ inputs.allow_phpstan_baseline }}
+          PROJECT_MODE_INPUT: ${{ inputs.project_mode }}
         run: |
           set -euo pipefail
           extra_args=""
-          if [ "${{ inputs.allow_phpstan_baseline }}" = "true" ] && [ "${{ inputs.project_mode }}" != "production" ]; then
+          if [ "$ALLOW_PHPSTAN_BASELINE" = "true" ] && [ "$PROJECT_MODE_INPUT" != "production" ]; then
             if [ -f "phpstan-baseline.neon" ]; then
               extra_args="--generate-baseline=phpstan-baseline.neon"
             fi
-          elif [ "${{ inputs.project_mode }}" = "production" ] && [ -f "phpstan-baseline.neon" ]; then
+          elif [ "$PROJECT_MODE_INPUT" = "production" ] && [ -f "phpstan-baseline.neon" ]; then
             echo "::error::PHP-005: phpstan-baseline.neon is not allowed in production mode — fix all errors"
             exit 1
           fi
