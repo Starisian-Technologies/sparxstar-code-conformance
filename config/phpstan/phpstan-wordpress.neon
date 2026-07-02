@@ -1,0 +1,46 @@
+# Starisian Technologies — WordPress-aware PHPStan configuration.
+# Ref: docs/php-wordpress-standard.md §10.1 (PHP-005: level 5 minimum).
+#      CI-Enforcement-Matrix.md PHP-005, AUTH-001.
+#
+# Consumer extension (in the project's phpstan.neon):
+#   includes:
+#       - vendor/starisian-technologies/coding-standards/config/phpstan/phpstan-wordpress.neon
+#   parameters:
+#       paths:
+#           - src
+#       level: 6           # MAY be raised; MUST NOT drop below 5
+#
+# This file includes:
+#   - szepeviktor/phpstan-wordpress WordPress extension
+#   - GovernedActionGateRule (authority-layer gate enforcement, warn-only until ADR ratified)
+#   - Strict parameter settings that apply to all consuming repos
+#
+# Paths and excludePaths are intentionally omitted — project-specific.
+
+includes:
+    # WordPress type extensions.
+    - %currentWorkingDirectory%/vendor/szepeviktor/phpstan-wordpress/extension.neon
+    # GovernedActionGateRule — enforces authority-layer gate at mutation entry points.
+    # STATUS: warn-only in CI until backing ADR is ratified (STD-TOOLCHAIN-001 §5).
+    - %currentWorkingDirectory%/vendor/starisian/standards-phpstan-rules/extension.neon
+
+parameters:
+    # PHP-005 — PHPStan level 5 minimum.
+    level: 5
+
+    # Distrust phpDoc types when code inference contradicts them.
+    treatPhpDocTypesAsCertain: false
+
+    # Surface stale ignore directives.
+    reportUnmatchedIgnoredErrors: true
+
+    # WordPress + ACF stubs — resolve types for functions not loaded by autoloader.
+    # %currentWorkingDirectory% refers to the project root that runs phpstan.
+    stubFiles:
+        - %currentWorkingDirectory%/vendor/starisian-technologies/coding-standards/stubs/acf.stub.php
+        - %currentWorkingDirectory%/vendor/starisian-technologies/coding-standards/stubs/wordpress-extra.stub.php
+
+    # WordPress core global functions use variadic signatures that trigger false positives.
+    ignoreErrors:
+        - '#Function apply_filters#'
+        - '#Function do_action#'

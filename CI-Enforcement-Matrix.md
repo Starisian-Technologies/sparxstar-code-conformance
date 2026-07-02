@@ -34,7 +34,7 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | SYS-005 | standards-handbook §0.5 | Idempotency key required for write operations | API / Mutations / Uploads | SPECIFIED | Contract tests / runtime middleware |
 | SYS-006 | standards-handbook §0.6 | Reserved section | All | RESERVED | N/A |
 | SYS-007 | standards-handbook §0.7 | No direct provider SDK usage without abstraction layer | App code | SPECIFIED | PHPStan custom rule (not yet shipped) + review gate |
-| AUTH-001 | standards-handbook §1.2 | Governed actions must call the authority layer before execution | Backend / Frontend governed flows | SPECIFIED | Static analysis custom rules |
+| AUTH-001 | standards-handbook §1.2 | Governed actions must call the authority layer before execution | Backend / Frontend governed flows | WARN | `scripts/audit-governed-actions.php` + `.github/workflows/full-quality-gate.yml` AUTH-001 step (warn-only; pending ADR ratification per STD-TOOLCHAIN-001 §5) |
 | AUTH-002 | standards-handbook §1.3 | Fail closed when authority-layer context/authority is unavailable | All governed repos | SPECIFIED | Integration tests |
 | GQL-001 | standards-handbook §2.1 | GraphQL max query depth 5 | GraphQL | SPECIFIED | `graphql-depth-limit` (no shared config ships yet) |
 | GQL-002 | standards-handbook §2.2 | Unbounded list query forbidden | GraphQL | SPECIFIED | Query complexity checks |
@@ -50,11 +50,14 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | DIST-003 | standards-handbook §8.4 | Deployment changes must be rollback-safe; breaking changes require feature flags | Release engineering | SPECIFIED | Deployment policy checks / migration tests |
 | DIST-004 | standards-handbook §8.5 | Schema version compatibility during rollout | Backend / Clients | SPECIFIED | Migration tests |
 | DIST-005 | standards-handbook §8.6 | Critical offline data in IndexedDB, not localStorage | Frontend | SPECIFIED | ESLint custom rule (not yet shipped) |
-| PHP-001 | php-wordpress-standard §2 | PHP files require `declare(strict_types=1)` | PHP | SPECIFIED | `ruleset.xml` shipped (`PSR12.Files.DeclareStrictTypes`); promotes to `ENFORCED` when the PHP reusable workflow ships (Catalog Step 5) |
-| PHP-002 | php-wordpress-standard §5 | No `SELECT *` in queries | PHP / SQL | SPECIFIED | PHPCS custom sniff (not yet shipped) |
-| PHP-003 | php-wordpress-standard §5 | All DB queries prepared (`$wpdb->prepare`) | PHP / SQL | SPECIFIED | `ruleset.xml` shipped (`WordPress.DB.PreparedSQL*`); promotes to `ENFORCED` when the PHP reusable workflow ships (Catalog Step 5) |
-| PHP-004 | php-wordpress-standard §3.2 | WordPress globals must be prefixed | WordPress | SPECIFIED | `ruleset.xml` shipped (`WordPress.NamingConventions.PrefixAllGlobals`); consumer MUST set `<config name="prefixes" value="myproduct"/>`; promotes to `ENFORCED` when the PHP reusable workflow ships (Catalog Step 5) |
-| PHP-005 | php-wordpress-standard §10.1 | PHPStan level 5 minimum | PHP | SPECIFIED | `phpstan.neon` shipped (`level: 5`); promotes to `ENFORCED` when the PHP reusable workflow ships (Catalog Step 5) |
+| PHP-001 | php-wordpress-standard §2 | PHP files require `declare(strict_types=1)` | PHP | ENFORCED | `config/phpcs/starisian-strict.xml` (`PSR12.Files.DeclareStrictTypes`) + `.github/workflows/full-quality-gate.yml` PHP-001 step |
+| PHP-002 | php-wordpress-standard §5 | No `SELECT *` in queries | PHP / SQL | ENFORCED | `scripts/audit-no-select-star.php` + `.github/workflows/full-quality-gate.yml` PHP-002 step |
+| PHP-003 | php-wordpress-standard §5 | All DB queries prepared (`$wpdb->prepare`) | PHP / SQL | ENFORCED | `config/phpcs/starisian-strict.xml` (`WordPress.DB.PreparedSQL*`) + `.github/workflows/full-quality-gate.yml` PHPCS step |
+| PHP-004 | php-wordpress-standard §3.2 | WordPress globals must be prefixed | WordPress | ENFORCED | `config/phpcs/starisian-strict.xml` (`WordPress.NamingConventions.PrefixAllGlobals`) + `.github/workflows/full-quality-gate.yml` PHPCS step; consumer MUST set `<config name="prefixes" value="myproduct"/>` |
+| PHP-005 | php-wordpress-standard §10.1 | PHPStan level 5 minimum | PHP | ENFORCED | `config/phpstan/phpstan-wordpress.neon` (`level: 5`) + `.github/workflows/full-quality-gate.yml` PHPStan step |
+| PHP-006 | php-wordpress-standard §4 | `isset()` is forbidden; use `??` or `array_key_exists()` | PHP | ENFORCED | `scripts/audit-no-isset.php` + `.github/workflows/full-quality-gate.yml` audit step |
+| PHP-007 | php-wordpress-standard §5 | `dbDelta()` forbidden outside approved schema migration entry points | PHP / WordPress | ENFORCED | `scripts/audit-no-dbdelta.php` + `.github/workflows/full-quality-gate.yml` audit step |
+| PHP-008 | php-wordpress-standard §9 | Every directory must contain an `index.php` to prevent directory listing | PHP / WordPress | ENFORCED | `scripts/audit-required-index-files.php` + `.github/workflows/full-quality-gate.yml` audit step |
 | JS-001 | javascript-react-standard §3 | Fetch/API calls require timeout and bounded retry | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped — Catalog #2) |
 | JS-002 | javascript-react-standard §6.2 | IndexedDB for critical offline data | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped) |
 | JS-003 | javascript-react-standard §11.2 | The auth SDK required for auth (no custom frontend auth) | JS/TS | SPECIFIED | Architecture checks |
