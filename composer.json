@@ -28,6 +28,11 @@
   "require-dev": {
     "rector/rector": "^1.2"
   },
+  "autoload": {
+    "psr-4": {
+      "Starisian\\Standards\\PhpStan\\": "standards/phpstan-rules/"
+    }
+  },
   "scripts": {
     "quality": [
       "@phpcs",
