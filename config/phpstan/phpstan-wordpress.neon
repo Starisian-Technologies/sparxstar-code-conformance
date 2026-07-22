@@ -20,9 +20,6 @@
 includes:
     # WordPress type extensions.
     - %currentWorkingDirectory%/vendor/szepeviktor/phpstan-wordpress/extension.neon
-    # GovernedActionGateRule — enforces authority-layer gate at mutation entry points.
-    # STATUS: warn-only in CI until backing ADR is ratified (STD-TOOLCHAIN-001 §5).
-    - %currentWorkingDirectory%/vendor/starisian/standards-phpstan-rules/extension.neon
 
 parameters:
     # PHP-005 — PHPStan level 5 minimum.
