@@ -103,7 +103,8 @@ foreach ($files as $file) {
 
     // Skip approved exception files.
     foreach ($approvedPaths as $approvedPath) {
-        if (str_ends_with($normalizedFile, ltrim($approvedPath, '/'))) {
+        $approvedPath = ltrim(preg_replace('#^\./#', '', $approvedPath), '/');
+        if ($normalizedFile === $approvedPath) {
             continue 2;
         }
     }
