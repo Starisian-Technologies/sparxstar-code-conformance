@@ -3,14 +3,15 @@
 declare(strict_types=1);
 
 /**
- * Advanced Custom Fields (ACF) PHPStan stubs.
+ * Field framework PHPStan stubs.
  *
- * Provides type definitions for ACF functions so PHPStan can analyze projects
- * that use ACF without ACF being loaded in the analysis environment.
+ * Provides type definitions for acf_* and related field functions so PHPStan
+ * can analyze projects without the field framework being loaded in the
+ * analysis environment.
  *
- * These stubs cover the most common ACF API surface. They are intentionally
- * minimal — only types that are necessary for PHPStan to resolve return types
- * and parameter types correctly. Stubs do not contain implementation.
+ * These stubs are intentionally minimal — only types that are necessary for
+ * PHPStan to resolve return types and parameter types correctly. Stubs do not
+ * contain implementation.
  *
  * Ref: config/phpstan/phpstan-wordpress.neon (stubFiles entry).
  */
