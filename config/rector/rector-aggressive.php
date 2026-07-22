@@ -17,22 +17,19 @@ declare(strict_types=1);
  */
 
 use Rector\Config\RectorConfig;
+use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector;
+use Rector\DeadCode\Rector\If_\UnwrapFutureCompatibleIfPhpVersionRector;
+use Rector\DeadCode\Rector\Property\RemoveUnusedPrivatePropertyRector;
+use Rector\Php80\Rector\FunctionLike\UnionTypesRector;
+use Rector\Php82\Rector\Class_\ReadOnlyClassRector;
 use Rector\Set\ValueObject\SetList;
-use Rector\Set\ValueObject\LevelSetList;
+use Rector\TypeDeclaration\Rector\ArrowFunction\AddArrowFunctionReturnTypeRector;
 use Rector\TypeDeclaration\Rector\ClassMethod\AddMethodCallBasedStrictParamTypeRector;
 use Rector\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromReturnDirectArrayRector;
-use Rector\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromStrictNativeCallRector;
 use Rector\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromStrictBoolReturnExprRector;
+use Rector\TypeDeclaration\Rector\ClassMethod\ReturnTypeFromStrictNativeCallRector;
 use Rector\TypeDeclaration\Rector\Property\TypedPropertyFromStrictConstructorRector;
 use Rector\TypeDeclaration\Rector\Property\TypedPropertyFromStrictSetUpRector;
-use Rector\TypeDeclaration\Rector\ArrowFunction\AddArrowFunctionReturnTypeRector;
-use Rector\Php80\Rector\Class_\AnnotationToAttributeRector;
-use Rector\Php80\Rector\FunctionLike\UnionTypesRector;
-use Rector\Php81\Rector\Class_\MyCLabsMethodCallToEnumConstRector;
-use Rector\Php82\Rector\Class_\ReadOnlyClassRector;
-use Rector\DeadCode\Rector\ClassMethod\RemoveUnusedPrivateMethodRector;
-use Rector\DeadCode\Rector\Property\RemoveUnusedPrivatePropertyRector;
-use Rector\DeadCode\Rector\If_\UnwrapFutureCompatibleIfPhpVersionRector;
 
 return RectorConfig::configure()
     ->withImportNames(importDocBlockNames: false)
