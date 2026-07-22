@@ -115,7 +115,7 @@ foreach ($files as $file) {
         }
 
         // Look for function/method declarations.
-        if (is_array($token) && in_array($token[0], [T_FUNCTION, T_FN], true)) {
+        if (is_array($token) && $token[0] === T_FUNCTION) {
             // Skip forward to function name.
             $j = $i + 1;
             while ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
