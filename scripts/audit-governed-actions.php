@@ -122,6 +122,14 @@ foreach ($files as $file) {
                 $j++;
             }
 
+            // Skip optional reference operator (&) in `function &name()`.
+            if ($j < $count && ! is_array($tokens[$j]) && $tokens[$j] === '&') {
+                $j++;
+                while ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
+                    $j++;
+                }
+            }
+
             $funcName = '';
             if ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_STRING) {
                 $funcName = $tokens[$j][1];
