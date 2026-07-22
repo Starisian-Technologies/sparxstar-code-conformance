@@ -76,7 +76,22 @@ foreach ($files as $file) {
         continue;
     }
 
-    $lines = explode("\n", $source);
+    // Strip comments/docblocks while preserving line numbers for reporting.
+    $tokens = token_get_all($source);
+    $clean  = '';
+    foreach ($tokens as $token) {
+        if ( ! is_array($token)) {
+            $clean .= $token;
+            continue;
+        }
+        if (in_array($token[0], [T_COMMENT, T_DOC_COMMENT], true)) {
+            $clean .= str_repeat("\n", substr_count($token[1], "\n"));
+            continue;
+        }
+        $clean .= $token[1];
+    }
+
+    $lines = explode("\n", $clean);
     foreach ($lines as $lineNo => $line) {
         if (preg_match($pattern, $line)) {
             $violations[] = sprintf(
