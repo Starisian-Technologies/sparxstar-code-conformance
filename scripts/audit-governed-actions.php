@@ -179,7 +179,19 @@ foreach ($files as $file) {
         }
 
         // Reset docblock on any non-whitespace token that is not function/fn/attribute.
-        if (is_array($token) && ! in_array($token[0], [T_ATTRIBUTE, T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+        if (is_array($token) && ! in_array($token[0], [
+            T_ATTRIBUTE,
+            T_WHITESPACE,
+            T_COMMENT,
+            T_DOC_COMMENT,
+            T_PUBLIC,
+            T_PROTECTED,
+            T_PRIVATE,
+            T_STATIC,
+            T_FINAL,
+            T_ABSTRACT,
+            T_READONLY,
+        ], true)) {
             $lastDocblock = '';
         }
 
