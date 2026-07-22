@@ -59,7 +59,7 @@ function check_index_files(string $dir, array $excludeDirs, array &$violations):
             continue;
         }
         $path = $dir . '/' . $entry;
-        if ( is_dir($path) ) {
+        if ( is_dir($path) && ! is_link($path) ) {
             if ( ! in_array($entry, $excludeDirs, true) ) {
                 check_index_files($path, $excludeDirs, $violations);
             }
