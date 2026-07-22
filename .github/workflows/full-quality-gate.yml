@@ -291,11 +291,35 @@ jobs:
 
       # ── PHPCS (PHP-003, PHP-004 + style) ─────────────────────────────────
       - name: PHP-LINT — PHPCS
-        if: hashFiles('phpcs.xml') != '' || hashFiles('phpcs.xml.dist') != '' || hashFiles('.phpcs.xml') != ''
         run: |
           set -euo pipefail
           phpcs_exit=0
-          phpcs --report=full 2>&1 || phpcs_exit=$?
+
+          runtime_args=()
+          if [ -n "$TEXT_DOMAIN" ]; then
+            runtime_args=(--runtime-set text_domain "$TEXT_DOMAIN")
+          fi
+
+          if [ -f "vendor/starisian-technologies/coding-standards/config/phpcs/starisian-strict.xml" ]; then
+            IFS=',' read -ra paths <<< "$SOURCE_PATHS"
+            args=()
+            for p in "${paths[@]}"; do
+              p="$(echo "$p" | tr -d '[:space:]')"
+              [ -n "$p" ] && args+=("$p")
+            done
+            [ ${#args[@]} -eq 0 ] && args=("src")
+
+            phpcs --standard="vendor/starisian-technologies/coding-standards/config/phpcs/starisian-strict.xml" "${runtime_args[@]}" --report=full "${args[@]}" 2>&1 || phpcs_exit=$?
+          elif [ -f "phpcs.xml" ] || [ -f "phpcs.xml.dist" ] || [ -f ".phpcs.xml" ]; then
+            phpcs --report=full 2>&1 || phpcs_exit=$?
+          else
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-LINT: no PHPCS config found and Starisian strict ruleset is not installed" && exit 1
+            else
+              echo "::warning::PHP-LINT: no PHPCS config found and Starisian strict ruleset is not installed"
+            fi
+          fi
+
           if [ "$phpcs_exit" -ne 0 ]; then
             if [ "$MODE_BLOCK" = "true" ]; then
               echo "::error::PHP-LINT: PHPCS violations found (exit $phpcs_exit)" && exit 1
