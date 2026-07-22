@@ -336,17 +336,17 @@ jobs:
           PROJECT_MODE_INPUT: ${{ inputs.project_mode }}
         run: |
           set -euo pipefail
-          extra_args=""
-          if [ "$ALLOW_PHPSTAN_BASELINE" = "true" ] && [ "$PROJECT_MODE_INPUT" != "production" ]; then
-            if [ -f "phpstan-baseline.neon" ]; then
-              extra_args="--generate-baseline=phpstan-baseline.neon"
-            fi
-          elif [ "$PROJECT_MODE_INPUT" = "production" ] && [ -f "phpstan-baseline.neon" ]; then
+          if [ "$PROJECT_MODE_INPUT" = "production" ] && [ -f "phpstan-baseline.neon" ]; then
             echo "::error::PHP-005: phpstan-baseline.neon is not allowed in production mode — fix all errors"
             exit 1
           fi
+
+          if [ "$ALLOW_PHPSTAN_BASELINE" != "true" ] && [ -f "phpstan-baseline.neon" ]; then
+            echo "::warning::PHP-005: phpstan-baseline.neon present but allow_phpstan_baseline is false"
+          fi
+
           phpstan_exit=0
-          phpstan analyse --level="$PHPSTAN_LEVEL" --no-progress $extra_args 2>&1 || phpstan_exit=$?
+          phpstan analyse --level="$PHPSTAN_LEVEL" --no-progress 2>&1 || phpstan_exit=$?
           if [ "$phpstan_exit" -ne 0 ]; then
             if [ "$MODE_BLOCK" = "true" ]; then
               echo "::error::PHP-005: PHPStan violations found" && exit 1
