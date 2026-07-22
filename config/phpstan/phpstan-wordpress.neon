@@ -34,7 +34,7 @@ parameters:
     # Surface stale ignore directives.
     reportUnmatchedIgnoredErrors: true
 
-    # WordPress + ACF stubs — resolve types for functions not loaded by autoloader.
+    # WordPress + field-framework stubs — resolve types for functions not loaded by autoloader.
     # %currentWorkingDirectory% refers to the project root that runs phpstan.
     stubFiles:
         - %currentWorkingDirectory%/vendor/starisian-technologies/coding-standards/stubs/acf.stub.php
