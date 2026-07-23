@@ -54,12 +54,12 @@ on:
         type: string
         default: '8.3'
       wordpress_version:
-        description: 'WordPress version the plugin targets (informational; used for presence checks)'
+        description: 'WordPress version the plugin targets (informational; currently unused / reserved for future presence checks)'
         required: false
         type: string
         default: '6.8'
       plugin_slug:
-        description: 'WordPress plugin slug (used for directory presence checks only; not hardcoded into configs)'
+        description: 'WordPress plugin slug (informational; currently unused / reserved for future directory presence checks)'
         required: false
         type: string
         default: ''
