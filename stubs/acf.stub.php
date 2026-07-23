@@ -29,7 +29,7 @@ if ( ! function_exists( 'get_field' ) ) {
      */
     function get_field( string $selector, int|string|bool $post_id = false, bool $format_value = true ): mixed
     {
-        // Stub — implementation provided by ACF plugin at runtime.
+        // Stub — implementation provided by field-framework plugin at runtime.
     }
 }
 
@@ -109,7 +109,7 @@ if ( ! function_exists( 'get_sub_field' ) ) {
 
 if ( ! function_exists( 'acf_add_options_page' ) ) {
     /**
-     * Register an ACF options page.
+     * Register a field-framework options page.
      *
      * @param array<string, mixed> $args Options page configuration.
      * @return array<string, mixed>|false
@@ -122,7 +122,7 @@ if ( ! function_exists( 'acf_add_options_page' ) ) {
 
 if ( ! function_exists( 'acf_register_block_type' ) ) {
     /**
-     * Register an ACF block type.
+     * Register a field-framework block type.
      *
      * @param array<string, mixed> $settings Block settings.
      */

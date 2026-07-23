@@ -58,7 +58,7 @@
     "audit:governed-actions": "php scripts/audit-governed-actions.php",
     "lint": "phpcs --standard=config/phpcs/starisian-strict.xml",
     "lint:fix": "phpcbf --standard=config/phpcs/starisian-autofix.xml",
-    "analyze": "phpstan analyse --configuration=config/phpstan/phpstan-wordpress.neon --no-progress"
+    "analyze": "phpstan analyse --configuration=phpstan.neon --no-progress"
   },
   "extra": {
     "starisian-technologies/coding-standards": {
