@@ -41,7 +41,7 @@
     ],
     "phpcs": "phpcs --standard=config/phpcs/starisian-strict.xml",
     "phpcbf": "phpcbf --standard=config/phpcs/starisian-autofix.xml",
-    "phpstan": "phpstan analyse --configuration=config/phpstan/phpstan-wordpress.neon --no-progress",
+    "phpstan": "phpstan analyse --configuration=phpstan.neon --no-progress",
     "rector:safe": "rector process --config=config/rector/rector-safe.php",
     "rector:aggressive": "rector process --config=config/rector/rector-aggressive.php",
     "audit": [
