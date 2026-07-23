@@ -284,11 +284,8 @@ jobs:
           hits="$(echo "$hits" | sed '/^$/d')"
           if [ -n "$hits" ]; then
             msg=$'PHP-002: SELECT * usage found — enumerate columns explicitly:\n'"$hits"
-            if [ "$MODE_BLOCK" = "true" ]; then
-              echo "::error::$msg" && exit 1
-            else
-              echo "::warning::$msg"
-            fi
+            # Note: tokenized audit (below) is the enforcement mechanism; this grep is best-effort only.
+            echo "::warning::$msg"
           fi
 
       # ── PHPCS (PHP-003, PHP-004 + style) ─────────────────────────────────
