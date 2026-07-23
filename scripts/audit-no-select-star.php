@@ -91,13 +91,13 @@ foreach ($files as $file) {
         $clean .= $token[1];
     }
 
-    $lines = explode("\n", $clean);
-    foreach ($lines as $lineNo => $line) {
-        if (preg_match($pattern, $line)) {
+    if (preg_match_all($pattern, $clean, $matches, PREG_OFFSET_CAPTURE)) {
+        foreach ($matches[0] as [$match, $offset]) {
+            $lineNo = substr_count($clean, "\n", 0, $offset) + 1;
             $violations[] = sprintf(
                 '%s:%d: SELECT * is forbidden — enumerate columns explicitly (PHP-002)',
                 $file,
-                $lineNo + 1
+                $lineNo
             );
         }
     }
