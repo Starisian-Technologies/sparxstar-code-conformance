@@ -254,8 +254,10 @@ jobs:
                 missing+=("$file")
               fi
             done < <(find "$path" -name '*.php' \
-              -not -path './vendor/*' \
-              -not -path './node_modules/*' \
+              -not -path '*/vendor/*' \
+              -not -path '*/node_modules/*' \
+              -not -path '*/build/*' \
+              -not -path '*/dist/*' \
               -print0)
           done
           if [ ${#missing[@]} -gt 0 ]; then
