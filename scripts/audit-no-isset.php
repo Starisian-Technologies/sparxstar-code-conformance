@@ -8,7 +8,7 @@ declare(strict_types=1);
  *
  * Rule: isset() is forbidden in this codebase.
  * Ref:  docs/php-wordpress-standard.md §2 (strict types), §4 (no isset).
- *       CI-Enforcement-Matrix.md PHP-001.
+ *       CI-Enforcement-Matrix.md PHP-006.
  *
  * isset() masks type errors that strict types would catch. Replace with:
  *   - null coalescing operator (??) for default values
