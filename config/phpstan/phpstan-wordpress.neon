@@ -20,7 +20,8 @@
 includes:
     # WordPress type extensions.
     - %currentWorkingDirectory%/vendor/szepeviktor/phpstan-wordpress/extension.neon
-
+    # Standards package custom rules (AUTH-001, warn-only).
+    - %currentWorkingDirectory%/vendor/starisian-technologies/coding-standards/standards/phpstan-rules/extension.neon
 parameters:
     # PHP-005 — PHPStan level 5 minimum.
     level: 5
