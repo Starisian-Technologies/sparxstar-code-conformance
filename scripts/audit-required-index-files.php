@@ -46,6 +46,7 @@ function check_index_files(string $dir, array $excludeDirs, array &$violations):
 {
     $entries = scandir($dir);
     if ($entries === false) {
+        $violations[] = $dir . ' is not readable (cannot scan for required index.php)';
         return;
     }
 
