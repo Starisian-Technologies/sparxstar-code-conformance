@@ -111,7 +111,7 @@ foreach ($files as $file) {
 
     $source = file_get_contents($file);
     if ($source === false) {
-        fwrite(STDERR, "audit-no-dbdelta: cannot read {$file}\n");
+        $violations[] = sprintf('%s:0: cannot read file (audit-no-dbdelta script error)', $file);
         continue;
     }
 
