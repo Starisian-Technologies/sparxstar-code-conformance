@@ -7,10 +7,9 @@ declare(strict_types=1);
  * audit-required-index-files.php — Starisian Technologies audit script.
  *
  * Rule: every directory under the scanned path must contain an index.php.
- * Ref:  docs/php-wordpress-standard.md §9 (security hardening).
- *       WordPress security practice: prevent directory listing.
+ * Ref:  CI-Enforcement-Matrix.md PHP-008.
  *
- * The required index.php content is a silent exit:
+ * Recommended index.php content is a silent exit:
  *   <?php // Silence is golden.
  *
  * Exit codes:
