@@ -57,6 +57,29 @@ export default [
           message: 'Do not use sessionStorage for persistent state. Use IndexedDB (DIST-005).',
         },
       ],
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'window',
+          property: 'localStorage',
+          message: 'Use IndexedDB for critical offline data (DIST-005). localStorage is not offline-safe.',
+        },
+        {
+          object: 'window',
+          property: 'sessionStorage',
+          message: 'Do not use sessionStorage for persistent state. Use IndexedDB (DIST-005).',
+        },
+        {
+          object: 'globalThis',
+          property: 'localStorage',
+          message: 'Use IndexedDB for critical offline data (DIST-005). localStorage is not offline-safe.',
+        },
+        {
+          object: 'globalThis',
+          property: 'sessionStorage',
+          message: 'Do not use sessionStorage for persistent state. Use IndexedDB (DIST-005).',
+        },
+      ],
       // Disallow alert/confirm/prompt in WordPress plugin code.
       'no-alert': 'error',
     },
