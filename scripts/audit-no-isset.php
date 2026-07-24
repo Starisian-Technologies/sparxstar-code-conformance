@@ -60,7 +60,7 @@ function collect_php_files(string $dir, array $excludeDirs): array
     foreach ($iterator as $file) {
         /** @var SplFileInfo $file */
         if ($file->isFile() && $file->getExtension() === 'php') {
-            $files[] = $file->getRealPath();
+            $files[] = $file->getRealPath() ?: $file->getPathname();
         }
     }
     return $files;
