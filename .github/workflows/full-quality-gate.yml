@@ -426,6 +426,8 @@ jobs:
           done
 
       - name: Audit — no unapproved dbDelta()
+        env:
+          APPROVED_IDS: ${{ steps.exceptions.outputs.active_exceptions }}
         run: |
           set -euo pipefail
           AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-no-dbdelta.php"
@@ -444,7 +446,7 @@ jobs:
             warn_flag=""
             [ "$MODE_BLOCK" = "false" ] && warn_flag="--warn-only"
             # Pass pre-parsed exception IDs from the YAML step to avoid regex/YAML mismatch.
-            approved_ids="${{ steps.exceptions.outputs.active_exceptions }}"
+            approved_ids="${APPROVED_IDS:-}"
             php "$AUDIT" --path="$path" ${warn_flag} ${approved_ids:+--approved-ids="$approved_ids"} || exit $?
           done
 
