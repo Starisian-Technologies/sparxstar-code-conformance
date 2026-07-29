@@ -37,7 +37,7 @@ guide in `REUSABLE-WORKFLOWS.md` tells new consumers to switch each job to
 
 - **Blocking mode value:** `gate` (not `required` — renamed in v1.0.0)
 - **Warn-only mode value:** `advisory`
-- **Org-locked pin:** `@v1.0.0` (immutable). `@v1` alias also exists.
+- **Org-default pin:** `@v1` (moving major alias — advances to each new `v1.x.x` release automatically). Frozen semver pins (e.g. `@v1.0.0`) are available for repos that require explicit consent to CI changes.
 - **Legacy `mode` input removal date:** 2027-01-01 — all callers on the old
   `mode` input must migrate to `enforcement_mode` before that date.
 - **Floor:** `v1.0.0` (set in `config/version-policy.yml`)
@@ -300,12 +300,13 @@ worth repeating verbally to teams onboarding for the first time.
 ### `config/version-policy.yml` — floor is a breaking change
 
 The floor is currently `v1.0.0`. Raising it means any consumer pinned to an
-older immutable tag (if one existed below the floor) would start failing
-version-drift-enforcement immediately, with no grace period.
+older immutable tag would start failing version-drift-enforcement immediately,
+with no grace period.
 
-Today all consumers should be on `v1.0.0` or `v1` since those are the only
-tags. But as new releases are cut and some consumers lag, raising the floor
-without notice will break those callers. The rule:
+Consumers using the recommended `@v1` pin are always on the latest `v1.x.x`
+release and are unaffected by floor bumps as long as they are current.
+Consumers who froze to an explicit semver tag (e.g. `@v1.0.0`) may fall
+behind the floor as new releases are cut. The rule:
 
 - Do not raise the floor without a platform announcement with a minimum
   four-week notice window.

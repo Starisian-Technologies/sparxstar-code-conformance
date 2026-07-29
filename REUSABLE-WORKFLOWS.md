@@ -62,15 +62,12 @@ any other file in this repository.
 
 ### Before you start
 
-Confirm two things:
+Confirm one thing:
 
 - You know your **repo type**. Pick exactly one:
   - `wp-plugin` — a WordPress plugin or mu-plugin (PHP).
   - `standalone-react` — a React app or component library (TypeScript/JS).
   - `standalone-node` — a Node service or library, no React (TypeScript/JS).
-- The **`v1.0.0` tag exists** on `sparxstar-code-conformance`. You pin to it
-  in step 2. If no semver tag exists yet, stop — adoption is not yet possible
-  and pinning to `@main` is not allowed (see "Why you pin to a tag" below).
 
 ### Step 1 — Copy the caller template for your repo type
 
@@ -87,20 +84,19 @@ that matches your repo into your repo's `.github/workflows/` directory as
 The template is the only file you add. You do not copy the enforcement
 workflows themselves — they live here and your caller references them.
 
-### Step 2 — Pin to `@v1.0.0` and set the enforcement mode
+### Step 2 — Verify the pin and set the enforcement mode
 
 Open the file you just copied. Two things must be set correctly:
 
-1. **The `uses:` line is pinned to `@v1.0.0`**, not `@main`. Update the
-   template pin from `@v1` to `@v1.0.0` — `@v1.0.0` is the org-locked
-   recommendation (immutable; never moves). Do not change it to `@main`.
+1. **The `uses:` line is pinned to `@v1`**, the moving major alias. The
+   template already ships this — do not change it to `@v1.0.0` or `@main`.
+   `@v1` advances automatically to each new `v1.x.x` release, so standards
+   fixes propagate to your repo without requiring a manual pin update.
+   `@main` is never permitted — breaking changes land there first.
 2. **`enforcement_mode` is set to `advisory` for new consumers.** New repos
    start advisory (warn-only) so onboarding is never blocked by a gate the
    repo does not yet pass. Switch to `gate` only when all violations are
    resolved — see "Advisory first, gate when clean" below.
-
-Do not leave `enforcement_mode` unset. The empty value falls back to a
-deprecated legacy `mode` input that is scheduled for removal on 2027-01-01.
 
 ### Step 3 — Add the exceptions file (only if you need an exception)
 
@@ -172,10 +168,11 @@ jobs:
     secrets: inherit
 ```
 
-**2. Update pins and set advisory mode.** Update every `uses:` line to end in
-`@v1.0.0`. Set every `enforcement_mode` to `advisory` for a new consumer —
-do not flip to `gate` until violations are zero (see "Advisory first,
-gate when clean" below). Set `repo_type` to `wp-plugin` everywhere.
+**2. Verify pins and set advisory mode.** The template already ships every
+`uses:` line ending in `@v1` — leave the pins as-is. Set every
+`enforcement_mode` to `advisory` for a new consumer — do not flip to `gate`
+until violations are zero (see "Advisory first, gate when clean" below). Set
+`repo_type` to `wp-plugin` everywhere.
 
 **3. Clean up violations in advisory mode.** With `enforcement_mode: advisory`,
 merge the caller file, let the gate run, and fix all reported violations.
@@ -188,21 +185,28 @@ push the branch, open the PR. The three jobs (php, css, media) run. In
 annotation — the job still passes so the PR is not blocked. Resolve all
 warnings, then switch to `enforcement_mode: gate` in a follow-up PR.
 
-That is a wp-plugin repo fully adopted: one file added, pinned to `@v1.0.0`,
+That is a wp-plugin repo fully adopted: one file added, pinned to `@v1`,
 advisory mode for onboarding, blocking gate once clean.
 
 ---
 
-### Why you pin to `@v1.0.0`, not `@main` or `@v1`
+### Why you pin to `@v1`, not `@main` or an immutable semver tag
 
-`@v1.0.0` is an immutable, released version of these workflows — it resolves
-to the same commit forever. Pinning to it means your enforcement only changes
-when you deliberately update the pin. `@v1` is the moving major alias; it
-advances automatically to future `v1.x.x` releases, which means a standards
-update can silently change your CI behaviour. `@main` is never permitted — it
-is the integration branch and breaking changes land there first.
+The caller templates ship with `@v1`, the moving major alias. `@v1` advances
+automatically to each new `v1.x.x` release — this is how standards fixes,
+security patches, and new checks propagate to every consuming repo without
+requiring manual pin updates. This is the stated design goal of the repo:
+"a standards update fixes every repo at once."
 
-Org-locked pin recommendation: `@v1.0.0`.
+`@main` is never permitted — it is the integration branch and breaking changes
+land there first. Pinning to a frozen semver tag such as `@v1.0.0` is
+available for repos that require explicit consent to every CI change, but those
+repos will not receive bug fixes or security patches until they manually update
+their pin. If you choose a frozen pin, you are responsible for keeping it
+current via your own process (for example, Dependabot PRs on
+`package-ecosystem: github-actions`).
+
+Org-default pin: `@v1`.
 
 ---
 
@@ -339,16 +343,17 @@ available to all repos.
 
 | Pin | When to use |
 |-----|-------------|
-| `@v1.0.0` | **Recommended (org-locked).** Immutable — resolves to the same commit forever. Update the pin deliberately to adopt a new release. |
-| `@v1` | Moving alias — advances automatically to each new `v1.x.x` release. Available but not the documented recommendation. |
+| `@v1` | **Recommended (org default).** Moving alias — advances to each new `v1.x.x` release automatically. Standards fixes and security patches reach your repo without a manual pin update. |
+| `@v1.0.0` | Frozen pin — resolves to the same commit forever. Use only if your repo requires explicit consent to every CI change; you are then responsible for keeping the pin current. |
 | `@main` | Never — breaking changes land here first; not for consumers. |
 
 ## Rules
 
 - **One `standards.yml` file per repo.** Don't create separate workflow
   files per check.
-- **Always pin to an immutable semver tag (`@v1.0.0` or later).** `@v1.0.0`
-  is the org-locked recommendation. Never pin to `@main` — breaking changes
+- **Pin to `@v1` (the moving major alias).** The templates already ship this
+  pin — do not change it to a frozen semver tag unless your repo explicitly
+  requires opt-in to every CI change. Never pin to `@main` — breaking changes
   land there first. See STD-TOOLCHAIN-001 §3 for the three-axis versioning
   model.
 - **Don't duplicate checks.** If the reusable workflow checks phpcs,
