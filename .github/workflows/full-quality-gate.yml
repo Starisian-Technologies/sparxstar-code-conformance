@@ -100,6 +100,7 @@ on:
 jobs:
   # ── Input validation ──────────────────────────────────────────────────────
   validate-inputs:
+
     name: Validate inputs
     runs-on: ubuntu-latest
     outputs:
@@ -143,10 +144,32 @@ jobs:
             development|production) echo "block=true"  >> "$GITHUB_OUTPUT" ;;
           esac
 
+  # ── Secret availability check ─────────────────────────────────────────────
+  # secrets context is NOT available in job-level if: expressions — only in
+  # step env and step run.  This job maps the secret into step env and emits
+  # an explicit string boolean so downstream jobs can use == 'true' comparisons
+  # rather than relying on bare truthy evaluation of an output string.
+  check-secrets:
+    name: Check secret availability
+    runs-on: ubuntu-latest
+    outputs:
+      has_composer_key: ${{ steps.check.outputs.has_composer_key }}
+    steps:
+      - name: Detect Composer resolver key
+        id: check
+        env:
+          KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "has_composer_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_composer_key=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # ── PHP quality checks ────────────────────────────────────────────────────
   php-quality:
     name: PHP quality
-    needs: validate-inputs
+    needs: [validate-inputs, check-secrets]
     runs-on: ubuntu-latest
     env:
       MODE_BLOCK: ${{ needs.validate-inputs.outputs.mode_block }}
@@ -229,17 +252,16 @@ jobs:
           coverage: none
 
       - name: Mint Composer auth token
-        if: hashFiles('composer.json') != ''
+        if: hashFiles('composer.json') != '' && needs.check-secrets.outputs.has_composer_key == 'true'
         id: read-token
         uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         with:
           app-id: ${{ vars.COMPOSER_RESOLVER_CLIENT_ID }}
           private-key: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
           owner: Starisian-Technologies
-        continue-on-error: true
 
       - name: Configure Composer auth
-        if: hashFiles('composer.json') != '' && steps.read-token.outputs.token != ''
+        if: hashFiles('composer.json') != '' && needs.check-secrets.outputs.has_composer_key == 'true' && steps.read-token.outputs.token != ''
         env:
           GH_TOKEN: ${{ steps.read-token.outputs.token }}
         run: |
@@ -542,7 +564,7 @@ jobs:
   # ── Gate summary ──────────────────────────────────────────────────────────
   gate-summary:
     name: Gate summary
-    needs: [validate-inputs, php-quality, js-quality]
+    needs: [validate-inputs, check-secrets, php-quality, js-quality]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -558,10 +580,16 @@ jobs:
           echo "| PHP quality | ${PHP_RESULT} |" >> "$GITHUB_STEP_SUMMARY"
           echo "| JS/TS quality | ${JS_RESULT} |" >> "$GITHUB_STEP_SUMMARY"
 
-          if [ "${PHP_RESULT}" = "failure" ]; then
-            echo "::error::full-quality-gate: PHP quality job failed in ${MODE} mode"
+          # php-quality is mandatory — treat anything other than explicit success
+          # as a hard failure.  A skipped result (e.g. when validate-inputs fails
+          # and php-quality is never scheduled) must not let the gate pass, because
+          # GitHub reports skipped jobs as "Success" in branch protection checks.
+          if [ "${PHP_RESULT}" != "success" ]; then
+            echo "::error::full-quality-gate: PHP quality job ${PHP_RESULT} in ${MODE} mode — expected success"
             exit 1
           fi
+          # js-quality is intentionally conditional (run_js: false skips it legitimately);
+          # only a genuine failure should block.
           if [ "${JS_RESULT}" = "failure" ]; then
             echo "::error::full-quality-gate: JS/TS quality job failed in ${MODE} mode"
             exit 1
