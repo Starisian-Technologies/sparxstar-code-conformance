@@ -17,9 +17,14 @@ declare(strict_types=1);
  * before PHPStan runs.
  *
  * Detection scope:
- *   - Functions/methods with @governed-mutation in their docblock.
- *   - Top-level functions whose names match WP AJAX/admin-post patterns
- *     (wp_ajax_*, wp_ajax_nopriv_*, admin_post_*).
+ *   1. Functions/methods with @governed-mutation in their docblock.
+ *   2. Top-level functions whose names match WP AJAX/admin-post patterns
+ *      (wp_ajax_*, wp_ajax_nopriv_*, admin_post_*). These match the hook name
+ *      convention sometimes used for named callbacks.
+ *   3. Functions registered as callbacks to add_action() with a wp_ajax_*,
+ *      wp_ajax_nopriv_*, admin_post_*, or admin_post_nopriv_* hook string.
+ *      WordPress AJAX callbacks are almost always registered this way; their
+ *      function names do NOT carry the wp_ajax_ prefix.
  *
  * The PHPStan GovernedActionGateRule provides AST-level enforcement.
  * This script provides a file-level fast check for CI.
@@ -78,10 +83,97 @@ $files      = is_file($scanPath) ? [$scanPath] : collect_php_files_governed($sca
 $violations = [];
 
 // WP entry-point function name patterns (mirror GovernedActionGateRule::ENTRY_POINT_PATTERNS).
-$entryPointPatterns = [
+// These match hook names registered via add_action().
+$hookPatterns = [
     '/^(wp_ajax_|wp_ajax_nopriv_)/',
     '/^(admin_post_|admin_post_nopriv_)/',
 ];
+
+/**
+ * Collect function names registered as callbacks via add_action() with a
+ * WP AJAX or admin-post hook string.
+ *
+ * WordPress callbacks are almost always registered as:
+ *   add_action( 'wp_ajax_my_action', 'my_callback_function' );
+ * The callback function is NOT named wp_ajax_*; only the hook is.
+ *
+ * @param array<int,array{int,string,int}|string> $tokens
+ * @param list<non-empty-string>                  $hookPatterns
+ * @return list<string>
+ */
+function collect_ajax_callbacks(array $tokens, array $hookPatterns): array
+{
+    $callbacks = [];
+    $count     = count($tokens);
+    for ($i = 0; $i < $count; $i++) {
+        $token = $tokens[$i];
+        // Look for add_action identifier.
+        if ( ! is_array($token) || $token[0] !== T_STRING || $token[1] !== 'add_action') {
+            continue;
+        }
+        // Confirm the very next non-whitespace token is `(`.
+        $j = $i + 1;
+        while ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
+            $j++;
+        }
+        if ($j >= $count || is_array($tokens[$j]) || $tokens[$j] !== '(') {
+            continue;
+        }
+        $j++; // skip '('
+        // Skip whitespace before first arg.
+        while ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
+            $j++;
+        }
+        // First arg must be a constant string (the hook name).
+        if ($j >= $count || ! is_array($tokens[$j]) || $tokens[$j][0] !== T_CONSTANT_ENCAPSED_STRING) {
+            continue;
+        }
+        $hookName = trim($tokens[$j][1], '"\'');
+        $j++;
+        // Check if hook matches any WP AJAX / admin-post pattern.
+        $matched = false;
+        foreach ($hookPatterns as $pattern) {
+            if (preg_match($pattern, $hookName)) {
+                $matched = true;
+                break;
+            }
+        }
+        if ( ! $matched) {
+            continue;
+        }
+        // Advance to comma separating first and second args.
+        $depth = 0;
+        while ($j < $count) {
+            $t = $tokens[$j];
+            if ( ! is_array($t)) {
+                if ($t === '(' || $t === '[') {
+                    $depth++;
+                } elseif ($t === ')' || $t === ']') {
+                    if ($depth === 0) {
+                        break; // closing paren of add_action() — no second arg found
+                    }
+                    $depth--;
+                } elseif ($t === ',' && $depth === 0) {
+                    $j++;
+                    break;
+                }
+            }
+            $j++;
+        }
+        // Skip whitespace before second arg.
+        while ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_WHITESPACE) {
+            $j++;
+        }
+        // Second arg: plain string = function name; array = [class, method] (skip).
+        if ($j < $count && is_array($tokens[$j]) && $tokens[$j][0] === T_CONSTANT_ENCAPSED_STRING) {
+            $callbackName = trim($tokens[$j][1], '"\'');
+            if ($callbackName !== '') {
+                $callbacks[] = $callbackName;
+            }
+        }
+    }
+    return $callbacks;
+}
 
 foreach ($files as $file) {
     $source = file_get_contents($file);
@@ -93,6 +185,9 @@ foreach ($files as $file) {
     // Tokenize for lightweight function/method extraction.
     $tokens = token_get_all($source);
     $count  = count($tokens);
+
+    // Collect callback function names registered via add_action() for WP AJAX / admin-post hooks.
+    $registeredCallbacks = collect_ajax_callbacks($tokens, $hookPatterns);
 
     // State machine: track docblock → function name → body boundaries.
     $i            = 0;
@@ -138,10 +233,17 @@ foreach ($files as $file) {
             // Determine if this is a governed entry point.
             $isGoverned = str_contains($lastDocblock, '@governed-mutation');
             if ( ! $isGoverned && $funcName !== '' ) {
-                foreach ($entryPointPatterns as $pattern) {
-                    if (preg_match($pattern, $funcName)) {
-                        $isGoverned = true;
-                        break;
+                // Check if this function is a registered WP AJAX / admin-post callback.
+                if (in_array($funcName, $registeredCallbacks, true)) {
+                    $isGoverned = true;
+                }
+                // Also check hook-name conventions (wp_ajax_* prefix on function name itself).
+                if ( ! $isGoverned) {
+                    foreach ($hookPatterns as $pattern) {
+                        if (preg_match($pattern, $funcName)) {
+                            $isGoverned = true;
+                            break;
+                        }
                     }
                 }
             }

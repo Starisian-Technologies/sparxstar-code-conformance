@@ -123,6 +123,16 @@ jobs:
             exit 1
           fi
 
+      - name: Validate production-mode requirements
+        env:
+          INPUT_MODE: ${{ inputs.project_mode }}
+          INPUT_RUN_PHPSTAN: ${{ inputs.run_phpstan }}
+        run: |
+          if [ "$INPUT_MODE" = "production" ] && [ "$INPUT_RUN_PHPSTAN" = "false" ]; then
+            echo "::error::full-quality-gate: run_phpstan must not be false in production mode — PHP-005 is mandatory"
+            exit 1
+          fi
+
       - name: Resolve block flag
         id: mode
         env:
@@ -329,12 +339,27 @@ jobs:
 
       # ── PHPStan (PHP-005) ─────────────────────────────────────────────────
       - name: PHP-005 — PHPStan static analysis
-        if: inputs.run_phpstan && (hashFiles('phpstan.neon') != '' || hashFiles('phpstan.neon.dist') != '' || hashFiles('phpstan.dist.neon') != '')
+        if: inputs.run_phpstan
         env:
           ALLOW_PHPSTAN_BASELINE: ${{ inputs.allow_phpstan_baseline }}
           PROJECT_MODE_INPUT: ${{ inputs.project_mode }}
         run: |
           set -euo pipefail
+
+          # In production mode, a phpstan config is mandatory; silently skipping
+          # would mean PHP-005 is claimed ENFORCED but never runs.
+          has_config=false
+          [ -f "phpstan.neon" ] || [ -f "phpstan.neon.dist" ] || [ -f "phpstan.dist.neon" ] && has_config=true || true
+          if [ "$has_config" = "false" ]; then
+            if [ "$PROJECT_MODE_INPUT" = "production" ]; then
+              echo "::error::PHP-005: no PHPStan configuration found (phpstan.neon / phpstan.neon.dist). Production mode requires a PHPStan config."
+              exit 1
+            else
+              echo "::warning::PHP-005: no PHPStan configuration found — skipping (add phpstan.neon to enable)"
+              exit 0
+            fi
+          fi
+
           if [ "$PROJECT_MODE_INPUT" = "production" ] && [ -f "phpstan-baseline.neon" ]; then
             echo "::error::PHP-005: phpstan-baseline.neon is not allowed in production mode — fix all errors"
             exit 1
@@ -355,69 +380,110 @@ jobs:
           fi
 
       # ── Audit scripts ─────────────────────────────────────────────────────
+      # Audit scripts are shipped by this package and must be run from the
+      # installed vendor location, not from the consuming repo's own scripts/.
+      # In blocking mode, missing the package is itself a violation.
       - name: Audit — no isset()
         run: |
           set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-no-isset.php"
+          if [ ! -f "$AUDIT" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-006: Starisian audit scripts not found — ensure starisian-technologies/coding-standards is in composer.json" && exit 1
+            else
+              echo "::warning::PHP-006: Starisian audit scripts not found — skipping"
+              exit 0
+            fi
+          fi
           IFS=',' read -ra paths <<< "$SOURCE_PATHS"
           for path in "${paths[@]}"; do
             path="$(echo "$path" | tr -d '[:space:]')"
             [ -d "$path" ] || continue
             warn_flag=""
             [ "$MODE_BLOCK" = "false" ] && warn_flag="--warn-only"
-            php scripts/audit-no-isset.php --path="$path" $warn_flag || exit $?
+            php "$AUDIT" --path="$path" $warn_flag || exit $?
           done
-        if: hashFiles('scripts/audit-no-isset.php') != ''
 
       - name: Audit — no SELECT *
         run: |
           set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-no-select-star.php"
+          if [ ! -f "$AUDIT" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-002: Starisian audit scripts not found — ensure starisian-technologies/coding-standards is in composer.json" && exit 1
+            else
+              echo "::warning::PHP-002: Starisian audit scripts not found — skipping"
+              exit 0
+            fi
+          fi
           IFS=',' read -ra paths <<< "$SOURCE_PATHS"
           for path in "${paths[@]}"; do
             path="$(echo "$path" | tr -d '[:space:]')"
             [ -d "$path" ] || continue
             warn_flag=""
             [ "$MODE_BLOCK" = "false" ] && warn_flag="--warn-only"
-            php scripts/audit-no-select-star.php --path="$path" $warn_flag || exit $?
+            php "$AUDIT" --path="$path" $warn_flag || exit $?
           done
-        if: hashFiles('scripts/audit-no-select-star.php') != ''
 
       - name: Audit — no unapproved dbDelta()
         run: |
           set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-no-dbdelta.php"
+          if [ ! -f "$AUDIT" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-007: Starisian audit scripts not found — ensure starisian-technologies/coding-standards is in composer.json" && exit 1
+            else
+              echo "::warning::PHP-007: Starisian audit scripts not found — skipping"
+              exit 0
+            fi
+          fi
           IFS=',' read -ra paths <<< "$SOURCE_PATHS"
           for path in "${paths[@]}"; do
             path="$(echo "$path" | tr -d '[:space:]')"
             [ -d "$path" ] || continue
             warn_flag=""
             [ "$MODE_BLOCK" = "false" ] && warn_flag="--warn-only"
-            php scripts/audit-no-dbdelta.php --path="$path" $warn_flag || exit $?
+            # Pass pre-parsed exception IDs from the YAML step to avoid regex/YAML mismatch.
+            approved_ids="${{ steps.exceptions.outputs.active_exceptions }}"
+            php "$AUDIT" --path="$path" ${warn_flag} ${approved_ids:+--approved-ids="$approved_ids"} || exit $?
           done
-        if: hashFiles('scripts/audit-no-dbdelta.php') != ''
 
       - name: Audit — required index.php files
         run: |
           set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-required-index-files.php"
+          if [ ! -f "$AUDIT" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-008: Starisian audit scripts not found — ensure starisian-technologies/coding-standards is in composer.json" && exit 1
+            else
+              echo "::warning::PHP-008: Starisian audit scripts not found — skipping"
+              exit 0
+            fi
+          fi
           IFS=',' read -ra paths <<< "$SOURCE_PATHS"
           for path in "${paths[@]}"; do
             path="$(echo "$path" | tr -d '[:space:]')"
             [ -d "$path" ] || continue
             warn_flag=""
             [ "$MODE_BLOCK" = "false" ] && warn_flag="--warn-only"
-            php scripts/audit-required-index-files.php --path="$path" $warn_flag || exit $?
+            php "$AUDIT" --path="$path" $warn_flag || exit $?
           done
-        if: hashFiles('scripts/audit-required-index-files.php') != ''
 
       - name: AUTH-001 (warn-only) — governed actions call authority-layer gate
         # STATUS: always warn-only until backing ADR is ratified (AUTH-001, STD-TOOLCHAIN-001 §5).
         run: |
           set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-governed-actions.php"
+          if [ ! -f "$AUDIT" ]; then
+            echo "::warning::AUTH-001: Starisian audit scripts not found — skipping"
+            exit 0
+          fi
           IFS=',' read -ra paths <<< "$SOURCE_PATHS"
           for path in "${paths[@]}"; do
             path="$(echo "$path" | tr -d '[:space:]')"
             [ -d "$path" ] || continue
-            php scripts/audit-governed-actions.php --path="$path" --warn-only || true
+            php "$AUDIT" --path="$path" --warn-only || true
           done
-        if: hashFiles('scripts/audit-governed-actions.php') != ''
 
   # ── JS/TS quality checks ──────────────────────────────────────────────────
   js-quality:

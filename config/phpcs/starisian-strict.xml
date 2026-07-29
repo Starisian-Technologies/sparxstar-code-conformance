@@ -33,14 +33,36 @@
     <exclude-pattern>*/build/*</exclude-pattern>
     <exclude-pattern>*/dist/*</exclude-pattern>
 
-    <!-- ── PHP-001: strict_types required (PSR-12 variant) ── -->
+    <!-- ── PHP-001: strict_types required ── -->
     <rule ref="PSR12.Files.DeclareStrictTypes">
         <severity>5</severity>
         <type>error</type>
     </rule>
 
-    <!-- ── PSR-12 baseline ── -->
+    <!-- ── PSR-12 style baseline (conflict exclusions listed below) ── -->
     <rule ref="PSR12"/>
+
+    <!--
+        PSR-12 vs WordPress-Core formatting conflicts.
+        WordPress enforces tabs; PSR-12 enforces spaces.
+        WordPress is authoritative for this ruleset — exclude the conflicting PSR-12 rules.
+    -->
+    <!-- Indentation: WordPress uses tabs, PSR-12 uses 4 spaces. -->
+    <rule ref="Generic.WhiteSpace.DisallowTabIndent">
+        <severity>0</severity>
+    </rule>
+    <!-- WordPress uses its own brace/paren spacing conventions. -->
+    <rule ref="PSR2.ControlStructures.ControlStructureSpacing">
+        <severity>0</severity>
+    </rule>
+    <!-- WordPress allows side effects in files (plugin bootstrap files). -->
+    <rule ref="PSR1.Files.SideEffects">
+        <severity>0</severity>
+    </rule>
+    <!-- WordPress uses snake_case method names, not camelCase. -->
+    <rule ref="PSR1.Methods.CamelCapsMethodName">
+        <severity>0</severity>
+    </rule>
 
     <!-- ── WordPress core + extra ── -->
     <rule ref="WordPress-Core"/>
