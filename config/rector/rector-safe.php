@@ -10,7 +10,7 @@ declare(strict_types=1);
  * Run before committing; safe to apply to any codebase.
  *
  * Usage:
- *     vendor/bin/rector process src --config vendor/starisian-technologies/coding-standards/config/rector/rector-safe.php
+ *     vendor/bin/rector process scripts standards stubs --config vendor/starisian-technologies/coding-standards/config/rector/rector-safe.php
  *
  * Consumer override (in project rector.php):
  *     $rectorConfig->import(__DIR__ . '/vendor/starisian-technologies/coding-standards/config/rector/rector-safe.php');

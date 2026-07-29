@@ -10,7 +10,7 @@ declare(strict_types=1);
  * or require constructor-injection refactors. Review changes before committing.
  *
  * Usage (review diff before commit):
- *     vendor/bin/rector process src --config vendor/starisian-technologies/coding-standards/config/rector/rector-aggressive.php --dry-run
+ *     vendor/bin/rector process scripts standards stubs --config vendor/starisian-technologies/coding-standards/config/rector/rector-aggressive.php --dry-run
  *
  * Consumer override (in project rector.php):
  *     $rectorConfig->import(__DIR__ . '/vendor/starisian-technologies/coding-standards/config/rector/rector-aggressive.php');
