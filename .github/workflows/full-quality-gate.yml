@@ -1,0 +1,635 @@
+# ============================================================
+# full-quality-gate.yml — Starisian Technologies
+# Ref: docs/php-wordpress-standard.md, docs/standards-handbook.md §0.1
+#      CI-Enforcement-Matrix.md PHP-001–PHP-005, AUTH-001, JS-001
+#
+# Reusable workflow: PHP/WordPress + JS full quality gate.
+#
+# Modes (project_mode):
+#   draft       — warn-only; never blocks merge except fatal syntax/security issues
+#   development — block on hard violations
+#   production  — block on everything; no suppressed correctness errors
+#
+# ENFORCES (when workflow runs):
+#   PHP-001 — declare(strict_types=1) in all PHP files
+#   PHP-002 — no SELECT * (audit-no-select-star.php)
+#   PHP-003 — all DB queries prepared (PHPCS WordPress.DB.PreparedSQL*)
+#   PHP-004 — WordPress globals prefixed (PHPCS WordPress.NamingConventions.PrefixAllGlobals)
+#   PHP-005 — PHPStan level 5 minimum
+#   AUTH-001 — governed actions call authority-layer gate (audit-governed-actions.php, warn-only §5)
+#
+# ALSO CHECKS:
+#   - no isset() calls (audit-no-isset.php)
+#   - no dbDelta() outside approved entry points (audit-no-dbdelta.php)
+#   - required index.php in all directories (audit-required-index-files.php)
+#   - JS/TS ESLint (when run_js: true)
+#
+# Caller example (consuming repo's .github/workflows/quality.yml):
+#
+#   jobs:
+#     quality:
+#       uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/full-quality-gate.yml@v1
+#       with:
+#         project_mode: production
+#         php_version: '8.3'
+#         wordpress_version: '6.8'
+#         source_paths: 'src'
+#       secrets:
+#         COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+# ============================================================
+
+name: Full Quality Gate
+
+on:
+  workflow_call:
+    inputs:
+      project_mode:
+        description: 'Enforcement mode: draft (warn-only) | development (block violations) | production (block everything)'
+        required: false
+        type: string
+        default: development
+      php_version:
+        description: 'PHP version to run checks against (e.g. 8.3)'
+        required: false
+        type: string
+        default: '8.3'
+      wordpress_version:
+        description: 'WordPress version the plugin targets (informational; currently unused / reserved for future presence checks)'
+        required: false
+        type: string
+        default: '6.8'
+      plugin_slug:
+        description: 'WordPress plugin slug (informational; currently unused / reserved for future directory presence checks)'
+        required: false
+        type: string
+        default: ''
+      text_domain:
+        description: 'Plugin text domain (passed to PHPCS i18n checks via environment)'
+        required: false
+        type: string
+        default: ''
+      php_prefix:
+        description: >
+          WordPress global-namespace prefix (e.g. "myplugin"), passed to PHPCS's
+          PrefixAllGlobals check via --runtime-set prefixes. PHP-004 is an error-level
+          rule with no usable default — leaving this empty in gate/development mode
+          fails the PHPCS step fast with a clear message instead of running the sniff
+          unconfigured and producing a mass of unrelated-looking violations.
+        required: false
+        type: string
+        default: ''
+      source_paths:
+        description: 'Comma-separated list of PHP source paths to scan (default: src)'
+        required: false
+        type: string
+        default: 'src'
+      run_js:
+        description: 'Run ESLint on JS/TS sources'
+        required: false
+        type: boolean
+        default: false
+      run_phpstan:
+        description: 'Run PHPStan static analysis'
+        required: false
+        type: boolean
+        default: true
+      allow_phpstan_baseline:
+        description: 'Allow phpstan-baseline.neon to suppress existing errors (production: always false)'
+        required: false
+        type: boolean
+        default: false
+      phpstan_level:
+        description: 'Minimum PHPStan analysis level (must be >= 5)'
+        required: false
+        type: string
+        default: '5'
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY:
+        required: false
+
+jobs:
+  # ── Input validation ──────────────────────────────────────────────────────
+  validate-inputs:
+
+    name: Validate inputs
+    runs-on: ubuntu-latest
+    outputs:
+      mode_block: ${{ steps.mode.outputs.block }}
+    steps:
+      - name: Validate project_mode
+        env:
+          INPUT_MODE: ${{ inputs.project_mode }}
+        run: |
+          case "$INPUT_MODE" in
+            draft|development|production) ;;
+            *) echo "::error::full-quality-gate: unknown project_mode '$INPUT_MODE' — must be draft | development | production" && exit 1 ;;
+          esac
+
+      - name: Validate phpstan_level
+        env:
+          INPUT_LEVEL: ${{ inputs.phpstan_level }}
+        run: |
+          if ! [[ "$INPUT_LEVEL" =~ ^[0-9]+$ ]] || [ "$INPUT_LEVEL" -lt 5 ]; then
+            echo "::error::full-quality-gate: phpstan_level must be an integer >= 5 (got '$INPUT_LEVEL')"
+            exit 1
+          fi
+
+      - name: Validate production-mode requirements
+        env:
+          INPUT_MODE: ${{ inputs.project_mode }}
+          INPUT_RUN_PHPSTAN: ${{ inputs.run_phpstan }}
+        run: |
+          if [ "$INPUT_MODE" = "production" ] && [ "$INPUT_RUN_PHPSTAN" = "false" ]; then
+            echo "::error::full-quality-gate: run_phpstan must not be false in production mode — PHP-005 is mandatory"
+            exit 1
+          fi
+
+      - name: Resolve block flag
+        id: mode
+        env:
+          INPUT_MODE: ${{ inputs.project_mode }}
+        run: |
+          case "$INPUT_MODE" in
+            draft)                  echo "block=false" >> "$GITHUB_OUTPUT" ;;
+            development|production) echo "block=true"  >> "$GITHUB_OUTPUT" ;;
+          esac
+
+  # ── Secret availability check ─────────────────────────────────────────────
+  # secrets context is NOT available in job-level if: expressions — only in
+  # step env and step run.  This job maps the secret into step env and emits
+  # an explicit string boolean so downstream jobs can use == 'true' comparisons
+  # rather than relying on bare truthy evaluation of an output string.
+  check-secrets:
+    name: Check secret availability
+    runs-on: ubuntu-latest
+    outputs:
+      has_composer_key: ${{ steps.check.outputs.has_composer_key }}
+    steps:
+      - name: Detect Composer resolver key
+        id: check
+        env:
+          KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "has_composer_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_composer_key=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  # ── PHP quality checks ────────────────────────────────────────────────────
+  php-quality:
+    name: PHP quality
+    needs: [validate-inputs, check-secrets]
+    runs-on: ubuntu-latest
+    env:
+      MODE_BLOCK: ${{ needs.validate-inputs.outputs.mode_block }}
+      PHPSTAN_LEVEL: ${{ inputs.phpstan_level }}
+      SOURCE_PATHS: ${{ inputs.source_paths }}
+      TEXT_DOMAIN: ${{ inputs.text_domain }}
+      PHP_PREFIX: ${{ inputs.php_prefix }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Parse standards exceptions
+        id: exceptions
+        env:
+          PARSE_SCRIPT: |
+            import sys, os, textwrap
+            from datetime import date
+            try:
+                import yaml
+            except ImportError:
+                print("::error::PyYAML not available — cannot parse exceptions file")
+                sys.exit(1)
+            today = date.today().isoformat()
+            active = []
+            expired = []
+            malformed = []
+            try:
+                with open(".standards/standards-exceptions.yml") as f:
+                    data = yaml.safe_load(f) or {}
+            except Exception as e:
+                print(f"::error::standards-exceptions.yml malformed — {e}")
+                sys.exit(1)
+            exceptions = data.get("exceptions", [])
+            for exc in exceptions:
+                if not isinstance(exc, dict):
+                    malformed.append("<no-id>")
+                    continue
+                required_fields = ["id", "rule", "reason", "owner", "expires", "approval"]
+                missing = [f for f in required_fields if f not in exc]
+                if missing:
+                    malformed.append(exc.get("id", "<no-id>"))
+                    continue
+                expires = exc["expires"]
+                if expires is None:
+                    malformed.append(exc.get("id", "<no-id>"))
+                    continue
+                if not isinstance(expires, str):
+                    if hasattr(expires, "isoformat"):
+                        expires = expires.isoformat()
+                    else:
+                        malformed.append(exc.get("id", "<no-id>"))
+                        continue
+                if expires < today:
+                    expired.append(exc["id"])
+                else:
+                    active.append(exc["id"])
+                    print(f"::notice::Active exception: {exc['id']} — {exc['rule']} — expires {expires}")
+            if expired:
+                print(f"::error::Expired exceptions (fail-closed): {', '.join(expired)}")
+                sys.exit(1)
+            if malformed:
+                print(f"::error::Malformed exception entries: {', '.join(malformed)}")
+                sys.exit(1)
+            with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                out.write(f"active_exceptions={','.join(active)}\n")
+        run: |
+          set -euo pipefail
+          if [ ! -f ".standards/standards-exceptions.yml" ]; then
+            echo "active_exceptions=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          pip3 install pyyaml --quiet
+          python3 -c "import textwrap, os; exec(textwrap.dedent(os.environ['PARSE_SCRIPT']))"
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@c541c155eee45413f5b09a52248675b1a2575231 # v2
+        with:
+          php-version: ${{ inputs.php_version }}
+          tools: composer, phpcs, phpstan
+          coverage: none
+
+      - name: Mint Composer auth token
+        if: hashFiles('composer.json') != '' && needs.check-secrets.outputs.has_composer_key == 'true'
+        id: read-token
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
+        with:
+          app-id: ${{ vars.COMPOSER_RESOLVER_CLIENT_ID }}
+          private-key: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+          owner: Starisian-Technologies
+
+      - name: Configure Composer auth
+        if: hashFiles('composer.json') != '' && needs.check-secrets.outputs.has_composer_key == 'true' && steps.read-token.outputs.token != ''
+        env:
+          GH_TOKEN: ${{ steps.read-token.outputs.token }}
+        run: |
+          composer config --global --auth github-oauth.github.com "$GH_TOKEN"
+          git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Install Composer dependencies
+        if: hashFiles('composer.json') != ''
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      # ── PHP-001: strict_types ─────────────────────────────────────────────
+      - name: PHP-001 — declare(strict_types=1) in all PHP files
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra paths <<< "$SOURCE_PATHS"
+          missing=()
+          for path in "${paths[@]}"; do
+            path="$(echo "$path" | tr -d '[:space:]')"
+            [ -d "$path" ] || continue
+            while IFS= read -r -d '' file; do
+              if ! grep -qP '^\s*declare\s*\(\s*strict_types\s*=\s*1\s*\)' "$file"; then
+                missing+=("$file")
+              fi
+            done < <(find "$path" -name '*.php' \
+              -not -path '*/vendor/*' \
+              -not -path '*/node_modules/*' \
+              -not -path '*/build/*' \
+              -not -path '*/dist/*' \
+              -print0)
+          done
+          if [ ${#missing[@]} -gt 0 ]; then
+            msg="PHP-001: missing declare(strict_types=1) in: ${missing[*]}"
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::$msg" && exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
+
+      # ── PHP-002: no SELECT * ──────────────────────────────────────────────
+      - name: PHP-002 — no SELECT * queries
+        run: |
+          set -euo pipefail
+          IFS=',' read -ra paths <<< "$SOURCE_PATHS"
+          hits=""
+          for path in "${paths[@]}"; do
+            path="$(echo "$path" | tr -d '[:space:]')"
+            [ -d "$path" ] || continue
+            result=$(grep -Prin --include='*.php' 'SELECT\s+\*\s+FROM' "$path" 2>/dev/null || true)
+            [ -n "$result" ] && hits="${hits}"$'\n'"${result}"
+          done
+          hits="$(echo "$hits" | sed '/^$/d')"
+          if [ -n "$hits" ]; then
+            msg=$'PHP-002: SELECT * usage found — enumerate columns explicitly:\n'"$hits"
+            # Note: tokenized audit (below) is the enforcement mechanism; this grep is best-effort only.
+            echo "::warning::$msg"
+          fi
+
+      # ── PHPCS (PHP-003, PHP-004 + style) ─────────────────────────────────
+      - name: PHP-LINT — preflight (PHP-004 / i18n require explicit config)
+        run: |
+          set -euo pipefail
+          uses_starisian="false"
+          [ -f "vendor/starisian-technologies/coding-standards/config/phpcs/starisian-strict.xml" ] && uses_starisian="true"
+
+          if [ "$uses_starisian" = "true" ] && [ -z "$PHP_PREFIX" ]; then
+            msg="PHP-004: starisian-strict.xml's PrefixAllGlobals is an error-level rule with no usable default. Set the 'php_prefix' input (e.g. php_prefix: myplugin) before running in gate/development mode, or every unprefixed global in your codebase will report as a violation."
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::$msg" && exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
+
+          if [ "$uses_starisian" = "true" ] && [ -z "$TEXT_DOMAIN" ]; then
+            msg="PHP-LINT: starisian-strict.xml's WordPress.WP.I18n is an error-level rule with no configured text domain. Set the 'text_domain' input before running in gate/development mode, or i18n checks will run unconfigured."
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::$msg" && exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
+
+      - name: PHP-LINT — PHPCS
+        run: |
+          set -euo pipefail
+          phpcs_exit=0
+
+          runtime_args=()
+          if [ -n "$TEXT_DOMAIN" ]; then
+            runtime_args+=(--runtime-set text_domain "$TEXT_DOMAIN")
+          fi
+          if [ -n "$PHP_PREFIX" ]; then
+            runtime_args+=(--runtime-set prefixes "$PHP_PREFIX")
+          fi
+
+          if [ -f "vendor/starisian-technologies/coding-standards/config/phpcs/starisian-strict.xml" ]; then
+            IFS=',' read -ra paths <<< "$SOURCE_PATHS"
+            args=()
+            for p in "${paths[@]}"; do
+              p="$(echo "$p" | tr -d '[:space:]')"
+              [ -n "$p" ] && args+=("$p")
+            done
+            [ ${#args[@]} -eq 0 ] && args=("src")
+
+            phpcs --standard="vendor/starisian-technologies/coding-standards/config/phpcs/starisian-strict.xml" "${runtime_args[@]}" --report=full "${args[@]}" 2>&1 || phpcs_exit=$?
+          elif [ -f "phpcs.xml" ] || [ -f "phpcs.xml.dist" ] || [ -f ".phpcs.xml" ]; then
+            phpcs --report=full 2>&1 || phpcs_exit=$?
+          else
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-LINT: no PHPCS config found and Starisian strict ruleset is not installed" && exit 1
+            else
+              echo "::warning::PHP-LINT: no PHPCS config found and Starisian strict ruleset is not installed"
+            fi
+          fi
+
+          if [ "$phpcs_exit" -ne 0 ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-LINT: PHPCS violations found (exit $phpcs_exit)" && exit 1
+            else
+              echo "::warning::PHP-LINT: PHPCS violations found (non-blocking)"
+            fi
+          fi
+
+      # ── PHPStan (PHP-005) ─────────────────────────────────────────────────
+      - name: PHP-005 — PHPStan static analysis
+        if: inputs.run_phpstan
+        env:
+          ALLOW_PHPSTAN_BASELINE: ${{ inputs.allow_phpstan_baseline }}
+          PROJECT_MODE_INPUT: ${{ inputs.project_mode }}
+        run: |
+          set -euo pipefail
+
+          # In production mode, a phpstan config is mandatory; silently skipping
+          # would mean PHP-005 is claimed ENFORCED but never runs.
+          has_config=false
+          [ -f "phpstan.neon" ] || [ -f "phpstan.neon.dist" ] || [ -f "phpstan.dist.neon" ] && has_config=true || true
+          if [ "$has_config" = "false" ]; then
+            if [ "$PROJECT_MODE_INPUT" = "production" ]; then
+              echo "::error::PHP-005: no PHPStan configuration found (phpstan.neon / phpstan.neon.dist). Production mode requires a PHPStan config."
+              exit 1
+            else
+              echo "::warning::PHP-005: no PHPStan configuration found — skipping (add phpstan.neon to enable)"
+              exit 0
+            fi
+          fi
+
+          if [ "$PROJECT_MODE_INPUT" = "production" ] && [ -f "phpstan-baseline.neon" ]; then
+            echo "::error::PHP-005: phpstan-baseline.neon is not allowed in production mode — fix all errors"
+            exit 1
+          fi
+
+          if [ "$ALLOW_PHPSTAN_BASELINE" != "true" ] && [ -f "phpstan-baseline.neon" ]; then
+            echo "::warning::PHP-005: phpstan-baseline.neon present but allow_phpstan_baseline is false"
+          fi
+
+          phpstan_exit=0
+          phpstan analyse --level="$PHPSTAN_LEVEL" --no-progress 2>&1 || phpstan_exit=$?
+          if [ "$phpstan_exit" -ne 0 ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-005: PHPStan violations found" && exit 1
+            else
+              echo "::warning::PHP-005: PHPStan violations found (non-blocking)"
+            fi
+          fi
+
+      # ── Audit scripts ─────────────────────────────────────────────────────
+      # Audit scripts are shipped by this package and must be run from the
+      # installed vendor location, not from the consuming repo's own scripts/.
+      # In blocking mode, missing the package is itself a violation.
+      - name: Audit — no isset()
+        run: |
+          set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-no-isset.php"
+          if [ ! -f "$AUDIT" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-006: Starisian audit scripts not found — ensure starisian-technologies/coding-standards is in composer.json" && exit 1
+            else
+              echo "::warning::PHP-006: Starisian audit scripts not found — skipping"
+              exit 0
+            fi
+          fi
+          IFS=',' read -ra paths <<< "$SOURCE_PATHS"
+          for path in "${paths[@]}"; do
+            path="$(echo "$path" | tr -d '[:space:]')"
+            [ -d "$path" ] || continue
+            warn_flag=""
+            [ "$MODE_BLOCK" = "false" ] && warn_flag="--warn-only"
+            php "$AUDIT" --path="$path" $warn_flag || exit $?
+          done
+
+      - name: Audit — no SELECT *
+        run: |
+          set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-no-select-star.php"
+          if [ ! -f "$AUDIT" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-002: Starisian audit scripts not found — ensure starisian-technologies/coding-standards is in composer.json" && exit 1
+            else
+              echo "::warning::PHP-002: Starisian audit scripts not found — skipping"
+              exit 0
+            fi
+          fi
+          IFS=',' read -ra paths <<< "$SOURCE_PATHS"
+          for path in "${paths[@]}"; do
+            path="$(echo "$path" | tr -d '[:space:]')"
+            [ -d "$path" ] || continue
+            warn_flag=""
+            [ "$MODE_BLOCK" = "false" ] && warn_flag="--warn-only"
+            php "$AUDIT" --path="$path" $warn_flag || exit $?
+          done
+
+      - name: Audit — no unapproved dbDelta()
+        env:
+          APPROVED_IDS: ${{ steps.exceptions.outputs.active_exceptions }}
+        run: |
+          set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-no-dbdelta.php"
+          if [ ! -f "$AUDIT" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-007: Starisian audit scripts not found — ensure starisian-technologies/coding-standards is in composer.json" && exit 1
+            else
+              echo "::warning::PHP-007: Starisian audit scripts not found — skipping"
+              exit 0
+            fi
+          fi
+          IFS=',' read -ra paths <<< "$SOURCE_PATHS"
+          for path in "${paths[@]}"; do
+            path="$(echo "$path" | tr -d '[:space:]')"
+            [ -d "$path" ] || continue
+            warn_flag=""
+            [ "$MODE_BLOCK" = "false" ] && warn_flag="--warn-only"
+            # Pass pre-parsed exception IDs from the YAML step to avoid regex/YAML mismatch.
+            approved_ids="${APPROVED_IDS:-}"
+            php "$AUDIT" --path="$path" ${warn_flag} ${approved_ids:+--approved-ids="$approved_ids"} || exit $?
+          done
+
+      - name: Audit — required index.php files
+        run: |
+          set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-required-index-files.php"
+          if [ ! -f "$AUDIT" ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::PHP-008: Starisian audit scripts not found — ensure starisian-technologies/coding-standards is in composer.json" && exit 1
+            else
+              echo "::warning::PHP-008: Starisian audit scripts not found — skipping"
+              exit 0
+            fi
+          fi
+          IFS=',' read -ra paths <<< "$SOURCE_PATHS"
+          for path in "${paths[@]}"; do
+            path="$(echo "$path" | tr -d '[:space:]')"
+            [ -d "$path" ] || continue
+            warn_flag=""
+            [ "$MODE_BLOCK" = "false" ] && warn_flag="--warn-only"
+            php "$AUDIT" --path="$path" $warn_flag || exit $?
+          done
+
+      - name: AUTH-001 (warn-only) — governed actions call authority-layer gate
+        # STATUS: always warn-only until backing ADR is ratified (AUTH-001, STD-TOOLCHAIN-001 §5).
+        run: |
+          set -euo pipefail
+          AUDIT="vendor/starisian-technologies/coding-standards/scripts/audit-governed-actions.php"
+          if [ ! -f "$AUDIT" ]; then
+            echo "::warning::AUTH-001: Starisian audit scripts not found — skipping"
+            exit 0
+          fi
+          IFS=',' read -ra paths <<< "$SOURCE_PATHS"
+          for path in "${paths[@]}"; do
+            path="$(echo "$path" | tr -d '[:space:]')"
+            [ -d "$path" ] || continue
+            php "$AUDIT" --path="$path" --warn-only || true
+          done
+
+  # ── JS/TS quality checks ──────────────────────────────────────────────────
+  js-quality:
+    name: JS/TS quality
+    needs: validate-inputs
+    if: inputs.run_js
+    runs-on: ubuntu-latest
+    env:
+      MODE_BLOCK: ${{ needs.validate-inputs.outputs.mode_block }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: pnpm
+
+      - name: Install JS dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint
+        run: |
+          set -euo pipefail
+          eslint_exit=0
+          pnpm eslint . 2>&1 || eslint_exit=$?
+          if [ "$eslint_exit" -ne 0 ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::JS-LINT: ESLint violations found (exit $eslint_exit)" && exit 1
+            else
+              echo "::warning::JS-LINT: ESLint violations found (non-blocking)"
+            fi
+          fi
+
+      - name: TypeScript type check
+        if: hashFiles('tsconfig.json') != '' || hashFiles('tsconfig.*.json') != ''
+        run: |
+          set -euo pipefail
+          tsc_exit=0
+          pnpm tsc --noEmit 2>&1 || tsc_exit=$?
+          if [ "$tsc_exit" -ne 0 ]; then
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::JS-TS: TypeScript type errors found (exit $tsc_exit)" && exit 1
+            else
+              echo "::warning::JS-TS: TypeScript type errors found (non-blocking)"
+            fi
+          fi
+
+  # ── Gate summary ──────────────────────────────────────────────────────────
+  gate-summary:
+    name: Gate summary
+    needs: [validate-inputs, check-secrets, php-quality, js-quality]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report gate result
+        env:
+          PHP_RESULT: ${{ needs.php-quality.result }}
+          JS_RESULT: ${{ needs.js-quality.result }}
+          MODE: ${{ inputs.project_mode }}
+        run: |
+          echo "## Full Quality Gate — ${MODE} mode" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Job | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-----|--------|" >> "$GITHUB_STEP_SUMMARY"
+          echo "| PHP quality | ${PHP_RESULT} |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| JS/TS quality | ${JS_RESULT} |" >> "$GITHUB_STEP_SUMMARY"
+
+          # php-quality is mandatory — treat anything other than explicit success
+          # as a hard failure.  A skipped result (e.g. when validate-inputs fails
+          # and php-quality is never scheduled) must not let the gate pass, because
+          # GitHub reports skipped jobs as "Success" in branch protection checks.
+          if [ "${PHP_RESULT}" != "success" ]; then
+            echo "::error::full-quality-gate: PHP quality job ${PHP_RESULT} in ${MODE} mode — expected success"
+            exit 1
+          fi
+          # js-quality is intentionally conditional (run_js: false skips it legitimately);
+          # only a genuine failure should block.
+          if [ "${JS_RESULT}" = "failure" ]; then
+            echo "::error::full-quality-gate: JS/TS quality job failed in ${MODE} mode"
+            exit 1
+          fi
+          echo "::notice::full-quality-gate: all jobs passed in ${MODE} mode"

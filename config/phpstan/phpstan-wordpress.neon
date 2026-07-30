@@ -1,0 +1,53 @@
+# Starisian Technologies — WordPress-aware PHPStan configuration.
+# Ref: docs/php-wordpress-standard.md §10.1 (PHP-005: level 5 minimum).
+#      CI-Enforcement-Matrix.md PHP-005.
+#
+# Consumer extension (in the project's phpstan.neon):
+#   includes:
+#       - vendor/starisian-technologies/coding-standards/config/phpstan/phpstan-wordpress.neon
+#   parameters:
+#       paths:
+#           - src
+#       level: 6           # MAY be raised; MUST NOT drop below 5
+#
+# This file includes:
+#   - szepeviktor/phpstan-wordpress WordPress extension
+#   - Strict parameter settings that apply to all consuming repos
+#
+# NOT included: standards/phpstan-rules/extension.neon (GovernedActionGateRule / AUTH-001).
+# That class implements getNodeTypes(): array against PHPStan\Rules\Rule, which declares
+# getNodeType(): string — including it raises a PHP fatal (engine-level, not a PHPStan
+# diagnostic) the instant this config is loaded. It also has no severity control PHPStan
+# can express as "warn-only", which AUTH-001 requires pending ADR ratification. AUTH-001
+# is enforced via scripts/audit-governed-actions.php (a plain script, so --warn-only is a
+# real flag) until the rule class is fixed and re-added with an explicit plan for how
+# warn-only is expressed here.
+#
+# Paths and excludePaths are intentionally omitted — project-specific.
+
+includes:
+    # WordPress type extensions.
+    - %currentWorkingDirectory%/vendor/szepeviktor/phpstan-wordpress/extension.neon
+parameters:
+    # PHP-005 — PHPStan level 5 minimum.
+    level: 5
+
+    # Distrust phpDoc types when code inference contradicts them.
+    treatPhpDocTypesAsCertain: false
+
+    # false: the two ignoreErrors patterns below are broad WordPress core-function false
+    # positives, not project-specific — a consumer whose code never triggers apply_filters
+    # or do_action inference issues should not fail on an "unmatched ignore" for a pattern
+    # this shared config declares, not them.
+    reportUnmatchedIgnoredErrors: false
+
+    # WordPress + field-framework stubs — resolve types for functions not loaded by autoloader.
+    # %currentWorkingDirectory% refers to the project root that runs phpstan.
+    stubFiles:
+        - %currentWorkingDirectory%/vendor/starisian-technologies/coding-standards/stubs/acf.stub.php
+        - %currentWorkingDirectory%/vendor/starisian-technologies/coding-standards/stubs/wordpress-extra.stub.php
+
+    # WordPress core global functions use variadic signatures that trigger false positives.
+    ignoreErrors:
+        - '#Function apply_filters#'
+        - '#Function do_action#'
