@@ -3,7 +3,7 @@
 // Contains isset() call — triggers PHP-006 (no-isset audit).
 // Contains SELECT * query — triggers PHP-002 (no-select-star audit).
 // Contains dbDelta() call — triggers PHP-007 (no-dbdelta audit).
-// No @governed-mutation gate call — triggers AUTH-001 warning.
+// delete_all_posts() is @governed-mutation with no gate call — triggers AUTH-001.
 
 namespace FixturePlugin;
 
@@ -12,7 +12,7 @@ class BadPlugin {
 	public function get_all_posts() {
 		global $wpdb;
 
-		// SELECT * violation (PHP-002 / PHP-SQL-002).
+		// SELECT * violation (PHP-002).
 		$results = $wpdb->get_results(
 			"SELECT * FROM {$wpdb->posts} WHERE post_status = 'publish'"
 		);
@@ -34,5 +34,16 @@ class BadPlugin {
 		) {$charset_collate};";
 		// dbDelta() violation (PHP-007).
 		dbDelta( $sql );
+	}
+
+	/**
+	 * @governed-mutation
+	 */
+	public function delete_all_posts(): void {
+		global $wpdb;
+		// AUTH-001 violation: a governed mutation with no call to the authority-layer
+		// gate anywhere in its body — not even a comment mentioning the gate function
+		// name, so a naive text/comment match cannot mistake this for compliant.
+		$wpdb->query( "DELETE FROM {$wpdb->posts}" );
 	}
 }

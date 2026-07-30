@@ -68,6 +68,16 @@ on:
         required: false
         type: string
         default: ''
+      php_prefix:
+        description: >
+          WordPress global-namespace prefix (e.g. "myplugin"), passed to PHPCS's
+          PrefixAllGlobals check via --runtime-set prefixes. PHP-004 is an error-level
+          rule with no usable default — leaving this empty in gate/development mode
+          fails the PHPCS step fast with a clear message instead of running the sniff
+          unconfigured and producing a mass of unrelated-looking violations.
+        required: false
+        type: string
+        default: ''
       source_paths:
         description: 'Comma-separated list of PHP source paths to scan (default: src)'
         required: false
@@ -176,6 +186,7 @@ jobs:
       PHPSTAN_LEVEL: ${{ inputs.phpstan_level }}
       SOURCE_PATHS: ${{ inputs.source_paths }}
       TEXT_DOMAIN: ${{ inputs.text_domain }}
+      PHP_PREFIX: ${{ inputs.php_prefix }}
 
     steps:
       - name: Checkout
@@ -321,6 +332,30 @@ jobs:
           fi
 
       # ── PHPCS (PHP-003, PHP-004 + style) ─────────────────────────────────
+      - name: PHP-LINT — preflight (PHP-004 / i18n require explicit config)
+        run: |
+          set -euo pipefail
+          uses_starisian="false"
+          [ -f "vendor/starisian-technologies/coding-standards/config/phpcs/starisian-strict.xml" ] && uses_starisian="true"
+
+          if [ "$uses_starisian" = "true" ] && [ -z "$PHP_PREFIX" ]; then
+            msg="PHP-004: starisian-strict.xml's PrefixAllGlobals is an error-level rule with no usable default. Set the 'php_prefix' input (e.g. php_prefix: myplugin) before running in gate/development mode, or every unprefixed global in your codebase will report as a violation."
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::$msg" && exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
+
+          if [ "$uses_starisian" = "true" ] && [ -z "$TEXT_DOMAIN" ]; then
+            msg="PHP-LINT: starisian-strict.xml's WordPress.WP.I18n is an error-level rule with no configured text domain. Set the 'text_domain' input before running in gate/development mode, or i18n checks will run unconfigured."
+            if [ "$MODE_BLOCK" = "true" ]; then
+              echo "::error::$msg" && exit 1
+            else
+              echo "::warning::$msg"
+            fi
+          fi
+
       - name: PHP-LINT — PHPCS
         run: |
           set -euo pipefail
@@ -328,7 +363,10 @@ jobs:
 
           runtime_args=()
           if [ -n "$TEXT_DOMAIN" ]; then
-            runtime_args=(--runtime-set text_domain "$TEXT_DOMAIN")
+            runtime_args+=(--runtime-set text_domain "$TEXT_DOMAIN")
+          fi
+          if [ -n "$PHP_PREFIX" ]; then
+            runtime_args+=(--runtime-set prefixes "$PHP_PREFIX")
           fi
 
           if [ -f "vendor/starisian-technologies/coding-standards/config/phpcs/starisian-strict.xml" ]; then

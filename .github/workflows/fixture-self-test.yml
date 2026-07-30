@@ -13,12 +13,16 @@ on:
   push:
     paths:
       - '.github/workflows/*-enforcement.yml'
+      - '.github/workflows/full-quality-gate.yml'
+      - 'config/**'
       - 'fixtures/**'
       - 'standards/**'
       - 'scripts/**'
   pull_request:
     paths:
       - '.github/workflows/*-enforcement.yml'
+      - '.github/workflows/full-quality-gate.yml'
+      - 'config/**'
       - 'fixtures/**'
       - 'standards/**'
       - 'scripts/**'
@@ -166,14 +170,14 @@ jobs:
           php-version: '8.3'
           coverage: none
 
-      - name: AUDIT-001 PASS — no isset() in pass fixture
+      - name: PHP-006 PASS — no isset() in pass fixture
         shell: bash
         run: |
           set -euo pipefail
           php scripts/audit-no-isset.php --path=fixtures/audit-scripts/pass/src --warn-only
-          echo "OK: AUDIT-001 pass fixture has no isset() violations"
+          echo "OK: PHP-006 pass fixture has no isset() violations"
 
-      - name: AUDIT-001 FAIL — isset() in fail fixture triggers violation
+      - name: PHP-006 FAIL — isset() in fail fixture triggers violation
         shell: bash
         run: |
           set -euo pipefail
@@ -181,16 +185,16 @@ jobs:
             echo "SELF-TEST FAIL: fail fixture should trigger isset() violation but audit passed"
             exit 1
           fi
-          echo "OK: AUDIT-001 fail fixture triggers isset() violation as expected"
+          echo "OK: PHP-006 fail fixture triggers isset() violation as expected"
 
-      - name: AUDIT-002 PASS — no SELECT * in pass fixture
+      - name: PHP-002 PASS — no SELECT * in pass fixture
         shell: bash
         run: |
           set -euo pipefail
           php scripts/audit-no-select-star.php --path=fixtures/audit-scripts/pass/src --warn-only
-          echo "OK: AUDIT-002 pass fixture has no SELECT * violations"
+          echo "OK: PHP-002 pass fixture has no SELECT * violations"
 
-      - name: AUDIT-002 FAIL — SELECT * in fail fixture triggers violation
+      - name: PHP-002 FAIL — SELECT * in fail fixture triggers violation
         shell: bash
         run: |
           set -euo pipefail
@@ -198,16 +202,16 @@ jobs:
             echo "SELF-TEST FAIL: fail fixture should trigger SELECT * violation but audit passed"
             exit 1
           fi
-          echo "OK: AUDIT-002 fail fixture triggers SELECT * violation as expected"
+          echo "OK: PHP-002 fail fixture triggers SELECT * violation as expected"
 
-      - name: AUDIT-007 PASS — no dbDelta() in pass fixture
+      - name: PHP-007 PASS — no dbDelta() in pass fixture
         shell: bash
         run: |
           set -euo pipefail
           php scripts/audit-no-dbdelta.php --path=fixtures/audit-scripts/pass/src --warn-only
-          echo "OK: AUDIT-007 pass fixture has no dbDelta() violations"
+          echo "OK: PHP-007 pass fixture has no dbDelta() violations"
 
-      - name: AUDIT-007 FAIL — dbDelta() in fail fixture triggers violation
+      - name: PHP-007 FAIL — dbDelta() in fail fixture triggers violation
         shell: bash
         run: |
           set -euo pipefail
@@ -215,14 +219,65 @@ jobs:
             echo "SELF-TEST FAIL: fail fixture should trigger dbDelta() violation but audit passed"
             exit 1
           fi
-          echo "OK: AUDIT-007 fail fixture triggers dbDelta() violation as expected"
+          echo "OK: PHP-007 fail fixture triggers dbDelta() violation as expected"
 
-      - name: AUDIT-008 PASS — required index.php present in pass fixture
+      - name: PHP-008 PASS — required index.php present in pass fixture
         shell: bash
         run: |
           set -euo pipefail
           php scripts/audit-required-index-files.php --path=fixtures/audit-scripts/pass/src --warn-only
-          echo "OK: AUDIT-008 pass fixture has required index.php files"
+          echo "OK: PHP-008 pass fixture has required index.php files"
+
+      - name: PHP-008 FAIL — missing index.php in fail fixture triggers violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if php scripts/audit-required-index-files.php --path=fixtures/audit-scripts/fail 2>/dev/null; then
+            echo "SELF-TEST FAIL: fail fixture should trigger missing index.php violation but audit passed"
+            exit 1
+          fi
+          echo "OK: PHP-008 fail fixture triggers missing index.php violation as expected"
+
+      - name: AUTH-001 PASS — pass fixture calls the authority-layer gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          php scripts/audit-governed-actions.php --path=fixtures/audit-scripts/pass/src --warn-only
+          echo "OK: AUTH-001 pass fixture has no ungated governed mutations"
+
+      - name: AUTH-001 FAIL — ungated governed mutation in fail fixture triggers violation
+        shell: bash
+        run: |
+          set -euo pipefail
+          if php scripts/audit-governed-actions.php --path=fixtures/audit-scripts/fail 2>/dev/null; then
+            echo "SELF-TEST FAIL: fail fixture should trigger AUTH-001 violation but audit passed"
+            exit 1
+          fi
+          echo "OK: AUTH-001 fail fixture triggers ungated-mutation violation as expected"
+
+      - name: AUTH-001 REGRESSION — a comment mentioning the gate function must not count as calling it
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/auth001-comment-fool/src
+          cat > /tmp/auth001-comment-fool/src/CommentFool.php <<'PHPEOF'
+          <?php
+          declare(strict_types=1);
+          namespace FixturePlugin;
+          class CommentFool {
+              /**
+               * @governed-mutation
+               */
+              public function risky_action(): void {
+                  // TODO: call assert_governed_action() before shipping
+              }
+          }
+          PHPEOF
+          if php scripts/audit-governed-actions.php --path=/tmp/auth001-comment-fool/src 2>/dev/null; then
+            echo "SELF-TEST FAIL: a comment mentioning the gate function name suppressed a real AUTH-001 violation"
+            exit 1
+          fi
+          echo "OK: AUTH-001 is not fooled by a comment mentioning the gate function name"
 
 
   css:
@@ -582,3 +637,69 @@ jobs:
             exit 1
           fi
           echo "OK: REUSABLE-WORKFLOWS.md contains no uses: lines pinned to @main"
+
+  # ── Config (PHPCS/PHPStan) end-to-end self-test ─────────────────────────────
+  # Added per review: config/** previously had no fixture coverage at all, which
+  # is how the phpstan-wordpress.neon fatal (B1) and the autofix/strict tab-vs-
+  # space disagreement (M1) both shipped undetected.
+  config-fixtures:
+    name: Config (PHPCS/PHPStan) fixture self-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@c541c155eee45413f5b09a52248675b1a2575231 # v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --no-progress
+
+      - name: phpstan-wordpress.neon loads without a PHP fatal (regression guard for B1)
+        shell: bash
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          cp -r fixtures/audit-scripts/pass/src/. "$work/"
+          cat > "$work/phpstan.neon" <<NEON
+          includes:
+              - $PWD/config/phpstan/phpstan-wordpress.neon
+          parameters:
+              paths:
+                  - .
+          NEON
+          set +e
+          vendor/bin/phpstan analyse --configuration="$work/phpstan.neon" --no-progress \
+            --error-format=raw > "$work/out.txt" 2>&1
+          set -e
+          cat "$work/out.txt"
+          if grep -qi 'PHP Fatal error\|Uncaught' "$work/out.txt"; then
+            echo "SELF-TEST FAIL: phpstan-wordpress.neon caused a PHP fatal error on load"
+            exit 1
+          fi
+          echo "OK: phpstan-wordpress.neon loads and analyses without a fatal error"
+
+      - name: PHPCS autofix -> strict round trip converges (regression guard for M1)
+        shell: bash
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          cp fixtures/audit-scripts/fail/BadPlugin.php "$work/BadPlugin.php"
+          vendor/bin/phpcbf --standard=config/phpcs/starisian-autofix.xml "$work/BadPlugin.php" || true
+          # After autofix, starisian-strict.xml must not flag indentation-style errors on
+          # its own output — that would mean autofix (phpcbf) and strict (phpcs) disagree
+          # on tabs vs spaces, the exact defect fixed here. Content violations the fixture
+          # deliberately contains (PHP-001/002/003/004 etc.) are expected and not checked.
+          set +e
+          vendor/bin/phpcs --standard=config/phpcs/starisian-strict.xml --report=full \
+            --runtime-set text_domain fixture-plugin "$work/BadPlugin.php" > "$work/phpcs-out.txt" 2>&1
+          set -e
+          cat "$work/phpcs-out.txt"
+          if grep -qi 'tab\|indent' "$work/phpcs-out.txt"; then
+            echo "SELF-TEST FAIL: starisian-strict.xml flags indentation after starisian-autofix.xml ran"
+            exit 1
+          fi
+          echo "OK: autofix output has no indentation disagreement with strict"

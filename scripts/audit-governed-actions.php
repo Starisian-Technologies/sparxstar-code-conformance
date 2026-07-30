@@ -250,12 +250,26 @@ foreach ($files as $file) {
 
             if ($isGoverned) {
                 // Extract the function body — scan from opening brace to matching closing brace.
-                $k     = $j;
-                $depth = 0;
-                $body  = '';
+                // Comments, docblocks, and string-literal tokens are excluded from the matched
+                // text: a call must be real code, not a mention in a TODO comment or a message
+                // string (e.g. "call assert_governed_action() before shipping" must NOT count
+                // as compliant — that was a real false-negative found in review).
+                $k          = $j;
+                $depth      = 0;
+                $body       = '';
+                $skipTypes  = [
+                    T_COMMENT,
+                    T_DOC_COMMENT,
+                    T_CONSTANT_ENCAPSED_STRING,
+                    T_ENCAPSED_AND_WHITESPACE,
+                ];
                 while ($k < $count) {
                     $t = $tokens[$k];
-                    $char = is_array($t) ? $t[1] : $t;
+                    if (is_array($t) && in_array($t[0], $skipTypes, true)) {
+                        $char = ' ';
+                    } else {
+                        $char = is_array($t) ? $t[1] : $t;
+                    }
                     if ($char === '{') {
                         $depth++;
                     } elseif ($char === '}') {

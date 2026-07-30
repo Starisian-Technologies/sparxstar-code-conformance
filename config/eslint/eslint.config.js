@@ -15,6 +15,20 @@
  * This file is the canonical consuming-project configuration entry point.
  * It re-exports the base config from the eslint-config package with WordPress
  * globals added for WordPress-coupled JavaScript.
+ *
+ * DUAL-INSTALL REQUIRED: this file ships inside the Composer package
+ * `starisian-technologies/coding-standards` but imports two npm packages
+ * (`@starisian-technologies/eslint-config` and `globals`). A repo installing
+ * only via Composer will have this file physically present but unable to
+ * resolve either import. You must also:
+ *   pnpm add -D @starisian-technologies/eslint-config globals
+ * before this config can run.
+ *
+ * This file resolves `@starisian-technologies/eslint-config` — the package
+ * under packages/eslint-config/ in this repo, not the separate, differently
+ * namespaced `@starisian/eslint-config` at the repo root. That naming split
+ * is an open question on this platform, not a choice this file should be
+ * read as having settled.
  */
 
 import starisian from '@starisian-technologies/eslint-config';

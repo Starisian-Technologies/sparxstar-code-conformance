@@ -8,8 +8,12 @@
     It deliberately excludes rules that require human judgment (naming, security,
     i18n, database).
 
-    Usage (run from consuming repo root):
-        vendor/bin/phpcbf --standard=vendor/starisian-technologies/coding-standards/config/phpcs/starisian-autofix.xml src/
+    Usage (run from consuming repo root), using PHP_CodeSniffer's "standard" option
+    set to this file's path:
+        vendor/bin/phpcbf "standard"=vendor/starisian-technologies/coding-standards/config/phpcs/starisian-autofix.xml src/
+    (NOTE: a literal double-hyphen is invalid inside an XML comment per the XML
+    spec — PHPCS's ruleset loader rejects it outright. Prefix the option name
+    above with two hyphens yourself when you actually run the command.)
 
     After autofixing, run starisian-strict.xml to catch any remaining violations.
 -->
@@ -44,11 +48,16 @@
     <rule ref="Generic.Formatting.SpaceAfterNot"/>
     <rule ref="Generic.PHP.LowerCaseConstant"/>
     <rule ref="Generic.PHP.LowerCaseKeyword"/>
-    <rule ref="Generic.WhiteSpace.DisallowTabIndent"/>
+    <!--
+        tabIndent=true: starisian-strict.xml disables DisallowTabIndent and pulls in
+        WordPress-Core, which requires tab indentation. Autofix must converge to the
+        same result strict accepts — space indentation here would make phpcbf output
+        that phpcs then rejects on the very next run.
+    -->
     <rule ref="Generic.WhiteSpace.ScopeIndent">
         <properties>
             <property name="indent" value="4"/>
-            <property name="tabIndent" value="false"/>
+            <property name="tabIndent" value="true"/>
         </properties>
     </rule>
     <rule ref="PSR2.ControlStructures.SwitchDeclaration"/>
