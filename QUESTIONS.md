@@ -68,6 +68,24 @@ registry for each before the associated requirement can be promoted from SPECIFI
 - **OQ-006** (`docs/python-standard.md`): All normative requirements in the Python standard (package
   manager, toolchain, enforcement rules); document is SPECIFIED-pending-ADR until formal ADR is filed.
 
+- **OQ-007** — canonical statement; `docs/standards-catalog.md` (Trademark rule), `AGENTS.md`, and
+  `.github/copilot-instructions.md` each hold only a one-line pointer back to this entry, not a
+  restatement:
+
+  Carve-out to the "zero product/repo names" rule. **Scope: the exemption covers repository names,
+  secret/variable names, and tag pins together — it is not limited to bare repository names.** It
+  applies in exactly three places: `docs/platform-setup/` (real cross-repo `uses:` integration
+  syntax — workflow calls, secret names, tag pins), `caller-templates/` (this repo's own copy/paste
+  `uses:` blocks for its reusable workflows — same reason), and the "Reference repositories" section
+  of `.github/copilot-instructions.md` (the MCP repos Copilot must fetch by exact identifier to
+  review a PR). All three are operational content, not standards prose, and are meaningless — or
+  non-functional — without these exact identifiers. Applied to all three governing documents on
+  2026-07-09 during platform-governance-setup doc review; `caller-templates/` added the same day
+  after review found it was already exempt in practice (it predates this OQ and was never flagged)
+  but missing from the carve-out's own text. Not yet traced to a formal ADR. Until ratified, treat
+  the carve-out as scoped strictly to these three named locations and not precedent for naming
+  products elsewhere in this repo.
+
 ## What This Implies for the Platform
 
 - This document should be published to a central standards repository so rules can be consumed and automated consistently.

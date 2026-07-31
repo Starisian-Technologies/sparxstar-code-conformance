@@ -3,7 +3,7 @@ Agent Guide --- Starisian Technologies Coding Standards
 
 This repository is policy infrastructure. Its output is enforceable standards, tool configs, and reusable workflows that all product repositories implement.
 
-**The one rule above all others:** zero product names, repo names, concept names, or anything trademarkable in this repo. If a rule only makes sense with a product name attached, it belongs in that product's repo, not here. See `docs/standards-catalog.md`.
+**The one rule above all others:** zero product names, repo names, concept names, or anything trademarkable in this repo. If a rule only makes sense with a product name attached, it belongs in that product's repo, not here. See `docs/standards-catalog.md`. **Exception: see OQ-007 in `QUESTIONS.md`** for the carve-out's exact scope and the three locations it applies to.
 
 Repository role
 ---------------
@@ -36,7 +36,7 @@ What you must NOT do
 --------------------
 
 -   **Invent standards without an ADR source.** No ADR = no standard. File an open question instead.
--   **Add product names anywhere.** Not in filenames, not in prose, not in code comments, not in examples.
+-   **Add product names anywhere.** Not in filenames, not in prose, not in code comments, not in examples. *Exception: see OQ-007 in `QUESTIONS.md`.*
 -   **Edit governance snapshot files** under `.github/instructions/governance/`. Auto-synced, read-only.
 -   **Mark a matrix row ENFORCED without a workflow.** Honesty rule: if no workflow checks it, the status is SPECIFIED.
 -   **Create decision records.** This repo has no ADRs. Decisions live in the ADR registry.
