@@ -108,10 +108,9 @@ when your pin falls behind the recommended patch tag and hard-fails if it drops 
 the floor in `config/version-policy.yml`, regardless of `enforcement_mode`. To find
 out via a PR instead of a CI warning, copy `caller-templates/dependabot.yml` to
 `.github/dependabot.yml` in your repo — Dependabot's `github-actions` ecosystem
-already understands the `uses: owner/repo@vX.Y.Z` lines in your caller template and
-will open a bump PR whenever this repo (or `sparxstar-claude-pr-review`, if you use
-that job) cuts a new patch tag. Optional but recommended; the version-check job works
-with or without it.
+already understands any `uses: owner/repo@vX.Y.Z` line in your caller template and
+will open a bump PR whenever an upstream workflow you pin cuts a new patch tag.
+Optional but recommended; the version-check job works with or without it.
 
 ### Step 3 — Add the exceptions file (only if you need an exception)
 
