@@ -1,6 +1,6 @@
 # Wiring a Repo into the Starisian Governance Platform
 
-> **Exemption note:** this document is exempt from this repo's org-wide "no repo/product names" rule (see the carve-out in `AGENTS.md` and `.github/copilot-instructions.md`) because it documents real cross-repo integration identifiers — `uses:` targets, secret/variable names, and tag pins — that are only correct and copy-pasteable with the exact values, not a generic coding/style standard.
+> **Exemption note:** this document is exempt from this repo's org-wide "no repo/product names" rule under OQ-007 (see `QUESTIONS.md` — the canonical statement of this carve-out) because it documents real cross-repo integration identifiers — `uses:` targets, secret/variable names, and tag pins — that are only correct and copy-pasteable with the exact values, not a generic coding/style standard.
 
 This is a step-by-step guide for connecting **any** Starisian Technologies repo to the shared
 governance platform: the ADR registry, contracts registry, product-spec registry, shared
@@ -106,12 +106,14 @@ forward the new secret until you bump the pin.
 
 ## 3. Version pinning — pick one policy and apply it everywhere
 
-Every registry publishes both an immutable patch tag (`v1.0.0`, `v1.0.1`, ...) and a moving major
-alias (`v1`) that repoints on every release. **Pin to the immutable patch tag** — this is what every
-registry's own README recommends, and the live audit found repos mixing the two inconsistently
-(some gates pinned `@v1.0.0`, others `@v1`), which means CI behavior can silently change out from
-under you the next time a registry cuts a release. Bumping the pin should be a deliberate, reviewed
-commit, not something that happens automatically.
+Every registry publishes an immutable patch tag (`v1.0.0`, `v1.0.1`, ...). Most also publish a
+moving major alias (`v1`) that repoints on every release — whether one exists is repo-specific, not
+guaranteed (see the `sparxstar-claude-pr-review` note below: as of this writing it has no `v1` alias
+at all). **Pin to the immutable patch tag regardless** — this is what every registry's own README
+recommends, and the live audit found repos mixing patch tags and aliases inconsistently where both
+existed (some gates pinned `@v1.0.0`, others `@v1`), which means CI behavior can silently change out
+from under you the next time a registry cuts a release. Bumping the pin should be a deliberate,
+reviewed commit, not something that happens automatically.
 
 **Also verify the tag you pin to actually exists and isn't stale.** One of the five integrations in
 the audited repo had been pinned to an old tag for months after the upstream repo had already
