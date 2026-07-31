@@ -18,7 +18,7 @@ on:
       - 'fixtures/**'
       - 'standards/**'
       - 'scripts/**'
-      - '*.xml'
+      - '**/*.xml'
   pull_request:
     paths:
       - '.github/workflows/*-enforcement.yml'
@@ -27,7 +27,7 @@ on:
       - 'fixtures/**'
       - 'standards/**'
       - 'scripts/**'
-      - '*.xml'
+      - '**/*.xml'
   workflow_dispatch:
 
 jobs:
