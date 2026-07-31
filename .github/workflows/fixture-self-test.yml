@@ -40,6 +40,12 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
+      - name: Setup PHP
+        uses: shivammathur/setup-php@c541c155eee45413f5b09a52248675b1a2575231 # v2
+        with:
+          php-version: '8.3'
+          coverage: none
+
       - name: Parse every *.xml file
         shell: bash
         run: |
@@ -49,7 +55,10 @@ jobs:
             if ! php -r '
               $doc = new DOMDocument();
               libxml_use_internal_errors(true);
-              if (!$doc->load($argv[1])) {
+              // LIBXML_NONET: this job runs on untrusted pull_request content -- a crafted XML
+              // file referencing an external DTD/entity must not be able to trigger network
+              // access from the runner.
+              if (!$doc->load($argv[1], LIBXML_NONET)) {
                 foreach (libxml_get_errors() as $e) {
                   fwrite(STDERR, sprintf("%s:%d: %s\n", $argv[1], $e->line, trim($e->message)));
                 }
