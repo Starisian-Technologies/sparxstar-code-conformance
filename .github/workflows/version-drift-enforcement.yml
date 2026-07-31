@@ -154,14 +154,14 @@ jobs:
 
           # Must match the immutable-patch-tag pattern (anchored) -- D1: no bare major/minor refs.
           if ! is_semver_tag "$REQUESTED"; then
-            REAL_TAGS=$(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tr '\n' ' ')
+            REAL_TAGS=$(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tr '\n' ' ' || true)
             echo "::error::contract_ref '${REQUESTED}' is not a valid immutable patch tag (expected vMAJOR.MINOR.PATCH, e.g. v1.0.2 -- bare v1/v1.2 major/minor refs are not accepted here). Existing patch tags: ${REAL_TAGS}"
             exit 1
           fi
 
           # Must exist as a real tag
           if ! git tag --list | grep -qxF "$REQUESTED"; then
-            REAL_TAGS=$(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tr '\n' ' ')
+            REAL_TAGS=$(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tr '\n' ' ' || true)
             echo "::error::contract_ref '${REQUESTED}' does not resolve to an existing tag. Existing patch tags: ${REAL_TAGS}"
             exit 1
           fi
