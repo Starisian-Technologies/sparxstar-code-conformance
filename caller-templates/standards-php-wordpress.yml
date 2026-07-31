@@ -52,6 +52,19 @@ jobs:
       enforcement_mode: advisory
       profile_version: v1
 
+  version-check:
+    # Warns (or hard-fails below the floor) if this file's pins fall behind the
+    # recommended patch tag. contract_ref MUST match the @vX.Y.Z pin on the jobs above --
+    # bump both together. write_drift_record: false keeps onboarding to just the
+    # already-required read secret; opt into true (and pass CONTRACT_SYNC_PRIVATE_KEY)
+    # only if you want this repo's version state recorded centrally.
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.2
+    with:
+      contract_ref: v1.0.2
+      write_drift_record: false
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+
   check-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
