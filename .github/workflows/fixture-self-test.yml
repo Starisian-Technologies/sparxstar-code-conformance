@@ -51,7 +51,7 @@ jobs:
               libxml_use_internal_errors(true);
               if (!$doc->load($argv[1])) {
                 foreach (libxml_get_errors() as $e) {
-                  fwrite(STDERR, sprintf("%s:%d: %s", $argv[1], $e->line, trim($e->message)));
+                  fwrite(STDERR, sprintf("%s:%d: %s\n", $argv[1], $e->line, trim($e->message)));
                 }
                 exit(1);
               }
