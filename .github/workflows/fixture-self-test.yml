@@ -18,6 +18,7 @@ on:
       - 'fixtures/**'
       - 'standards/**'
       - 'scripts/**'
+      - '*.xml'
   pull_request:
     paths:
       - '.github/workflows/*-enforcement.yml'
@@ -26,6 +27,7 @@ on:
       - 'fixtures/**'
       - 'standards/**'
       - 'scripts/**'
+      - '*.xml'
   workflow_dispatch:
 
 jobs:
@@ -65,7 +67,10 @@ jobs:
                 exit(1);
               }
             ' "$file"; then
-              echo "::error file=$file::not well-formed XML"
+              # Plain log line, not a `::error file=...::` workflow command: $file comes from
+              # checked-out pull_request content, and embedding untrusted text directly into a
+              # workflow command's property value is an injection surface (unescaped %/CR/LF).
+              echo "NOT WELL-FORMED: $file"
               failed=1
             fi
           done < <(find . -name '*.xml' -not -path '*/vendor/*' -not -path '*/node_modules/*' -print0)
