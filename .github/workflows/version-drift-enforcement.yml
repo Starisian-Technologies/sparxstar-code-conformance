@@ -10,9 +10,10 @@
 #       but >= floor              → pass + ::warning:: annotation
 #   contract_ref < floor          → hard fail
 #
-# Drift record: on each run a JSON record is committed to drift/ in this repo
-# (using contract-sync, the confirmed write app) so every consumer's version
-# state is visible in one place.
+# Drift record: when write_drift_record is true (the default), each run commits
+# a JSON record to drift/ in this repo (using contract-sync, the confirmed write
+# app) so every consumer's version state is visible in one place. Callers that
+# pass write_drift_record: false skip this write entirely.
 #
 # Caller example (.github/workflows/standards.yml):
 #
