@@ -29,6 +29,43 @@ on:
   workflow_dispatch:
 
 jobs:
+  # ── XML well-formedness ──────────────────────────────────────────────────────
+  # This defect (a literal double-hyphen inside an XML comment, which PHPCS's ruleset
+  # loader rejects outright) has shipped twice: once in an earlier phpcs.xml.dist
+  # (f93b8b0), and again in config/phpcs/starisian-autofix.xml (#29 review). Cheap
+  # check, stops a third.
+  xml-lint:
+    name: XML well-formedness
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Parse every *.xml file
+        shell: bash
+        run: |
+          set -euo pipefail
+          failed=0
+          while IFS= read -r -d '' file; do
+            if ! php -r '
+              $doc = new DOMDocument();
+              libxml_use_internal_errors(true);
+              if (!$doc->load($argv[1])) {
+                foreach (libxml_get_errors() as $e) {
+                  fwrite(STDERR, sprintf("%s:%d: %s", $argv[1], $e->line, trim($e->message)));
+                }
+                exit(1);
+              }
+            ' "$file"; then
+              echo "::error file=$file::not well-formed XML"
+              failed=1
+            fi
+          done < <(find . -name '*.xml' -not -path '*/vendor/*' -not -path '*/node_modules/*' -print0)
+          if [ "$failed" -ne 0 ]; then
+            echo "::error::One or more *.xml files are not well-formed"
+            exit 1
+          fi
+          echo "OK: all *.xml files parse as well-formed XML"
+
   # ── PHP enforcement ──────────────────────────────────────────────────────────
   php:
     name: PHP fixture self-test
