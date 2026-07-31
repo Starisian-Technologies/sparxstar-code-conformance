@@ -1,11 +1,14 @@
 # Drop this file into a WordPress/PHP consuming repo at:
 #   .github/workflows/standards.yml
 #
-# Pin the workflow ref to a major release tag (e.g. @v1), never @main in production.
+# Pin the workflow ref to an immutable patch tag (e.g. @v1.0.0), never @main in
+# production and never the moving @v1 major alias — see REUSABLE-WORKFLOWS.md
+# "Why you pin to @v1.0.0, not @main or @v1".
 # Three independent axes — move them independently:
-#   1. Workflow ref  (@v1)           — the executable. Bugfixes bump this only.
+#   1. Workflow ref  (@v1.0.0)       — the executable. Bugfixes bump this only.
 #   2. profile_version (v1)         — the dependency/config contract. Bump to adopt new required surface.
-#   3. enforcement_mode (gate)  — fail-closed. advisory = warn-only (exceptions file is optional in both modes).
+#   3. enforcement_mode — start advisory (warn-only); flip to gate (fail-closed) only once
+#      violations are zero. See REUSABLE-WORKFLOWS.md "Advisory first, gate when clean."
 #
 name: Starisian Standards
 
@@ -16,43 +19,77 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
     with:
-      enforcement_mode: gate
+      enforcement_mode: advisory
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   php:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1.0.2
     with:
       repo_type: wp-plugin
       profile_version: v1
-      enforcement_mode: gate
+      enforcement_mode: advisory
       php-version: '8.3'
       phpstan-level: '5'
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   css:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1.0.2
     with:
       repo_type: wp-plugin
       profile_version: v1
-      enforcement_mode: gate
+      enforcement_mode: advisory
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
     with:
-      enforcement_mode: gate
+      repo_type: wp-plugin
+      enforcement_mode: advisory
       profile_version: v1
 
+  version-check:
+    # Warns (or hard-fails below the floor) if this file's pins fall behind the
+    # recommended patch tag. contract_ref MUST match the @vX.Y.Z pin on the jobs above --
+    # bump both together. write_drift_record: false keeps onboarding to just the
+    # already-required read secret; opt into true (and pass CONTRACT_SYNC_PRIVATE_KEY)
+    # only if you want this repo's version state recorded centrally.
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.2
+    with:
+      contract_ref: v1.0.2
+      write_drift_record: false
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+
+  check-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    outputs:
+      enabled: ${{ steps.check.outputs.enabled }}
+    steps:
+      - id: check
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          if [[ -n "$ANTHROPIC_API_KEY" && -n "$COMPOSER_RESOLVER_PRIVATE_KEY" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
   review:
-    if: github.event_name == 'pull_request' && secrets.ANTHROPIC_API_KEY != ''
+    needs: check-review
+    if: needs.check-review.outputs.enabled == 'true'
     permissions:
       contents: read
       pull-requests: write
-    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@v1
+    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@v1.1.0
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}

@@ -1,7 +1,12 @@
 # Drop this file into a standalone-react consuming repo at:
 #   .github/workflows/standards.yml
 #
-# Pin the workflow ref to a major release tag (e.g. @v1), never @main in production.
+# Pin the workflow ref to an immutable patch tag (e.g. @v1.0.0), never @main in
+# production and never the moving @v1 major alias — see REUSABLE-WORKFLOWS.md
+# "Why you pin to @v1.0.0, not @main or @v1".
+#
+# enforcement_mode: start advisory (warn-only); flip to gate (fail-closed) only once
+# violations are zero. See REUSABLE-WORKFLOWS.md "Advisory first, gate when clean."
 
 name: Starisian Standards
 
@@ -12,30 +17,55 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
     with:
-      enforcement_mode: gate
+      enforcement_mode: advisory
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   react:
+    # react-enforcement.yml runs pnpm install but currently declares no workflow_call secrets
+    # and performs no git-auth setup. Repos with private GitHub-hosted JS dependencies will
+    # hit a git-auth failure in this job even if the pnpm job above succeeds. This is a known
+    # platform gap requiring a change to the reusable workflow itself. Do not pass
+    # COMPOSER_RESOLVER_PRIVATE_KEY here — @v1.0.2 does not declare it and workflow
+    # validation will reject it. See the platform setup doc (docs/platform-setup/) §4.3
+    # for details and check this repo's tags for a release that ships the fix.
     needs: pnpm
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/react-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/react-enforcement.yml@v1.0.2
     with:
       repo_type: standalone-react
       profile_version: v1
-      enforcement_mode: gate
+      enforcement_mode: advisory
       node-version: '22'
       bundle-size-limit-kb: 150
 
   css:
     needs: pnpm
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1.0.2
     with:
       repo_type: standalone-react
       profile_version: v1
-      enforcement_mode: gate
+      enforcement_mode: advisory
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
     with:
-      enforcement_mode: gate
+      repo_type: standalone-react
+      enforcement_mode: advisory
       profile_version: v1
+
+  version-check:
+    # Warns (or hard-fails below the floor) if this file's pins fall behind the
+    # recommended patch tag. contract_ref MUST match the @vX.Y.Z pin on the jobs above --
+    # bump both together. write_drift_record: false keeps onboarding to just the
+    # already-required read secret; opt into true (and pass CONTRACT_SYNC_PRIVATE_KEY)
+    # only if you want this repo's version state recorded centrally.
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.2
+    with:
+      contract_ref: v1.0.2
+      write_drift_record: false
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
