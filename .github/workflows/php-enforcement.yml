@@ -66,7 +66,11 @@ on:
         default: '5'
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY:
-        required: true
+        # Optional: only repos declaring a private dependency source need it.
+        # Marking it required made every caller fail closed when the secret was
+        # unavailable -- notably on bot-triggered runs, which read a separate
+        # secrets store -- before any check had run.
+        required: false
 
 jobs:
   enforce:
@@ -210,8 +214,69 @@ jobs:
           tools: composer, phpcs, phpstan
           coverage: none
 
+      # Private-source detection. A repo whose composer.json resolves entirely from
+      # public Packagist needs no resolver credential, so the mint step below is
+      # skipped and the job runs unauthenticated. Only a declared private source -- a
+      # VCS repository, or a composer registry that is not Packagist -- requires it.
+      # This keeps the credential out of runs that have no use for it, including
+      # bot-triggered runs, which cannot read Actions secrets at all.
+      - name: Detect private Composer sources
+        id: private-deps
+        shell: bash
+        run: |
+          set -euo pipefail
+          needs=false
+          if [ -f composer.json ]; then
+            if jq -e '
+              (.repositories // [])
+              | (if type == "object" then [.[]] else . end)
+              | map(select(type == "object"))
+              | map(select(
+                  ((.type // "") as $t
+                    | ($t == "vcs" or $t == "git" or $t == "github"
+                       or $t == "gitlab" or $t == "bitbucket"))
+                  or ((.type // "") == "composer"
+                      and (((.url // "") | contains("packagist.org")) | not))
+                ))
+              | length > 0
+            ' composer.json >/dev/null 2>&1; then
+              needs=true
+            fi
+          fi
+          echo "needs_private=$needs" >> "$GITHUB_OUTPUT"
+          if [ "$needs" = "true" ]; then
+            echo "Private Composer sources declared - resolver credential required."
+          else
+            echo "No private Composer sources declared - proceeding without a resolver credential."
+          fi
+
+      # Mirrors the check-secrets idiom already used by full-quality-gate.yml. The
+      # secrets context cannot be evaluated in a step `if:`, so it is mapped to an
+      # env var and reduced to a string output first.
+      - name: Detect resolver credential availability
+        id: resolver-key
+        env:
+          KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -n "${KEY:-}" ]; then
+            echo "has_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_key=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Fail loudly rather than resolve silently against an incomplete tree: a repo
+      # that genuinely declares private sources must not pass on a partial install.
+      - name: Require resolver credential for private sources
+        if: steps.private-deps.outputs.needs_private == 'true' && steps.resolver-key.outputs.has_key != 'true'
+        shell: bash
+        run: |
+          echo "::error::This repository declares private Composer sources but no resolver credential is available to this run. Supply COMPOSER_RESOLVER_PRIVATE_KEY to the caller, or remove the private source. Runs triggered by an automated dependency bot read a separate secrets store and never receive Actions secrets."
+          exit 1
+
       - name: Mint read token (composer-resolver)
-        if: hashFiles('composer.json') != ''
+        if: steps.private-deps.outputs.needs_private == 'true' && steps.resolver-key.outputs.has_key == 'true'
         id: read-token
         uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1
         with:
@@ -220,7 +285,7 @@ jobs:
           owner: Starisian-Technologies
 
       - name: Configure Composer auth for private dependencies
-        if: hashFiles('composer.json') != ''
+        if: steps.private-deps.outputs.needs_private == 'true' && steps.resolver-key.outputs.has_key == 'true' && steps.read-token.outputs.token != ''
         env:
           GH_TOKEN: ${{ steps.read-token.outputs.token }}
         shell: bash

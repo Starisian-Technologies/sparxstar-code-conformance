@@ -337,13 +337,34 @@ matrix:
 Default is `development`. Use `draft` for repos in early development
 where you want visibility without blocking.
 
-## Composer auth for PHP repos
+## Dependency resolver credential
 
-If the PHP workflow needs private packages, pass the required secrets to
-the reusable workflow (e.g., using `secrets: inherit` or explicit secrets)
-— or ensure the reusable workflow accepts auth inputs. The org secrets
-`COMPOSER_RESOLVER_CLIENT_ID` and `COMPOSER_RESOLVER_PRIVATE_KEY` are
-available to all repos.
+`COMPOSER_RESOLVER_PRIVATE_KEY` is **optional** on `php-enforcement`,
+`pnpm-enforcement`, and `css-enforcement`. Pass it only if your repository
+actually resolves a dependency from a private source.
+
+Each of those workflows decides for itself whether the credential is needed:
+
+| Workflow | Detects a private source when | Secret needed |
+|---|---|---|
+| `php-enforcement` | `composer.json` declares a `repositories` entry of type `vcs`/`git`/`github`/`gitlab`/`bitbucket`, or a `composer` registry that is not Packagist | Yes |
+| `php-enforcement` | every package resolves from public Packagist | No |
+| `pnpm-enforcement`, `css-enforcement` | a `package.json` dependency spec is git-hosted (`git+…`, `git://`, `github:`, `gitlab:`, `bitbucket:`, a `github.com` URL, or `owner/repo` shorthand) | Yes |
+| `pnpm-enforcement`, `css-enforcement` | every spec resolves from the public registry | No |
+
+When no private source is detected the token is never minted and the checks
+run unauthenticated. When one **is** detected and the credential is missing,
+the job fails with an explicit error rather than resolving against an
+incomplete dependency tree.
+
+> **Automated dependency bots.** A run triggered by a dependency-update bot
+> reads a *separate* secrets store and never receives Actions secrets, so
+> `secrets: inherit` resolves empty in those runs. Previously the credential
+> was declared `required: true` and minted whenever a manifest existed, which
+> made every bot-authored pull request fail at the token step before a single
+> check had run. Repositories with no private sources are now unaffected. A
+> repository that does have private sources must add the credential to the
+> bot's own secrets store for those runs to pass.
 
 ## Pin strategy
 
