@@ -13,7 +13,7 @@
 #     pnpm:
 #       uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
 #       with:
-#         enforcement_mode: required   # gate | advisory
+#         enforcement_mode: gate       # gate | advisory
 
 name: pnpm enforcement (ADR-017)
 
