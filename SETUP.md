@@ -76,7 +76,7 @@ never stall a team, and leaving it advisory forever must never become normal.
 workflow, move both the immutable semver tag and any moving major alias onto
 the commit containing the edit, then verify:
 
-```
+```bash
 git ls-remote origin 'refs/tags/v1*'
 ```
 
