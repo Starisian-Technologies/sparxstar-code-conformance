@@ -25,7 +25,7 @@ themselves mint tokens to reach private dependencies, so consumers still pass
 | Understand the version-drift gate specifically | [`docs/setup-and-install.md`](../setup-and-install.md) |
 | Know which rule IDs a gate enforces | [`CI-Enforcement-Matrix.md`](../../CI-Enforcement-Matrix.md) |
 | Read the standards themselves | [`docs/standards-catalog.md`](../standards-catalog.md) |
-| Wire a **brand-new** repo end to end | `starisian-technologies-proprietary-license` → `GOVERNANCE-SETUP.md` — *landing on that repo's open governance-wiring PR; not yet on its default branch* |
+| Wire a **brand-new** repo end to end | `starisian-technologies-proprietary-license` → `GOVERNANCE-SETUP.md` |
 | Authenticate to another repo | product-spec registry → `specs/_platform/SPARXSTAR-CROSS-REPO-ACCESS-STANDARD.md` |
 
 ---
