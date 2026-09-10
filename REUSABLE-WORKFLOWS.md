@@ -16,6 +16,10 @@ Create one file in your repo: `.github/workflows/standards.yml`
 This single file can call one or more reusable workflows. You don't need
 a separate workflow file per check — one file, multiple jobs.
 
+> **Pin an immutable patch tag in every example below.** The D1 ruling is
+> immutable patch tags only — never `@main`, never the moving `@v1` alias. See
+> "Why you pin to an immutable patch tag".
+
 ```yaml
 # .github/workflows/standards.yml
 name: Platform Standards
@@ -27,7 +31,7 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
     with:
       enforcement_mode: gate
 
@@ -87,12 +91,12 @@ that matches your repo into your repo's `.github/workflows/` directory as
 The template is the only file you add. You do not copy the enforcement
 workflows themselves — they live here and your caller references them.
 
-### Step 2 — Pin to `@v1.0.0` and set the enforcement mode
+### Step 2 — Pin to an immutable patch tag and set the enforcement mode
 
 Open the file you just copied. Two things must be set correctly:
 
 1. **The `uses:` line is pinned to `@v1.0.0`**, not `@main`. Update the
-   template pin from `@v1` to `@v1.0.0` — `@v1.0.0` is the org-locked
+   template pin from `@v1` to the current immutable patch tag — that is the org-locked
    recommendation (immutable; never moves). Do not change it to `@main`.
 2. **`enforcement_mode` is set to `advisory` for new consumers.** New repos
    start advisory (warn-only) so onboarding is never blocked by a gate the
@@ -163,19 +167,19 @@ on:
     branches: [main]
 jobs:
   php:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1.0.2
     with:
       repo_type: wp-plugin
       enforcement_mode: gate
     secrets: inherit
   css:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1.0.2
     with:
       repo_type: wp-plugin
       enforcement_mode: gate
     secrets: inherit
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
     with:
       repo_type: wp-plugin
       enforcement_mode: gate
@@ -203,16 +207,21 @@ advisory mode for onboarding, blocking gate once clean.
 
 ---
 
-### Why you pin to `@v1.0.0`, not `@main` or `@v1`
+### Why you pin to an immutable patch tag, not `@main` or `@v1`
 
-`@v1.0.0` is an immutable, released version of these workflows — it resolves
+A `vMAJOR.MINOR.PATCH` tag is an immutable, released version of these workflows — it resolves
 to the same commit forever. Pinning to it means your enforcement only changes
 when you deliberately update the pin. `@v1` is the moving major alias; it
 advances automatically to future `v1.x.x` releases, which means a standards
 update can silently change your CI behaviour. `@main` is never permitted — it
 is the integration branch and breaking changes land there first.
 
-Org-locked pin recommendation: `@v1.0.0`.
+**Org-locked pin recommendation: the highest published patch tag.** As of
+2026-09-10 that is `@v1.0.2`, which is what every file in `caller-templates/`
+pins and what `version-drift-enforcement` treats as "recommended". Read the
+current value from the tag list (`git ls-remote --tags`) or from
+`caller-templates/` rather than from this sentence — a version written into
+prose is a version that goes stale.
 
 ---
 
@@ -253,11 +262,11 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
     with:
       enforcement_mode: gate
   php:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1.0.2
     with:
       repo_type: wp-plugin
       profile_version: v1
@@ -275,23 +284,23 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
     with:
       enforcement_mode: gate
   react:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/react-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/react-enforcement.yml@v1.0.2
     with:
       repo_type: standalone-react
       profile_version: v1
       enforcement_mode: gate
   css:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1.0.2
     with:
       repo_type: standalone-react
       profile_version: v1
       enforcement_mode: gate
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
     with:
       enforcement_mode: gate
       profile_version: v1
@@ -307,17 +316,17 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
     with:
       enforcement_mode: gate
   node:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@v1.0.2
     with:
       repo_type: standalone-node
       profile_version: v1
       enforcement_mode: gate
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
     with:
       enforcement_mode: gate
       profile_version: v1
