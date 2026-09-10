@@ -1,5 +1,8 @@
 # Starisian Technologies — Coding Standards
 
+> **Adopting these workflows? [`SETUP.md`](./SETUP.md) routes you; [`REUSABLE-WORKFLOWS.md`](./REUSABLE-WORKFLOWS.md) is the manual.**
+
+
 The organization-wide coding standards of Starisian Technologies. Read [`docs/standards-catalog.md`](docs/standards-catalog.md) first.
 
 ---
