@@ -19,12 +19,12 @@ themselves mint tokens to reach private dependencies, so consumers still pass
 
 | You want to | Read |
 |---|---|
-| **Adopt these workflows in a repo** (repo types, caller templates, pin policy, advisory→gate, worked examples) | [`REUSABLE-WORKFLOWS.md`](./REUSABLE-WORKFLOWS.md) — **start here** |
-| Copy a ready-made caller | [`caller-templates/`](./caller-templates/) — the maintained originals |
-| Wire a repo into the *whole* platform (all five governance repos, propose-back flow) | [`docs/platform-setup/STARISIAN-GOVERNANCE-PLATFORM-SETUP.md`](./docs/platform-setup/STARISIAN-GOVERNANCE-PLATFORM-SETUP.md) |
-| Understand the version-drift gate specifically | [`docs/setup-and-install.md`](./docs/setup-and-install.md) |
-| Know which rule IDs a gate enforces | [`CI-Enforcement-Matrix.md`](./CI-Enforcement-Matrix.md) |
-| Read the standards themselves | [`docs/standards-catalog.md`](./docs/standards-catalog.md) |
+| **Adopt these workflows in a repo** (repo types, caller templates, pin policy, advisory→gate, worked examples) | [`REUSABLE-WORKFLOWS.md`](../../REUSABLE-WORKFLOWS.md) — **start here** |
+| Copy a ready-made caller | [`caller-templates/`](../../caller-templates/) — the maintained originals |
+| Wire a repo into the *whole* platform (all five governance repos, propose-back flow) | [`docs/platform-setup/STARISIAN-GOVERNANCE-PLATFORM-SETUP.md`](./STARISIAN-GOVERNANCE-PLATFORM-SETUP.md) |
+| Understand the version-drift gate specifically | [`docs/setup-and-install.md`](../setup-and-install.md) |
+| Know which rule IDs a gate enforces | [`CI-Enforcement-Matrix.md`](../../CI-Enforcement-Matrix.md) |
+| Read the standards themselves | [`docs/standards-catalog.md`](../standards-catalog.md) |
 | Wire a **brand-new** repo end to end | `starisian-technologies-proprietary-license` → `GOVERNANCE-SETUP.md` |
 | Authenticate to another repo | product-spec registry → `specs/_platform/SPARXSTAR-CROSS-REPO-ACCESS-STANDARD.md` |
 

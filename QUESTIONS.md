@@ -72,7 +72,16 @@ registry for each before the associated requirement can be promoted from SPECIFI
   `.github/copilot-instructions.md` each hold only a one-line pointer back to this entry, not a
   restatement:
 
-  Carve-out to the "zero product/repo names" rule. **Scope: the exemption covers repository names,
+  **Amended 2026-09-10 (owner ruling): the base rule now permits this repository
+  to name itself.** `sparxstar-code-conformance` may appear anywhere — prose,
+  filenames, comments, examples — because a repository cannot document its own
+  reusable workflows without saying what to call them. Every OTHER product or
+  repo name remains prohibited outside the carve-out below, and the carve-out's
+  scope is unchanged by this amendment. Applied to `docs/standards-catalog.md`
+  (Trademark rule) and both statements in `AGENTS.md`. Still not traced to a
+  formal ADR.
+
+  Carve-out to the "no other product/repo names" rule. **Scope: the exemption covers repository names,
   secret/variable names, and tag pins together — it is not limited to bare repository names.** It
   applies in exactly three places: `docs/platform-setup/` (real cross-repo `uses:` integration
   syntax — workflow calls, secret names, tag pins), `caller-templates/` (this repo's own copy/paste
@@ -84,7 +93,13 @@ registry for each before the associated requirement can be promoted from SPECIFI
   after review found it was already exempt in practice (it predates this OQ and was never flagged)
   but missing from the carve-out's own text. Not yet traced to a formal ADR. Until ratified, treat
   the carve-out as scoped strictly to these three named locations and not precedent for naming
-  products elsewhere in this repo.
+  other products elsewhere in this repo.
+
+  **`SETUP.md` (2026-09-10):** a consumer-facing setup router was added at the repo root naming
+  five other governance repos. Under the amended base rule that is not permitted at root, and it
+  was NOT added to the carve-out — the carve-out stays at three locations. The file was moved to
+  `docs/platform-setup/SETUP.md` instead, which is already carved out for exactly this content.
+  The root pointer to it in `README.md` names no repository but this one.
 
 ## What This Implies for the Platform
 

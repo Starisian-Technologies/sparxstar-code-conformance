@@ -6,7 +6,7 @@
 
 **Admission rule:** a standard earns its place by being enforceable — if no tool can check it, it's guidance inside an existing document, not a new standard.
 
-**Trademark rule:** zero product names, repo names, concept names, or anything trademarkable in this repository. If a rule only makes sense with a product name attached, the rule belongs in that product's repo, not here. **Exception: see OQ-007 in `QUESTIONS.md`** for the carve-out's exact scope.
+**Trademark rule:** **the only repository that may be named in this repository is `sparxstar-code-conformance` — itself.** Zero other product names, repo names, concept names, or anything trademarkable. If a rule only makes sense with another product's name attached, the rule belongs in that product's repo, not here. **Exception: see OQ-007 in `QUESTIONS.md`** for the carve-out's exact scope — the locations where other repos' identifiers may appear.
 
 ---
 
