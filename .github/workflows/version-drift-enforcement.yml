@@ -11,9 +11,12 @@
 #   contract_ref < floor          → hard fail
 #
 # Drift record: when write_drift_record is true (the default), each run commits
-# a JSON record to drift/ in this repo (using contract-sync, the confirmed write
-# app) so every consumer's version state is visible in one place. Callers that
-# pass write_drift_record: false skip this write entirely.
+# a JSON record to drift/<owner>-<repo>.json in sparxstar-architecture-governance-
+# registry (using contract-sync, the confirmed write app, with a token scoped to
+# that repo only) so every consumer's version state is visible in one place.
+# Drift records are INTERNAL (owner ruling, 2026-11-04): they name private repos,
+# so they are never committed to this public repo. Callers that pass
+# write_drift_record: false skip this write entirely.
 #
 # Caller example (.github/workflows/standards.yml):
 #
@@ -220,7 +223,9 @@ jobs:
           echo "::error::${CALLING_REPO} is on contract ${REQUESTED} which is below the minimum floor ${FLOOR} (recommended ${RECOMMENDED}). Upgrade required — STD-TOOLCHAIN-001 §floor."
           exit 1
 
-      # ── DRIFT RECORD: write JSON to drift/ in this repo via contract-sync ──
+      # ── DRIFT RECORD: write JSON to drift/ in the governance registry via contract-sync ──
+      # Internal-only (owner ruling, 2026-11-04). The write token is scoped to
+      # the registry ALONE; this public repo is never a write target.
       - name: Mint write token (contract-sync)
         id: write-token
         if: inputs.write_drift_record
@@ -229,7 +234,7 @@ jobs:
           client-id: ${{ vars.CONTRACT_SYNC_CLIENT_ID }}
           private-key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
           owner: Starisian-Technologies
-          repositories: sparxstar-code-conformance
+          repositories: sparxstar-architecture-governance-registry
 
       - name: Commit drift record
         if: inputs.write_drift_record
@@ -242,9 +247,20 @@ jobs:
           CALLING_REPO: ${{ steps.versions.outputs.calling_repo }}
           RUN_URL:      ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           RUN_TS:       ${{ github.event.head_commit.timestamp }}
+          REGISTRY:     Starisian-Technologies/sparxstar-architecture-governance-registry
         shell: bash
         run: |
           set -euo pipefail
+
+          # head_commit is absent on pull_request events; fall back to now.
+          RUN_TS="${RUN_TS:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+
+          # Separate clone of the registry with the write token. Nothing is
+          # written to the sparxstar-code-conformance checkout above.
+          REG_DIR="${RUNNER_TEMP}/governance-registry"
+          git clone --depth 1 --branch main \
+            "https://x-access-token:${GH_TOKEN}@github.com/${REGISTRY}.git" "$REG_DIR"
+          cd "$REG_DIR"
 
           # Slug the caller repo name for the filename (replace / and other non-alphanum with -)
           SLUG=$(echo "$CALLING_REPO" | tr '/' '-' | tr -cd '[:alnum:]-')
@@ -260,7 +276,6 @@ jobs:
 
           git config user.name  "sparxstar-contract-sync[bot]"
           git config user.email "contract-sync@starisian.com"
-          git remote set-url origin "https://x-access-token:${GH_TOKEN}@github.com/Starisian-Technologies/sparxstar-code-conformance.git"
 
           git add "$RECORD_PATH"
           git diff --cached --quiet && echo "drift record unchanged — no commit needed" && exit 0
