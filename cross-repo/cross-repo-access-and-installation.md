@@ -56,7 +56,7 @@ These names exist at org level. **Whether a repo can read the org-level copies d
 | `COMPOSER_RESOLVER_CLIENT_ID` | Variable | Actions, repository level | always |
 | `COMPOSER_RESOLVER_PRIVATE_KEY` | Secret | Actions, repository level | always |
 | `ANTHROPIC_API_KEY` | Secret | Actions, repository level | the Claude PR reviewer runs in the repo |
-| `COMPOSER_RESOLVER_PRIVATE_KEY` | Secret | **Dependabot**, repository level | Dependabot runs in the repo |
+| `COMPOSER_RESOLVER_PRIVATE_KEY` *(second copy, Dependabot store)* | Secret | **Dependabot**, repository level | Dependabot runs in the repo |
 
 Dependabot-triggered runs do not receive Actions secrets; they read Dependabot secrets. Without the Dependabot copy, every credential-gated job skips on Dependabot PRs.
 
@@ -64,7 +64,7 @@ Dependabot-triggered runs do not receive Actions secrets; they read Dependabot s
 
 ### Adding a private repo
 
-1. Set the values above at repository level: Settings → Secrets and variables → **Actions** (Secrets and Variables tabs, *Repository* section), and → **Dependabot** for the Dependabot copy.
+1. Set every row above at repository level. `COMPOSER_RESOLVER_PRIVATE_KEY` is set **twice**: once under Settings → Secrets and variables → **Actions** (Secrets tab, *Repository* section), and again under → **Dependabot**. The two stores are separate, so setting it once leaves Dependabot PRs without it. The variable goes under **Actions** → Variables tab.
 2. Scope the composer-resolver App to every repo the new repo's workflows read (see Troubleshooting).
 3. Add the repo to the list below.
 
