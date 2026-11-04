@@ -46,26 +46,11 @@ standard is short-lived **GitHub App installation tokens**, minted per-job with
 long-lived personal access token. You need an identifier for the App and its private key (a repo/org
 **Secret**) — ask a platform admin for these if your repo doesn't have them yet:
 
-**Version-pinning caveat on `actions/create-github-app-token` itself:** this platform pins two
-different major versions of that action for the same purpose, with different input semantics — the
-required identifier depends on which one your workflow uses, so check before copying either pattern:
-
-- This repo's `pnpm-enforcement.yml`, `php-enforcement.yml`, and `css-enforcement.yml` all pin
-  `actions/create-github-app-token` by commit SHA with a `# v1` comment (the workflow files
-  themselves show only that SHA, not a resolved version — looking up that commit shows it lands on
-  the `1.12.0` release) and pass the identifier via that version's `app-id` input, documented there
-  simply as "GitHub App ID" — that release has no separate `client-id` input at all.
-- `sparxstar-claude-pr-review`'s own token-minting step pins `actions/create-github-app-token@v3` and
-  passes the identifier via `client-id` — the input name that action's current major version
-  documents and recommends.
-
-Both integrations read the identifier from the **same** org variable, `COMPOSER_RESOLVER_CLIENT_ID`.
-Whether one raw value stored there is valid for both an `app-id` input (v1) and a `client-id` input
-(v3) is a question for a platform admin to verify against what's actually stored — don't assume it
-either works or is broken without checking. Flag the version split itself to a platform admin as
-worth standardizing on one `actions/create-github-app-token` major version platform-wide, so the
-required identifier type isn't ambiguous per-workflow; that's out of scope for a per-repo setup guide
-to fix:
+**Which input to use:** pass the identifier through `client-id`. Every mint step in this repo's
+workflows pins `actions/create-github-app-token` to a v3 release by commit SHA (`# v3` comment) and
+uses `client-id` (owner ruling 2026-11-04, resolving OD-2). That input arrived in v3.1.0, which also
+deprecated `app-id`. Read the exact SHA from the workflow files, not from this page. The value is the
+App's Client ID (the `Iv23…` string) held in the `*_CLIENT_ID` variables below:
 
 | Secret pair | Used for |
 |---|---|

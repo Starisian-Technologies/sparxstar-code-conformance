@@ -52,7 +52,7 @@ There is no third app. Never create a PAT to solve cross-repo access.
 
 ## The canonical mint block
 
-Pattern verified 2026-09-10 against live workflows in the registry, contracts-registry, and claude-pr-review — all use `@v3` / `client-id:`. The enforcement workflows in code-conformance/coding-standards currently use a SHA-pinned v1 with `app-id:`, deliberately (supply-chain pinning), pending an owner ruling on platform-wide standardization (see Open Decisions in the correction list). Until that ruling, treat `@v3` + `client-id:` as the default for anything NEW, and never "fix" an existing green workflow's mint step to match this document — the green run wins. The Drive docs' unpinned `@v1` / `app-id:` block matches neither live pattern and is retired.
+Pattern verified 2026-09-10 against live workflows in the registry, contracts-registry, and claude-pr-review — all use `@v3` / `client-id:`. The enforcement workflows in code-conformance now use this pattern too: a SHA-pinned v3 release with `client-id:` (owner ruling 2026-11-04, resolving OD-2). SHA-pinning is still preferred over the bare `@v3` shown below; the pinned SHA lives in the workflow files. The Drive docs' unpinned `@v1` / `app-id:` block matches neither live pattern and is retired.
 
 ```yaml
 - name: Mint read token
@@ -86,7 +86,7 @@ Mint block above, then either:
 
 ```yaml
 - name: Check out that repo
-  uses: actions/checkout@v4
+  uses: actions/checkout@v5
   with:
     repository: Starisian-Technologies/<REPO-TO-READ>
     token: ${{ steps.read-token.outputs.token }}

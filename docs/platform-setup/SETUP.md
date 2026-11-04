@@ -88,8 +88,9 @@ broken.
 `on.workflow_call.secrets` *and* be inside the tag a caller pins, before that
 caller can pass it. Order is always: declare → re-tag → callers pass.
 
-**Never re-cut a green mint step to match a document.** The enforcement
-workflows here deliberately SHA-pin `create-github-app-token` with an `app-id:`
-input, while the registries use `@v3` with `client-id:`. Both are live and both
-work; the SHA pin is a supply-chain choice. Standardising them is an open
-platform decision, not a licence to edit passing CI.
+**Mint steps use the canonical pattern.** Every `create-github-app-token`
+step in this repo is SHA-pinned to a v3 release with a `# v3` comment and passes
+`client-id:` (owner ruling 2026-11-04, resolving OD-2). The variable and secret
+names are unchanged. Don't reintroduce `app-id:`, which v3.1.0 and later
+deprecate. Outside an owner-approved change, never re-cut a green mint step to
+match a document.

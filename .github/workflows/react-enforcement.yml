@@ -73,7 +73,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
 
       - name: Parse standards exceptions (.standards/standards-exceptions.yml)
         id: exceptions
@@ -184,9 +184,13 @@ jobs:
           fi
 
       - name: Setup Node.js
-        uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: ${{ inputs['node-version'] }}
+          # setup-node v5 turns caching on when package.json has a packageManager
+          # field. pnpm is only enabled by corepack in the next step, so the cache
+          # step would fail here. Keep v4's behaviour: no caching.
+          package-manager-cache: false
 
       - name: Enable corepack (pnpm)
         shell: bash
