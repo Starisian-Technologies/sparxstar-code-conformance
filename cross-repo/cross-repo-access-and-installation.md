@@ -59,10 +59,16 @@ These names exist at org level. **Whether a repo can read the org-level copies d
 | `COMPOSER_RESOLVER_PRIVATE_KEY` *(second copy, Dependabot store)* | Secret | **Dependabot**, repository level | Dependabot runs in the repo |
 | `CONTRACT_SYNC_CLIENT_ID` | Variable | Actions, repository level | always |
 | `CONTRACT_SYNC_PRIVATE_KEY` | Secret | Actions, repository level | always |
+| `CONTRACT_SYNC_PRIVATE_KEY` *(second copy, Dependabot store)* | Secret | **Dependabot**, repository level | Dependabot runs in the repo **and** the repo writes a drift record |
 
 **Contract-sync (owner ruling, 2026-11-04):** private repos carry `CONTRACT_SYNC_CLIENT_ID` and `CONTRACT_SYNC_PRIVATE_KEY` alongside the composer-resolver values. `version-drift-enforcement`'s `write_drift_record` stays at its default, so the drift record keeps being written.
 
-Dependabot-triggered runs do not receive Actions secrets; they read Dependabot secrets. Without the Dependabot copy, every credential-gated job skips on Dependabot PRs.
+**Dependabot (owner rulings, 2026-11-04).** Dependabot-triggered runs do not receive Actions secrets; they read Dependabot secrets. So:
+
+- Where Dependabot runs, the repo carries a Dependabot copy of `COMPOSER_RESOLVER_PRIVATE_KEY`.
+- Where Dependabot runs **and** the repo writes a drift record, it also carries a Dependabot copy of `CONTRACT_SYNC_PRIVATE_KEY`.
+
+Without these copies, every credential-gated job skips or fails on Dependabot PRs.
 
 "Never recreate" applies to the org-level values only. A private repo's repository-level copies are required, not a violation.
 
@@ -71,7 +77,7 @@ Dependabot-triggered runs do not receive Actions secrets; they read Dependabot s
 1. Set every row above at repository level:
    - **Actions → Variables tab:** `COMPOSER_RESOLVER_CLIENT_ID`, `CONTRACT_SYNC_CLIENT_ID`.
    - **Actions → Secrets tab:** `COMPOSER_RESOLVER_PRIVATE_KEY`, `CONTRACT_SYNC_PRIVATE_KEY`, and `ANTHROPIC_API_KEY` where the reviewer runs.
-   - **Dependabot → Secrets:** `COMPOSER_RESOLVER_PRIVATE_KEY` again, where Dependabot runs. The Actions and Dependabot stores are separate, so setting it once leaves Dependabot PRs without it.
+   - **Dependabot → Secrets:** `COMPOSER_RESOLVER_PRIVATE_KEY` again, where Dependabot runs; and `CONTRACT_SYNC_PRIVATE_KEY` again, where Dependabot runs and the repo writes a drift record. The Actions and Dependabot stores are separate, so setting a key once leaves Dependabot PRs without it.
 2. Scope the composer-resolver App to every repo the new repo's workflows read (see Troubleshooting), and the contract-sync App to every repo they write to — for the drift record, that is `sparxstar-code-conformance` (see `docs/setup-and-install.md`, Section 0).
 3. Add the repo to the list below.
 
@@ -114,6 +120,9 @@ Does your workflow touch a repo OTHER than the one it runs in?
 - **Yes, reading only** → Block A.
 - **Yes, writing/pushing** → Block B.
 - **You are the Claude PR reviewer caller** → Block C. The reviewer reads the two internal registries itself; your caller only passes it the credentials.
+- **A Claude Code agent session needs to read a repo it is not cloned into** → Block D.
+
+**Scope every token to the minimum the run needs** — only the repositories it touches (`repositories:`) and only the access it uses. A read-only workflow mints a read token (composer-resolver); it never mints or receives a write token (contract-sync). *(Moved here from the product-spec registry's cross-repo standard, AC-002.)*
 
 ### Block A — Read another private repo / install private packages
 
@@ -180,6 +189,12 @@ git ls-remote --tags https://github.com/Starisian-Technologies/sparxstar-claude-
 
 Before pinning, open `.github/workflows/claude-pr-review.yml` **at that tag** and confirm its `on.workflow_call.secrets` declares exactly the two names above (sequencing rule 3). This block was checked against `v1.1.1` on 2026-11-04, where both are `required: true`. The reviewer refuses to run on a public repo; see its own `docs/consumer-setup.md`.
 
+### Block D — Read token for a Claude Code agent session
+
+Use this when an agent session in a workflow must read a repository it is not cloned into. Mint with the canonical mint block above (composer-resolver, read), with `repositories:` set to the repo the agent reads. Then pass `${{ steps.read-token.outputs.token }}` to the agent session through an environment variable (for example `SPECS_TOKEN`). The agent reads; it does not write, so it never gets a contract-sync token. *(Moved here from the product-spec registry's cross-repo standard, REQ-004.)*
+
+This is not Block C. Block C is a caller of the published reviewer workflow, which mints its own tokens; Block D is for a workflow that runs an agent session itself.
+
 ---
 
 ## Reusable-workflow sequencing rules (violating these looks like an auth failure)
@@ -207,4 +222,5 @@ An App being installed org-wide is NOT the same as being scoped to the repo bein
 - Never a PAT for cross-repo access.
 - Never an API key in Variables — keys are Secrets.
 - Never define a token a workflow doesn't use.
+- Never pass a write token to a read-only workflow. Scope every token to the minimum needed.
 - Never restate the mint block in a repo's own instructions — link here.
