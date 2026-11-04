@@ -63,7 +63,8 @@ on:
         default: ''
       write_drift_record:
         description: >
-          Whether to commit the drift record to drift/ in this repo using
+          Whether to commit the drift record to drift/ in
+          sparxstar-architecture-governance-registry (internal) using
           contract-sync. Set false to skip the write (advisory/read-only runs).
           Default true.
         required: false
