@@ -235,8 +235,8 @@ this workflow adds a new secret declaration after a consumer has pinned an older
 tag, the consumer's pinned tag still contains the old declaration and will not
 forward the new secret.
 
-Always re-tag (move `v1` to the new commit and cut a new immutable semver tag)
-after any change to secrets, inputs, or job logic. Consumers pinned to an
+After any change to secrets, inputs, or job logic, cut a new immutable patch
+tag on the commit containing the change. Never move an existing semver tag (D1). Consumers pinned to an
 immutable tag must update their pin to receive the new declaration. Notify
 consuming repos when a secrets block changes — they cannot pick it up
 automatically on an immutable pin.

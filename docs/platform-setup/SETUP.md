@@ -26,7 +26,7 @@ themselves mint tokens to reach private dependencies, so consumers still pass
 | Know which rule IDs a gate enforces | [`CI-Enforcement-Matrix.md`](../../CI-Enforcement-Matrix.md) |
 | Read the standards themselves | [`docs/standards-catalog.md`](../standards-catalog.md) |
 | Wire a **brand-new** repo end to end | `starisian-technologies-proprietary-license` → `GOVERNANCE-SETUP.md` — *landing on that repo's open governance-wiring PR; not yet on its default branch* |
-| Authenticate to another repo | product-spec registry → `specs/_platform/SPARXSTAR-CROSS-REPO-ACCESS-STANDARD.md` |
+| Authenticate to another repo (Apps, secret and variable names, where private repos keep them) | [`cross-repo/cross-repo-access-and-installation.md`](../../cross-repo/cross-repo-access-and-installation.md) — the canonical home |
 
 ---
 
@@ -72,9 +72,9 @@ never stall a team, and leaving it advisory forever must never become normal.
 
 ## Editing a workflow in this repo
 
-**Tags follow edits, in the same sitting.** After any change to a reusable
-workflow, move both the immutable semver tag and any moving major alias onto
-the commit containing the edit, then verify:
+**New edit, new tag, in the same sitting.** After any change to a reusable
+workflow, cut a new immutable patch tag on the commit containing the edit.
+Never move an existing semver tag (D1). Then verify the new tag exists:
 
 ```bash
 git ls-remote origin 'refs/tags/v1*'
@@ -86,7 +86,8 @@ broken.
 
 **Declare before callers pass.** A secret must appear in the callee's
 `on.workflow_call.secrets` *and* be inside the tag a caller pins, before that
-caller can pass it. Order is always: declare → re-tag → callers pass.
+caller can pass it. Order is always: declare → cut a new patch tag → callers
+bump their pin and pass.
 
 **Never re-cut a green mint step to match a document.** The enforcement
 workflows here deliberately SHA-pin `create-github-app-token` with an `app-id:`
