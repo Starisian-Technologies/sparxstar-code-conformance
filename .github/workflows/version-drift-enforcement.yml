@@ -96,6 +96,7 @@ jobs:
           repository: Starisian-Technologies/sparxstar-code-conformance
           token: ${{ steps.read-token.outputs.token }}
           fetch-depth: 0    # full history so all tags are present
+          persist-credentials: false
 
       # ── RESOLVE: floor from config, recommended from real tags ──
       - name: Resolve floor, recommended, and validate requested ref
