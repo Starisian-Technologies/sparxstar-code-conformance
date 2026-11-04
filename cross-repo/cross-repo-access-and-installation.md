@@ -178,7 +178,7 @@ Before pinning, open `.github/workflows/claude-pr-review.yml` **at that tag** an
 ## Reusable-workflow sequencing rules (violating these looks like an auth failure)
 
 1. **Registry declares first.** A caller passing a secret the pinned reusable workflow doesn't declare in `on.workflow_call.secrets` fails at startup. Order is always: callee declares → callee cuts a new patch tag → caller bumps its pin and passes.
-2. **New edit, new tag.** After any edit to a reusable workflow, **cut a new immutable patch tag** on the commit containing the edit. Never move an existing semver tag (D1). Verify the new tag exists with `git ls-remote origin 'refs/tags/v1*'` — never from memory.
+2. **New edit, new tag.** After any edit to a reusable workflow, **cut a new immutable patch tag** on the commit containing the edit. Never move an existing semver tag (D1). Patch tags never move; the release workflow advances the `vN` alias. Verify the new tag exists with `git ls-remote origin 'refs/tags/v1*'` — never from memory.
 3. **Names must match by reading, not recall.** When a secret-passing failure occurs, open the caller and the callee's `on.workflow_call.secrets` block in the same turn and compare the exact names. A mismatch there IS the bug.
 
 ## Where this document lives

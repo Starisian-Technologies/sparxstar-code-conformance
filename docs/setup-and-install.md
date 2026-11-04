@@ -31,10 +31,14 @@ false`. `contract-sync` is only exercised when `write_drift_record: true`
 (the default), but its secret must still be declared in the caller's
 `secrets:` block.
 
-### Org secrets
+### Secrets (org level for public repos, repository level for private repos)
 
-Must exist at org or repo level under Settings → Secrets and variables →
-Actions → Secrets before a consumer passes them. These are secrets — do not
+Must be readable by the consumer repo before it passes them: under Settings →
+Secrets and variables → Actions → Secrets, at org level for a public repo and
+at **repository level** for a private one (this org's plan does not let
+private repos read org-level secrets). Which values a private repo carries is
+defined in
+[`cross-repo/cross-repo-access-and-installation.md`](../cross-repo/cross-repo-access-and-installation.md). These are secrets — do not
 store them as Variables.
 
 | Secret name | What it holds |
@@ -42,10 +46,11 @@ store them as Variables.
 | `COMPOSER_RESOLVER_PRIVATE_KEY` | PEM private key for the composer-resolver App |
 | `CONTRACT_SYNC_PRIVATE_KEY` | PEM private key for the contract-sync App |
 
-### Org variables
+### Variables (org level for public repos, repository level for private repos)
 
 Must exist as Variables (not Secrets) under Settings → Secrets and variables →
-Actions → Variables. A client-id stored in the wrong slot (or stored as a
+Actions → Variables — at org level for a public repo, at **repository level**
+for a private one. A client-id stored in the wrong slot (or stored as a
 Secret instead of a Variable) causes the token-mint step to fail with an
 opaque 401.
 
@@ -56,7 +61,7 @@ opaque 401.
 
 ### Who provisions these
 
-App installation and org secret/variable creation require org-admin rights.
+App installation, and creating the secrets and variables (org level, or repository level for a private repo), require admin rights.
 A consuming repo's developer typically cannot do this. Request provisioning
 from your org administrator and confirm all four items above exist before
 wiring the gate.
@@ -139,9 +144,9 @@ secrets:
 **`secrets: inherit` is prohibited.** Pass each secret by name as shown. Only
 these two cross the boundary.
 
-**Org variables are not passed by the consumer.** `COMPOSER_RESOLVER_CLIENT_ID`
-and `CONTRACT_SYNC_CLIENT_ID` are org Variables (referenced as `vars.*` inside
-the workflow). They propagate automatically and must not appear in the caller's
+**Variables are not passed by the consumer.** `COMPOSER_RESOLVER_CLIENT_ID`
+and `CONTRACT_SYNC_CLIENT_ID` are Variables (referenced as `vars.*` inside the
+workflow) — org-level for a public repo, repository-level for a private one. They propagate automatically and must not appear in the caller's
 `secrets:` block.
 
 ---
