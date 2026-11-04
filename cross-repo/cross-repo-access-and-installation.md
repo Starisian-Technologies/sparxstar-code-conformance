@@ -52,6 +52,7 @@ Every repo a workflow writes to through contract-sync must be in the App's repos
 | `sparxstar-contracts-registry` → `propose-contract.yml`, `fetch-contracts.yml` (drift report) | `sparxstar-contracts-registry` |
 | `sparxstar-contracts-registry` → `dispatch-contract-change.yml` | the consumer repos it resolves for the changed contract |
 | product repos → `sync-contracts.yml` | `sparxstar-contracts-registry` |
+| product repos → their own `governance.yml` (inline spec proposal, e.g. `sparxstar-sky-ui`, `sparxstar-3iatlas-wordpad`, `sparxstar-contracts-registry`) | `sparxstar-product-specification-registry` |
 
 Before changing the App's access, re-read each workflow's `repositories:` line rather than trusting this table; a workflow added later is not listed until someone adds it here.
 
