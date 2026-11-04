@@ -49,7 +49,7 @@ There is no third app. Never create a PAT to solve cross-repo access.
 These names exist at org level. **Whether a repo can read the org-level copies depends on its visibility** (owner ruling, 2026-11-04):
 
 - **Public repos** read the org-level values. Reference them; never recreate them.
-- **Private repos cannot.** This org's GitHub plan does not let private repositories read org-level secrets or variables, and product repos stay private — they are not made public to work around this. Each private repo carries its own **repository-level** copies of the composer-resolver values it uses:
+- **Private repos cannot.** This org's GitHub plan does not let private repositories read org-level secrets or variables, and product repos stay private — they are not made public to work around this. Each private repo carries its own **repository-level** copies of the composer-resolver and contract-sync values:
 
 | Name | Type | Where it is set | Needed when |
 | --- | --- | --- | --- |
@@ -57,6 +57,10 @@ These names exist at org level. **Whether a repo can read the org-level copies d
 | `COMPOSER_RESOLVER_PRIVATE_KEY` | Secret | Actions, repository level | always |
 | `ANTHROPIC_API_KEY` | Secret | Actions, repository level | the Claude PR reviewer runs in the repo |
 | `COMPOSER_RESOLVER_PRIVATE_KEY` *(second copy, Dependabot store)* | Secret | **Dependabot**, repository level | Dependabot runs in the repo |
+| `CONTRACT_SYNC_CLIENT_ID` | Variable | Actions, repository level | always |
+| `CONTRACT_SYNC_PRIVATE_KEY` | Secret | Actions, repository level | always |
+
+**Contract-sync (owner ruling, 2026-11-04):** private repos carry `CONTRACT_SYNC_CLIENT_ID` and `CONTRACT_SYNC_PRIVATE_KEY` alongside the composer-resolver values. `version-drift-enforcement`'s `write_drift_record` stays at its default, so the drift record keeps being written.
 
 Dependabot-triggered runs do not receive Actions secrets; they read Dependabot secrets. Without the Dependabot copy, every credential-gated job skips on Dependabot PRs.
 
@@ -64,17 +68,20 @@ Dependabot-triggered runs do not receive Actions secrets; they read Dependabot s
 
 ### Adding a private repo
 
-1. Set every row above at repository level. `COMPOSER_RESOLVER_PRIVATE_KEY` is set **twice**: once under Settings → Secrets and variables → **Actions** (Secrets tab, *Repository* section), and again under → **Dependabot**. The two stores are separate, so setting it once leaves Dependabot PRs without it. The variable goes under **Actions** → Variables tab.
-2. Scope the composer-resolver App to every repo the new repo's workflows read (see Troubleshooting).
+1. Set every row above at repository level:
+   - **Actions → Variables tab:** `COMPOSER_RESOLVER_CLIENT_ID`, `CONTRACT_SYNC_CLIENT_ID`.
+   - **Actions → Secrets tab:** `COMPOSER_RESOLVER_PRIVATE_KEY`, `CONTRACT_SYNC_PRIVATE_KEY`, and `ANTHROPIC_API_KEY` where the reviewer runs.
+   - **Dependabot → Secrets:** `COMPOSER_RESOLVER_PRIVATE_KEY` again, where Dependabot runs. The Actions and Dependabot stores are separate, so setting it once leaves Dependabot PRs without it.
+2. Scope the composer-resolver App to every repo the new repo's workflows read (see Troubleshooting), and the contract-sync App to every repo they write to — for the drift record, that is `sparxstar-code-conformance` (see `docs/setup-and-install.md`, Section 0).
 3. Add the repo to the list below.
 
 ### Private repos carrying repository-level credentials
 
-Maintained by the owner. An agent cannot read Actions secrets or variables, so it must not add a repo here without the owner's word. To verify an entry: the repo's Settings → Secrets and variables → Actions (and → Dependabot), *Repository* section.
+Maintained by the owner. An agent cannot read Actions secrets or variables, so it must not add a repo here without the owner's word. An entry means the repo holds **every** applicable row of the table above. To verify an entry: the repo's Settings → Secrets and variables → Actions (and → Dependabot), *Repository* section.
 
 | Repo | Recorded |
 | --- | --- |
-| `sparxstar-3iatlas-consent-node` | 2026-11-04 (owner) |
+| `sparxstar-3iatlas-consent-node` | 2026-11-04 (owner) — recorded before the contract-sync ruling; owner to confirm `CONTRACT_SYNC_*` are set |
 
 **Phantom names — these do NOT exist. If you see one in any workflow or instruction file, it was fabricated. Delete it:** `ADR_REGISTRY_READ_TOKEN`, `REGISTRY_READ_TOKEN`, `STANDARDS_READ_TOKEN`
 
