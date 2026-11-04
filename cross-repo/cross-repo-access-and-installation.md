@@ -36,6 +36,25 @@ Retired names — never use, correct on sight: `sparxstar-architecture-decision-
 
 There is no third app. Never create a PAT to solve cross-repo access.
 
+### Drift records (owner ruling, 2026-11-04)
+
+`version-drift-enforcement` writes one JSON record per consuming repo to **`sparxstar-architecture-governance-registry`** — proposed path `drift/<owner>-<repo>.json` on `main`. Drift records are **internal**: they name private repos, so they are never committed to `sparxstar-code-conformance`, which is public. The workflow mints its contract-sync token scoped to the registry only.
+
+### What contract-sync needs repository access to
+
+Every repo a workflow writes to through contract-sync must be in the App's repository access (org Settings → GitHub Apps → contract-sync → Repository access). As read from the live workflows on 2026-11-04:
+
+| Writer (repo → workflow) | Writes to |
+| --- | --- |
+| `sparxstar-code-conformance` → `version-drift-enforcement.yml` | `sparxstar-architecture-governance-registry` (drift records) |
+| `sparxstar-architecture-governance-registry` → `governance-sync.yml` | every repo in its `config/governance-consumers.txt` |
+| `sparxstar-product-specification-registry` → `propose-spec.yml` (called from product repos), `fetch-specs.yml` (drift report) | `sparxstar-product-specification-registry` |
+| `sparxstar-contracts-registry` → `propose-contract.yml`, `fetch-contracts.yml` (drift report) | `sparxstar-contracts-registry` |
+| `sparxstar-contracts-registry` → `dispatch-contract-change.yml` | the consumer repos it resolves for the changed contract |
+| product repos → `sync-contracts.yml` | `sparxstar-contracts-registry` |
+
+Before changing the App's access, re-read each workflow's `repositories:` line rather than trusting this table; a workflow added later is not listed until someone adds it here.
+
 ## Secrets and variables: names, and where each repo reads them
 
 | Name | Type | App |
@@ -78,7 +97,7 @@ Without these copies, every credential-gated job skips or fails on Dependabot PR
    - **Actions → Variables tab:** `COMPOSER_RESOLVER_CLIENT_ID`, `CONTRACT_SYNC_CLIENT_ID`.
    - **Actions → Secrets tab:** `COMPOSER_RESOLVER_PRIVATE_KEY`, `CONTRACT_SYNC_PRIVATE_KEY`, and `ANTHROPIC_API_KEY` where the reviewer runs.
    - **Dependabot → Secrets:** `COMPOSER_RESOLVER_PRIVATE_KEY` again, where Dependabot runs; and `CONTRACT_SYNC_PRIVATE_KEY` again, where Dependabot runs and the repo writes a drift record. The Actions and Dependabot stores are separate, so setting a key once leaves Dependabot PRs without it.
-2. Scope the composer-resolver App to every repo the new repo's workflows read (see Troubleshooting), and the contract-sync App to every repo they write to — for the drift record, that is `sparxstar-code-conformance` (see `docs/setup-and-install.md`, Section 0).
+2. Scope the composer-resolver App to every repo the new repo's workflows read (see Troubleshooting), and the contract-sync App to every repo they write to — for the drift record, that is `sparxstar-architecture-governance-registry` (see "Drift records" above).
 3. Add the repo to the list below.
 
 ### Private repos carrying repository-level credentials
