@@ -78,6 +78,7 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | VITE-001 | standards-handbook §0.8 | Vite production builds must enforce asset budgets and deterministic output | Vite | SPECIFIED | Build checks (no shared Vite config ships yet) |
 | CSS-001 | css-standard §1 | CSS bundle must stay within 50 KB gzipped total per page | Frontend CSS | SPECIFIED | Build size check (no shared build config ships yet — Catalog #4, #10) |
 | CSS-002 | css-standard §2 | Prohibited high-cost CSS properties blocked | Frontend CSS | SPECIFIED | Stylelint custom rule (no shared `stylelint` config ships yet — Catalog #4) |
+| CSS-003 | css-standard §2 | Prohibited CSS properties `filter` and `backdrop-filter` | Frontend CSS | ENFORCED | `css-standards.yml` (Stylelint `property-disallowed-list` from `stylelint-config`); see `docs/enforcement-matrix.md` §4 |
 | CSS-004 | css-standard §6.2 | Platform fonts: Inter as one subsetted WOFF2 with African-orthography coverage; Google Sans/Fira only as reported fallbacks; no Noto; `font-display: swap` (OQ-008) | Frontend CSS | SPECIFIED | Font-subset and page-weight checks (not yet shipped); `css-enforcement.yml` CSS-PERF-006 warns only when `font-display` is missing |
 | MEDIA-001 | media-upload-standard §1 | Audio sample rate <= 16000 | JS/PHP | SPECIFIED | Runtime validation |
 | MEDIA-002 | media-upload-standard §2 | Video constraints (max resolution/FPS/bitrate) enforced | JS/PHP | SPECIFIED | Runtime validation |
