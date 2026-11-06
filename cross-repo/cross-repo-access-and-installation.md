@@ -76,7 +76,7 @@ Does your workflow touch a repo OTHER than the one it runs in?
 - **No** → the default `GITHUB_TOKEN` is enough. Stop.
 - **Yes, reading only** → Block A.
 - **Yes, writing/pushing** → Block B.
-- **You are the Claude PR reviewer caller** → Block C. It reads no other repo.
+- **You are the Claude PR reviewer caller** → Block C. Read it: at the tag most callers pin, the reviewer does read other repos and needs more than the API key.
 
 ### Block A — Read another private repo / install private packages
 
