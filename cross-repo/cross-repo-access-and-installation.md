@@ -40,9 +40,9 @@ There is no third app. Never create a PAT to solve cross-repo access.
 
 `version-drift-enforcement` writes one JSON record per consuming repo to **`sparxstar-architecture-governance-registry`** — proposed path `drift/<owner>-<repo>.json` on `main`. Drift records are **internal**: they name private repos, so they are never committed to `sparxstar-code-conformance`, which is public. The workflow mints its contract-sync token scoped to the registry only.
 
-> **Pending release.** This destination is implemented in Starisian-Technologies/sparxstar-code-conformance#41 and takes effect from the first `version-drift-enforcement` release that includes it (planned `v1.0.4`). Tags up to and including `v1.0.3` still mint for, and push to, `sparxstar-code-conformance`. Their drift-record write fails, and it would target the wrong repo even if it didn't. **Do not turn the drift record on while pinned to `v1.0.3` or earlier.** Until that release exists, contract-sync's access to the registry is preparation only.
+> **From `v1.0.4`.** This destination ships in `version-drift-enforcement` `v1.0.4` (Starisian-Technologies/sparxstar-code-conformance#41). Tags up to and including `v1.0.3` still mint for, and push to, `sparxstar-code-conformance`. Their drift-record write fails, and it would target the wrong repo even if it didn't. **Do not turn the drift record on while pinned to `v1.0.3` or earlier.**
 
-**Turning the drift record on in a caller.** The maintained caller templates (`caller-templates/standards-*.yml`) set `write_drift_record: false` and pass only `COMPOSER_RESOLVER_PRIVATE_KEY`. Setting the credentials alone records nothing. To turn it on:
+**Turning the drift record on in a caller.** From `v1.0.4`, the maintained caller templates (`caller-templates/standards-*.yml`) pin `v1.0.4`, set `write_drift_record: true`, and pass `CONTRACT_SYNC_PRIVATE_KEY` by name (owner ruling, 2026-11-04). A caller copied from an earlier template still sets `write_drift_record: false` and passes only `COMPOSER_RESOLVER_PRIVATE_KEY`, so setting the credentials alone records nothing there. To turn it on in such a caller:
 
 1. Set the contract-sync values in the repo (table below, including the Dependabot copy where Dependabot runs).
 2. Pin `version-drift-enforcement` and `contract_ref` to a release that writes to the registry (the release above or later).
@@ -54,7 +54,7 @@ Every repo a workflow writes to through contract-sync must be in the App's repos
 
 | Writer (repo → workflow) | Writes to |
 | --- | --- |
-| `sparxstar-code-conformance` → `version-drift-enforcement.yml` | `sparxstar-architecture-governance-registry` (drift records), from the release that includes #41. Earlier tags target `sparxstar-code-conformance`. |
+| `sparxstar-code-conformance` → `version-drift-enforcement.yml` | `sparxstar-architecture-governance-registry` (drift records), from `v1.0.4`. Earlier tags target `sparxstar-code-conformance`. |
 | `sparxstar-architecture-governance-registry` → `governance-sync.yml` | every repo in its `config/governance-consumers.txt` |
 | `sparxstar-product-specification-registry` → `propose-spec.yml` (called from product repos), `fetch-specs.yml` (drift report) | `sparxstar-product-specification-registry` |
 | `sparxstar-contracts-registry` → `propose-contract.yml`, `fetch-contracts.yml` (drift report) | `sparxstar-contracts-registry` |
@@ -89,7 +89,7 @@ These names exist at org level. **Whether a repo can read the org-level copies d
 | `CONTRACT_SYNC_PRIVATE_KEY` | Secret | Actions, repository level | always |
 | `CONTRACT_SYNC_PRIVATE_KEY` *(second copy, Dependabot store)* | Secret | **Dependabot**, repository level | Dependabot runs in the repo **and** the repo writes a drift record |
 
-**Contract-sync (owner ruling, 2026-11-04):** private repos carry `CONTRACT_SYNC_CLIENT_ID` and `CONTRACT_SYNC_PRIVATE_KEY` alongside the composer-resolver values. `version-drift-enforcement`'s `write_drift_record` defaults to true, but the caller templates override it to false. A repo records drift only after the caller steps under "Drift records" above.
+**Contract-sync (owner ruling, 2026-11-04):** private repos carry `CONTRACT_SYNC_CLIENT_ID` and `CONTRACT_SYNC_PRIVATE_KEY` alongside the composer-resolver values. `version-drift-enforcement`'s `write_drift_record` defaults to true, and the caller templates from `v1.0.4` leave it on. Callers copied from earlier templates override it to false; see the caller steps under "Drift records" above.
 
 **Dependabot (owner rulings, 2026-11-04).** Dependabot-triggered runs do not receive Actions secrets; they read Dependabot secrets. So:
 

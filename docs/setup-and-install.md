@@ -17,11 +17,12 @@ auth error — not a clear "prerequisite missing" message.
 | App | Org variable that holds its client-id | Permission required | What it does |
 |---|---|---|---|
 | `composer-resolver` | `vars.COMPOSER_RESOLVER_CLIENT_ID` | Contents: Read | Checks out `sparxstar-code-conformance` to read `config/version-policy.yml` and git tags |
-| `contract-sync` | `vars.CONTRACT_SYNC_CLIENT_ID` | Contents: Read/Write | Commits the drift record to `drift/<slug>.json` in `sparxstar-code-conformance` |
+| `contract-sync` | `vars.CONTRACT_SYNC_CLIENT_ID` | Contents: Read/Write | Commits the drift record to `drift/<slug>.json` in `sparxstar-architecture-governance-registry` (internal; never this public repo) |
 
-Both Apps must be installed in the **Starisian-Technologies** org and their
-installation must include `sparxstar-code-conformance` in their repository
-scope. **An App existing in the org is not the same as it being scoped to
+Both Apps must be installed in the **Starisian-Technologies** org.
+`composer-resolver`'s installation must include `sparxstar-code-conformance`
+in its repository scope; `contract-sync`'s must include
+`sparxstar-architecture-governance-registry`. **An App existing in the org is not the same as it being scoped to
 the repo.** Verify under org Settings → GitHub Apps → (App name) →
 Repository access. A missing scope produces a "repository not found" error
 with no indication the App caused it.
@@ -78,7 +79,7 @@ recommended version passes silently; a ref that is behind the recommended but
 at or above the floor passes with a `::warning::` annotation visible in the
 Actions UI; a ref below the floor hard-fails the job unconditionally
 regardless of any `enforcement_mode` setting. On every passing or warning run
-the gate also commits a JSON drift record to `drift/` in this repo via the
+the gate also commits a JSON drift record to `drift/` in `sparxstar-architecture-governance-registry` via the
 contract-sync App, giving the platform team a single place to see every
 consumer's version state without querying each repo individually.
 
@@ -121,7 +122,7 @@ Read from `on.workflow_call.inputs` in
 |---|---|---|---|---|
 | `contract_ref` | **yes** | `string` | — | The ref the calling repo pins its enforcement workflow calls to. Must be an existing tag matching `vMAJOR`, `vMAJOR.MINOR`, or `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`). Hard-fails if the tag does not exist on `sparxstar-code-conformance` or falls below the floor in `config/version-policy.yml`. |
 | `calling_repo` | no | `string` | `''` | Full `owner/repo` of the caller. Defaults to `github.repository` when empty. Override only when the caller needs to report a different identity — this is rare. |
-| `write_drift_record` | no | `boolean` | `true` | Whether to commit a JSON drift record to `drift/` in this repo via contract-sync. Set `false` for read-only runs. Omit on normal wiring. |
+| `write_drift_record` | no | `boolean` | `true` | Whether to commit a JSON drift record to `drift/` in `sparxstar-architecture-governance-registry` via contract-sync. Set `false` for read-only runs. Omit on normal wiring. |
 
 ---
 
