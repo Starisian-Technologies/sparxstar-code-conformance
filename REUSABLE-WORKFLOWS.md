@@ -171,19 +171,21 @@ jobs:
     with:
       repo_type: wp-plugin
       enforcement_mode: gate
-    secrets: inherit
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
   css:
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1.0.2
     with:
       repo_type: wp-plugin
       enforcement_mode: gate
-    secrets: inherit
+    secrets:
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
   media:
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
     with:
       repo_type: wp-plugin
       enforcement_mode: gate
-    secrets: inherit
+    # media-enforcement.yml declares no secrets, so none are passed.
 ```
 
 **2. Update pins and set advisory mode.** Update every `uses:` line to end in
@@ -348,11 +350,15 @@ where you want visibility without blocking.
 
 ## Composer auth for PHP repos
 
-If the PHP workflow needs private packages, pass the required secrets to
-the reusable workflow (e.g., using `secrets: inherit` or explicit secrets)
-— or ensure the reusable workflow accepts auth inputs. The org secrets
-`COMPOSER_RESOLVER_CLIENT_ID` and `COMPOSER_RESOLVER_PRIVATE_KEY` are
-available to all repos.
+If the PHP workflow needs private packages, pass the secrets the reusable
+workflow declares **by name** in the caller's `secrets:` block. Never use
+`secrets: inherit`.
+
+Do not assume the credentials reach your repo. Public repos read the
+org-level values; private repos cannot, and must carry repository-level
+copies. The names, where each is set, and the auth block itself live in
+[`cross-repo/cross-repo-access-and-installation.md`](cross-repo/cross-repo-access-and-installation.md)
+(Block A covers Composer auth). Read them there; do not copy them here.
 
 ## Pin strategy
 
