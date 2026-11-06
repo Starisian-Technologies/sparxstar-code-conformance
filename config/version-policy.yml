@@ -7,7 +7,8 @@
 # recommended: NOT stored here. Resolved at runtime from the repo's real git
 #              tags (highest valid semver). Editing this file never touches it.
 #
-# To raise the floor: edit floor below, commit, cut a new semver tag, move v1.
+# To raise the floor: edit floor below, commit, cut a new immutable patch tag.
+# Never move an existing semver tag (D1).
 # To cut a new version: tag the merge commit (see REUSABLE-WORKFLOWS.md §Tags).
 
 floor: v1.0.0
