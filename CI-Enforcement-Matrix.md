@@ -34,7 +34,7 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | SYS-005 | standards-handbook §0.5 | Idempotency key required for write operations | API / Mutations / Uploads | SPECIFIED | Contract tests / runtime middleware |
 | SYS-006 | standards-handbook §0.6 | Reserved section | All | RESERVED | N/A |
 | SYS-007 | standards-handbook §0.7 | No direct provider SDK usage without abstraction layer | App code | SPECIFIED | PHPStan custom rule (not yet shipped) + review gate |
-| SYS-008 | standards-handbook §0.4 | Max first-screen weight 100 KB, fonts and inline SVG included; no images on the first screen (OQ-008) | Frontend | SPECIFIED | Page-weight check (no shared gate ships yet — Catalog #10) |
+| SYS-008 | standards-handbook §0.4 | Max first-screen weight 100 KB compressed, fonts and inline SVG included; no images on the first screen (OQ-008) | Frontend | SPECIFIED | Page-weight check (no shared gate ships yet — Catalog #10) |
 | AUTH-001 | standards-handbook §1.2 | Governed actions must call the authority layer before execution | Backend / Frontend governed flows | WARN | `scripts/audit-governed-actions.php` + `.github/workflows/full-quality-gate.yml` AUTH-001 step (warn-only; pending ADR ratification per STD-TOOLCHAIN-001 §5) |
 | AUTH-002 | standards-handbook §1.3 | Fail closed when authority-layer context/authority is unavailable | All governed repos | SPECIFIED | Integration tests |
 | GQL-001 | standards-handbook §2.1 | GraphQL max query depth 5 | GraphQL | SPECIFIED | `graphql-depth-limit` (no shared config ships yet) |
