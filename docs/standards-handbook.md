@@ -84,6 +84,7 @@ Every failure must return a defined error, log internally with full context, and
 | Max concurrent ops | 1 active mutation and 1 active upload per user | Per user, enforced separately by operation type; governed actions count toward the mutation cap unless explicitly assigned a different cap in a later section |
 | Max JS bundle | 150 KB gzipped | All JavaScript bundles |
 | Max CSS size | 50 KB gzipped | All stylesheet bundles |
+| Max first-screen weight | 100 KB | Everything a user interface loads for its first screen, including web fonts and inline SVG. No images on the first screen; small inline SVG icons are allowed. (OQ-008, pending ADR) |
 
 ## 0.5 Idempotency — Mandatory
 

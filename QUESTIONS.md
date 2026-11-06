@@ -101,6 +101,22 @@ registry for each before the associated requirement can be promoted from SPECIFI
   `docs/platform-setup/SETUP.md` instead, which is already carved out for exactly this content.
   The root pointer to it in `README.md` names no repository but this one.
 
+- **OQ-008** (`docs/standards-handbook.md` §0.4, `docs/css-standard.md` §6.2): First-screen page weight
+  and platform fonts. Owner ruling, 2026-11-04, recorded platform-wide (owner decision on scope,
+  2026-11-06). Not yet traced to a formal ADR.
+  - **Page weight:** 100 KB for the whole first screen of any user interface. Web fonts and inline
+    SVG count inside the 100 KB. No images on the first screen; small inline SVG icons are allowed.
+  - **Primary font:** Inter, shipped as ONE subsetted WOFF2 file. The subset covers Latin, Latin
+    Extended, and the characters African orthographies need. Rendering of ŋ, ɲ, ɛ, ɔ and
+    tone-marked vowels is verified, and the subset's size is reported in the PR that adds it.
+  - **Fallback fonts:** Google Sans and Fira are approved platform fonts, used only where Inter
+    cannot cover a character. Any such use is reported in the PR.
+  - **Excluded:** Noto is not used.
+  - **Loading:** `font-display: swap`, so text shows immediately while the font loads.
+  - **Open:** the ruling does not say whether the 100 KB is compressed transfer size or
+    uncompressed size. It also does not name a CI gate; each product's own plan sets when its
+    gate starts.
+
 ## What This Implies for the Platform
 
 - This document should be published to a central standards repository so rules can be consumed and automated consistently.
