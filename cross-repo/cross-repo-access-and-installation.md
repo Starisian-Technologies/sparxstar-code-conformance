@@ -76,7 +76,7 @@ Does your workflow touch a repo OTHER than the one it runs in?
 - **No** → the default `GITHUB_TOKEN` is enough. Stop.
 - **Yes, reading only** → Block A.
 - **Yes, writing/pushing** → Block B.
-- **You are the Claude PR reviewer caller** → Block C. It reads no other repo.
+- **You are the Claude PR reviewer caller** → Block C. Read it: at the tag most callers pin, the reviewer does read other repos and needs more than the API key.
 
 ### Block A — Read another private repo / install private packages
 
@@ -121,7 +121,12 @@ Same shape as Block A but mint with `CONTRACT_SYNC_CLIENT_ID` / `CONTRACT_SYNC_P
 
 ### Block C — Claude PR reviewer caller
 
-Pass only the API key. Delete any phantom token lines.
+Pass the secrets the tag you pin declares, and delete any phantom token lines.
+Read the callee before copying either block below — rule 3 applies here too.
+
+At `@v1.1.1` the reviewer mints its own read token for the private ADR and
+product-spec registries, so it declares **two** required secrets and a caller
+passing only the API key fails at startup:
 
 ```yaml
 jobs:
@@ -129,12 +134,43 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
-    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@main
+    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@v1.1.1
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 ```
 
+Its client id still comes from the organization variable
+`COMPOSER_RESOLVER_CLIENT_ID`; only the private key is passed.
+
 ---
+
+## Dependabot-triggered runs read a different secret store
+
+A workflow run triggered by Dependabot does **not** receive the repository's
+ordinary Actions secrets. Organization and repository *variables* do reach it;
+*secrets* must additionally exist in the separate Dependabot store
+(**Settings → Secrets and variables → Dependabot**) under the same name.
+
+This is invisible until you read a log, because the mint step fails on the
+secret while the variable beside it resolves normally:
+
+```
+client-id: Iv23…                                      <- the VARIABLE arrived
+Error: The 'private-key' input must be set to a non-empty string.
+```
+
+That is a real sirus run from 1 Aug 2026. An ordinary (non-Dependabot) run on
+the same repository minted its token without complaint.
+
+So for any repo whose CI mints a token and also receives Dependabot PRs,
+`COMPOSER_RESOLVER_PRIVATE_KEY` must exist **twice**: once as an org Actions
+secret, and once as an org Dependabot secret with the identical name. Without
+the second one, every Dependabot PR in that repo is permanently red at the mint
+step and no dependency update can ever be merged on a green run.
+
+Do not diagnose this as a missing or broken key. The key is fine; the run is
+reading a different store.
 
 ## Reusable-workflow sequencing rules (violating these looks like an auth failure)
 
@@ -144,8 +180,8 @@ jobs:
 
 ## Where this document lives and how it reaches repos
 
-- Canonical home: `sparxstar-architecture-governance-registry`.
-- Distribution: the governance-sync workflow compiles snapshot files and pushes them into each consumer's `.github/instructions/governance/`. For this document to distribute, it must be added to the workflow's "Compile snapshot" step and its path added to the push trigger paths.
+- Canonical home: `sparxstar-code-conformance`, at `cross-repo/cross-repo-access-and-installation.md`. (It was previously `sparxstar-architecture-governance-registry`; that is no longer where it is edited.)
+- Distribution: the governance-sync workflow compiles snapshot files and pushes them into each consumer's `.github/instructions/governance/`. Because the source moved, that workflow's "Compile snapshot" step and its push trigger paths must point at this repository and this path — verify both by reading the live workflow before relying on distribution.
 - **Coverage is an explicit allowlist**: `config/governance-consumers.txt` in the registry. A repo not in that file receives nothing. This is deliberate (an unscoped token would cover the whole installation). "My repo has no governance folder" is fixed by adding the repo to that file — the change itself triggers a sync.
 
 ## Troubleshooting: opaque `repository not found` at checkout
