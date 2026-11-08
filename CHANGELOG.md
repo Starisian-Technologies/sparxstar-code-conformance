@@ -12,6 +12,7 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
   - `docs/standards-handbook.md` §0.4: 100 KB compressed cap for a UI's whole first screen, web fonts and inline SVG included; no images on the first screen.
   - `docs/css-standard.md` §6.2: Inter as one subsetted WOFF2 file covering Latin, Latin Extended and African-orthography characters (verify ŋ, ɲ, ɛ, ɔ and tone-marked vowels; report the size). Google Sans and Fira only where Inter can't cover a character, reported in the PR. No Noto. `font-display: swap` only; `optional` is no longer allowed.
   - `CI-Enforcement-Matrix.md`: rows SYS-008 and CSS-004.
+- `cross-repo/set-repo-credentials.sh` (#40): owner script that sets a private repo's repository-level credentials (both Client ID variables; both private keys as Actions and Dependabot secrets; optional `ANTHROPIC_API_KEY` from a hidden prompt), then verifies by listing names only. Has `--dry-run`; skips public repos; stops if `gh` isn't logged in. Usage is documented in `cross-repo/cross-repo-access-and-installation.md` under "Adding a private repo".
 
 ### Changed
 
