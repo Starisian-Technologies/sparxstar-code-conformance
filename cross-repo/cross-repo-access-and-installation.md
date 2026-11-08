@@ -260,7 +260,7 @@ This is not Block C. Block C is a caller of the published reviewer workflow, whi
 ## Where this document lives
 
 - **Canonical home: this file, `sparxstar-code-conformance` → `cross-repo/cross-repo-access-and-installation.md`** (owner ruling, 2026-11-04). The repo is public so agents can read it; link here rather than copying it.
-- **Not canonical:** `sparxstar-product-specification-registry` → `specs/_platform/SPARXSTAR-CROSS-REPO-ACCESS-STANDARD.md` is being reduced to a pointer to this file. Where it disagrees with this file, this file wins. No copy lives in `sparxstar-architecture-governance-registry`.
+- **Not canonical:** `sparxstar-product-specification-registry` → `specs/_platform/SPARXSTAR-CROSS-REPO-ACCESS-STANDARD.md` is a pointer to this file (`status: superseded`, owner ruling 2026-11-08, sparxstar-product-specification-registry#38). It holds no rules. No copy lives in `sparxstar-architecture-governance-registry`.
 
 ## Governance snapshot coverage
 
