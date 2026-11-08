@@ -119,10 +119,12 @@ done
 
 check_client_id() {
 	local label="$1" value="$2"
-	[[ "$value" =~ ^[0-9]+$ ]] &&
+	if [[ "$value" =~ ^[0-9]+$ ]]; then
 		die "${label} looks like a numeric App ID. Pass the Client ID string (Iv23...) instead"
-	[[ "$value" =~ ^[A-Za-z0-9._-]+$ ]] ||
+	fi
+	if [[ ! "$value" =~ ^[A-Za-z0-9._-]+$ ]]; then
 		die "${label} contains characters a Client ID does not have"
+	fi
 }
 check_client_id "--composer-resolver-client-id" "$cr_client_id"
 check_client_id "--contract-sync-client-id" "$cs_client_id"
@@ -321,7 +323,9 @@ for raw in "${repos[@]}"; do
 			set_secret_from_file "$repo" dependabot "$CS_KEY_SECRET" "$cs_key"
 		fi
 	fi
-	[[ $with_anthropic -eq 1 ]] && set_anthropic "$repo"
+	if [[ $with_anthropic -eq 1 ]]; then
+		set_anthropic "$repo"
+	fi
 
 	info "  verify (names only):"
 	repo_missing=0
