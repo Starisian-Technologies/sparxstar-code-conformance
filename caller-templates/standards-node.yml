@@ -17,7 +17,7 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.4
     with:
       enforcement_mode: advisory
     secrets:
@@ -28,11 +28,11 @@ jobs:
     # and performs no git-auth setup. Repos with private GitHub-hosted JS dependencies will
     # hit a git-auth failure in this job even if the pnpm job above succeeds. This is a known
     # platform gap requiring a change to the reusable workflow itself. Do not pass
-    # COMPOSER_RESOLVER_PRIVATE_KEY here — @v1.0.2 does not declare it and workflow
+    # COMPOSER_RESOLVER_PRIVATE_KEY here — @v1.0.4 does not declare it and workflow
     # validation will reject it. See the platform setup doc (docs/platform-setup/) §4.3
     # for details and check this repo's tags for a release that ships the fix.
     needs: pnpm
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@v1.0.4
     with:
       repo_type: standalone-node
       profile_version: v1
@@ -40,7 +40,7 @@ jobs:
       node-version: '22'
 
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.4
     with:
       repo_type: standalone-node
       enforcement_mode: advisory
@@ -49,12 +49,16 @@ jobs:
   version-check:
     # Warns (or hard-fails below the floor) if this file's pins fall behind the
     # recommended patch tag. contract_ref MUST match the @vX.Y.Z pin on the jobs above --
-    # bump both together. write_drift_record: false keeps onboarding to just the
-    # already-required read secret; opt into true (and pass CONTRACT_SYNC_PRIVATE_KEY)
-    # only if you want this repo's version state recorded centrally.
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.2
+    # bump both together. Drift record ON (owner ruling, 2026-11-04): this repo's
+    # version state is recorded in sparxstar-architecture-governance-registry (internal)
+    # via contract-sync. Set CONTRACT_SYNC_CLIENT_ID (variable) and
+    # CONTRACT_SYNC_PRIVATE_KEY (secret) first -- see
+    # cross-repo/cross-repo-access-and-installation.md. The callee reads the client ID
+    # as a variable itself, so only the secret is passed.
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.4
     with:
-      contract_ref: v1.0.2
-      write_drift_record: false
+      contract_ref: v1.0.4
+      write_drift_record: true
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+      CONTRACT_SYNC_PRIVATE_KEY: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
