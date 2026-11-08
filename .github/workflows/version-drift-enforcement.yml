@@ -180,6 +180,14 @@ jobs:
           else
             CALLER="$GITHUB_REPOSITORY_CALLER"
           fi
+          # Accept only owner/repo with GitHub's name characters. This value
+          # flows into the drift record JSON, its commit message, the output
+          # file and workflow annotations, so anything else (quotes,
+          # backslashes, newlines) is rejected here, once, before any of them.
+          if ! [[ "$CALLER" =~ ^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$ ]]; then
+            echo "::error::calling_repo must be owner/repo (letters, digits, '-', and '.'/'_' in the repo name); got a value that does not match."
+            exit 1
+          fi
           echo "calling_repo=$CALLER" >> "$GITHUB_OUTPUT"
 
           # ---------- three-tier check ----------
