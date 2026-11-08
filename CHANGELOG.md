@@ -6,6 +6,10 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ## [Unreleased]
 
+### Fixed
+
+- `version-drift-enforcement.yml`: the drift-record push now retries. On a rejected push it refetches `sparxstar-architecture-governance-registry` `main`, regenerates the caller's record on top of it, and pushes again: up to 5 attempts with a short backoff, then the step fails with an explicit error. Each caller writes its own file, so retries never conflict on content, and callers need no `concurrency:` group for the write. Replaces the single `git pull --rebase` + push, which failed an otherwise passing check when two runs overlapped.
+
 ### Added
 
 - First-screen page weight and platform fonts (owner ruling 2026-11-04, OQ-008, pending ADR), recorded platform-wide and SPECIFIED until a CI gate checks them:
