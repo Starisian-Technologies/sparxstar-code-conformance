@@ -34,6 +34,7 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | SYS-005 | standards-handbook §0.5 | Idempotency key required for write operations | API / Mutations / Uploads | SPECIFIED | Contract tests / runtime middleware |
 | SYS-006 | standards-handbook §0.6 | Reserved section | All | RESERVED | N/A |
 | SYS-007 | standards-handbook §0.7 | No direct provider SDK usage without abstraction layer | App code | SPECIFIED | PHPStan custom rule (not yet shipped) + review gate |
+| SYS-008 | standards-handbook §0.4 | Max first-screen weight 100 KB compressed, fonts and inline SVG included; no images on the first screen (OQ-008) | Frontend | SPECIFIED | Page-weight check (no shared gate ships yet — Catalog #10) |
 | AUTH-001 | standards-handbook §1.2 | Governed actions must call the authority layer before execution | Backend / Frontend governed flows | WARN | `scripts/audit-governed-actions.php` + `.github/workflows/full-quality-gate.yml` AUTH-001 step (warn-only; pending ADR ratification per STD-TOOLCHAIN-001 §5) |
 | AUTH-002 | standards-handbook §1.3 | Fail closed when authority-layer context/authority is unavailable | All governed repos | SPECIFIED | Integration tests |
 | GQL-001 | standards-handbook §2.1 | GraphQL max query depth 5 | GraphQL | SPECIFIED | `graphql-depth-limit` (no shared config ships yet) |
@@ -77,6 +78,8 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | VITE-001 | standards-handbook §0.8 | Vite production builds must enforce asset budgets and deterministic output | Vite | SPECIFIED | Build checks (no shared Vite config ships yet) |
 | CSS-001 | css-standard §1 | CSS bundle must stay within 50 KB gzipped total per page | Frontend CSS | SPECIFIED | Build size check (no shared build config ships yet — Catalog #4, #10) |
 | CSS-002 | css-standard §2 | Prohibited high-cost CSS properties blocked | Frontend CSS | SPECIFIED | Stylelint custom rule (no shared `stylelint` config ships yet — Catalog #4) |
+| CSS-003 | css-standard §2 | Prohibited CSS properties `filter` and `backdrop-filter` | Frontend CSS | ENFORCED | `css-standards.yml` (Stylelint `property-disallowed-list` from `stylelint-config`); see `docs/enforcement-matrix.md` §4 |
+| CSS-004 | css-standard §6.2 | Platform fonts: Inter as one subsetted WOFF2 with African-orthography coverage; Google Sans/Fira only as reported fallbacks; no Noto; `font-display: swap` (OQ-008) | Frontend CSS | SPECIFIED | Font-subset and page-weight checks (not yet shipped); `css-enforcement.yml` CSS-PERF-006 warns only when `font-display` is missing |
 | MEDIA-001 | media-upload-standard §1 | Audio sample rate <= 16000 | JS/PHP | SPECIFIED | Runtime validation |
 | MEDIA-002 | media-upload-standard §2 | Video constraints (max resolution/FPS/bitrate) enforced | JS/PHP | SPECIFIED | Runtime validation |
 | MEDIA-003 | media-upload-standard §4 | The audio capture SDK required (no raw `MediaRecorder`) | JS/TS | SPECIFIED | ESLint custom rule (not yet shipped — Catalog #5) |

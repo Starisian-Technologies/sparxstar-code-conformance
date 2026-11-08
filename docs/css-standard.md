@@ -175,8 +175,17 @@ body {
 
 ## 6.2 Font Loading
 
-- (M) Web fonts use `font-display: swap` or `font-display: optional`
+> **Platform fonts (OQ-008, pending ADR):** owner ruling, 2026-11-04. SPECIFIED until a CI gate
+> checks it.
+
+- (M) The primary UI font is Inter, shipped as **one** subsetted WOFF2 file
+- (M) The subset covers Latin, Latin Extended, and the characters African orthographies need. The PR that
+  adds or changes the subset verifies that ŋ, ɲ, ɛ, ɔ and tone-marked vowels render, and reports the subset's size
+- (M) The font file counts inside the first-screen page-weight cap ([Standards Handbook](standards-handbook.md) §0.4)
+- (M) Web fonts use `font-display: swap`
 - (M) Font files served from the same origin or a trusted CDN with appropriate `Cache-Control`
+- (M) Google Sans or Fira are used only where Inter cannot cover a character, and the PR says which characters and why
+- (X) Noto fonts
 - (X) Blocking font loads without `font-display` strategy
 - (X) Loading more than 2 web font families per page
 
