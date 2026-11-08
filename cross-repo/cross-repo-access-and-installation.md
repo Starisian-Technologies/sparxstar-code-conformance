@@ -42,6 +42,8 @@ There is no third app. Never create a PAT to solve cross-repo access.
 
 > **From `v1.0.4`.** This destination ships in `version-drift-enforcement` `v1.0.4` (Starisian-Technologies/sparxstar-code-conformance#41). Tags up to and including `v1.0.3` still mint for, and push to, `sparxstar-code-conformance`. Their drift-record write fails, and it would target the wrong repo even if it didn't. **Do not turn the drift record on while pinned to `v1.0.3` or earlier.**
 
+**No concurrency group needed (from `v1.0.5`).** Each caller writes only its own `drift/<owner>-<repo>.json`, so writes from different repos never conflict on content, only on push timing. From `v1.0.5`, a rejected push refetches the registry's `main`, regenerates the record on top of it, and pushes again: up to 5 attempts with a short backoff, then the step fails with an explicit error. Two runs from the same repo simply write the same up-to-date record, and the last one wins. Callers therefore need **no** `concurrency:` group on their `version-check` job for the drift record. A caller that added one as a stop-gap on `v1.0.4` can remove it when it moves to `v1.0.5`.
+
 **Turning the drift record on in a caller.** From `v1.0.4`, the maintained caller templates (`caller-templates/standards-*.yml`) pin `v1.0.4`, set `write_drift_record: true`, and pass `CONTRACT_SYNC_PRIVATE_KEY` by name (owner ruling, 2026-11-04). A caller copied from an earlier template still sets `write_drift_record: false` and passes only `COMPOSER_RESOLVER_PRIVATE_KEY`, so setting the credentials alone records nothing there. To turn it on in such a caller:
 
 1. Set the contract-sync values in the repo (table below, including the Dependabot copy where Dependabot runs).

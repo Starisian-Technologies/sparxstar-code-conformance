@@ -267,20 +267,46 @@ jobs:
           SLUG=$(echo "$CALLING_REPO" | tr '/' '-' | tr -cd '[:alnum:]-')
 
           RECORD_PATH="drift/${SLUG}.json"
-          mkdir -p drift
-
-          # Build JSON record (no jq dependency — printf to avoid heredoc indentation issues)
           GAP=$([ "$REQUESTED" = "$RECOMMENDED" ] && echo "none" || echo "${REQUESTED} -> ${RECOMMENDED}")
-          printf '{\n  "calling_repo": "%s",\n  "contract_ref": "%s",\n  "recommended":  "%s",\n  "floor":        "%s",\n  "gap":          "%s",\n  "tier":         "%s",\n  "run_url":      "%s",\n  "recorded_at":  "%s"\n}\n' \
-            "$CALLING_REPO" "$REQUESTED" "$RECOMMENDED" "$FLOOR" "$GAP" "$TIER" "$RUN_URL" "$RUN_TS" \
-            > "$RECORD_PATH"
 
           git config user.name  "sparxstar-contract-sync[bot]"
           git config user.email "contract-sync@starisian.com"
 
-          git add "$RECORD_PATH"
-          git diff --cached --quiet && echo "drift record unchanged — no commit needed" && exit 0
-          git commit -m "chore: drift record — ${CALLING_REPO} on ${REQUESTED} (recommended ${RECOMMENDED})"
-          # Pull rebase to handle concurrent drift runs on main, then push.
-          git pull --rebase origin main
-          git push origin HEAD:main
+          # Each caller writes only its own drift/<owner>-<repo>.json, so two
+          # repos never conflict on content -- only on push timing. On a
+          # rejected push, reset to the latest registry main, regenerate this
+          # repo's record on top of it, and push again. Two runs from the same
+          # repo just write the same up-to-date record; the last one wins.
+          # Callers therefore need no concurrency group for this write.
+          MAX_ATTEMPTS=5
+          for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
+            mkdir -p drift
+            # Build JSON record (no jq dependency — printf to avoid heredoc indentation issues)
+            printf '{\n  "calling_repo": "%s",\n  "contract_ref": "%s",\n  "recommended":  "%s",\n  "floor":        "%s",\n  "gap":          "%s",\n  "tier":         "%s",\n  "run_url":      "%s",\n  "recorded_at":  "%s"\n}\n' \
+              "$CALLING_REPO" "$REQUESTED" "$RECOMMENDED" "$FLOOR" "$GAP" "$TIER" "$RUN_URL" "$RUN_TS" \
+              > "$RECORD_PATH"
+
+            git add "$RECORD_PATH"
+            if git diff --cached --quiet; then
+              echo "drift record unchanged — no commit needed"
+              exit 0
+            fi
+            git commit -q -m "chore: drift record — ${CALLING_REPO} on ${REQUESTED} (recommended ${RECOMMENDED})"
+
+            if git push origin HEAD:main; then
+              echo "drift record pushed (attempt ${attempt}/${MAX_ATTEMPTS})"
+              exit 0
+            fi
+
+            if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
+              break
+            fi
+            delay=$(( attempt * 2 + RANDOM % 3 ))
+            echo "::warning::drift record push rejected (attempt ${attempt}/${MAX_ATTEMPTS}); refetching registry main and retrying in ${delay}s"
+            sleep "$delay"
+            git fetch -q --depth 1 origin main
+            git reset -q --hard origin/main
+          done
+
+          echo "::error::drift record push to ${REGISTRY} failed after ${MAX_ATTEMPTS} attempts. The drift check itself completed; only the record write failed. Check contract-sync's access to ${REGISTRY} and that repo's branch rules for main."
+          exit 1
