@@ -8,7 +8,7 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ### Fixed
 
-- `version-drift-enforcement.yml`: the drift-record push now retries. On a rejected push it refetches `sparxstar-architecture-governance-registry` `main`, regenerates the caller's record on top of it, and pushes again: up to 5 attempts with a short backoff, then the step fails with an explicit error. Each caller writes its own file, so retries never conflict on content, and callers need no `concurrency:` group for the write. Replaces the single `git pull --rebase` + push, which failed an otherwise passing check when two runs overlapped.
+- `version-drift-enforcement.yml` (released in `v1.0.6`; `v1.0.5` predates it): the drift-record push now retries. On a rejected push it refetches `sparxstar-architecture-governance-registry` `main`, regenerates the caller's record on top of it, and pushes again: up to 5 attempts with a short backoff, then the step fails with an explicit error. Each caller writes its own file, so retries never conflict on content, and callers need no `concurrency:` group for the write. Replaces the single `git pull --rebase` + push, which failed an otherwise passing check when two runs overlapped.
 
 ### Added
 
