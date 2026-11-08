@@ -109,6 +109,30 @@ Without these copies, every credential-gated job skips or fails on Dependabot PR
 2. Scope the composer-resolver App to every repo the new repo's workflows read (see Troubleshooting), and the contract-sync App to every repo they write to. For the drift record, that is `sparxstar-architecture-governance-registry`, once the repo is pinned to a release that writes there (see "Drift records" above).
 3. Add the repo to the list below.
 
+#### Script for step 1: `cross-repo/set-repo-credentials.sh`
+
+The owner runs this from their own machine, logged in to the GitHub CLI (`gh auth login`). It sets step 1's rows on one or more private repos at repository level, then lists each store's names and reports any expected name that is missing. It does not do steps 2 or 3; it prints a reminder for them. The names it sets come from the table above. If the script and this doc disagree, this doc wins: fix the script. The script refuses to run if a name it uses is missing from this file.
+
+```bash
+cross-repo/set-repo-credentials.sh [--dry-run] [--anthropic-key] \
+  [--no-dependabot] [--no-contract-sync-dependabot] \
+  --composer-resolver-client-id <CLIENT_ID> \
+  --composer-resolver-key <path/to/composer-resolver.pem> \
+  --contract-sync-client-id <CLIENT_ID> \
+  --contract-sync-key <path/to/contract-sync.pem> \
+  <repo> [<repo> ...]
+```
+
+- **Repos:** a bare name defaults to owner `Starisian-Technologies`; `OWNER/NAME` also works. Public repos are skipped with a warning, because they read the org-level values.
+- **Client IDs:** the Client ID strings (`Iv23…`), never the numeric App ID. A numeric value is rejected.
+- **Private keys:** read from the `.pem` files you hold and passed to `gh` on standard input. They never go on a command line, to the terminal, a log or a file, and are never read back.
+- **Default:** both Client ID variables, both private keys as Actions secrets, and both private keys as Dependabot secrets.
+- **`--anthropic-key`:** also sets `ANTHROPIC_API_KEY` as an Actions secret, for repos where the Claude PR reviewer runs. The script asks once, with input hidden, and uses the value for every repo named.
+- **`--no-dependabot`:** skips both Dependabot copies, for repos where Dependabot doesn't run. **`--no-contract-sync-dependabot`:** skips only the contract-sync Dependabot copy, for repos that write no drift record. The script notes when a repo has `.github/dependabot.yml`, or a workflow that sets `write_drift_record: false`, so you can tell which applies.
+- **`--dry-run`:** checks the inputs, the `gh` login and each repo's visibility, shows what would be set, and lists which expected names are already there. It changes nothing and does not prompt for the Anthropic key.
+- **Re-checking a repo wired by hand:** run with `--dry-run`. Every `MISSING` line is a row still to set.
+- **Exit status:** 0 when every expected name is present (or on a dry run); non-zero if `gh` isn't logged in, an input is invalid, a repo is skipped, a set fails, or a name is still missing afterwards.
+
 ### Private repos carrying repository-level credentials
 
 Maintained by the owner. An agent cannot read Actions secrets or variables, so it must not add a repo here without the owner's word. An entry means the repo holds **every** applicable row of the table above. To verify an entry: the repo's Settings → Secrets and variables → Actions (and → Dependabot), *Repository* section.
