@@ -6,6 +6,10 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ## [Unreleased]
 
+### Changed
+
+- `caller-templates/standards-*.yml`: every `sparxstar-code-conformance` pin and `contract_ref` move `v1.0.4` → `v1.0.6`, so new callers get the drift-record push retry. No callee's declared secrets or inputs changed between the two tags.
+
 ### Fixed
 
 - `version-drift-enforcement.yml` (released in `v1.0.6`; `v1.0.5` predates it): the drift-record push now retries. On a rejected push it refetches `sparxstar-architecture-governance-registry` `main`, regenerates the caller's record on top of it, and pushes again: up to 5 attempts with a short backoff, then the step fails with an explicit error. Each caller writes its own file, so retries never conflict on content, and callers need no `concurrency:` group for the write. Replaces the single `git pull --rebase` + push, which failed an otherwise passing check when two runs overlapped.
