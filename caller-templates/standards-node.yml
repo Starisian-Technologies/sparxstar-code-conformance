@@ -17,7 +17,7 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.4
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.6
     with:
       enforcement_mode: advisory
     secrets:
@@ -28,11 +28,11 @@ jobs:
     # and performs no git-auth setup. Repos with private GitHub-hosted JS dependencies will
     # hit a git-auth failure in this job even if the pnpm job above succeeds. This is a known
     # platform gap requiring a change to the reusable workflow itself. Do not pass
-    # COMPOSER_RESOLVER_PRIVATE_KEY here — @v1.0.4 does not declare it and workflow
+    # COMPOSER_RESOLVER_PRIVATE_KEY here — @v1.0.6 does not declare it and workflow
     # validation will reject it. See the platform setup doc (docs/platform-setup/) §4.3
     # for details and check this repo's tags for a release that ships the fix.
     needs: pnpm
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@v1.0.4
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@v1.0.6
     with:
       repo_type: standalone-node
       profile_version: v1
@@ -40,7 +40,7 @@ jobs:
       node-version: '22'
 
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.4
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.6
     with:
       repo_type: standalone-node
       enforcement_mode: advisory
@@ -55,9 +55,9 @@ jobs:
     # CONTRACT_SYNC_PRIVATE_KEY (secret) first -- see
     # cross-repo/cross-repo-access-and-installation.md. The callee reads the client ID
     # as a variable itself, so only the secret is passed.
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.4
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.6
     with:
-      contract_ref: v1.0.4
+      contract_ref: v1.0.6
       write_drift_record: true
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
