@@ -131,3 +131,33 @@ The document scopes to WordPress + PHP as the reference implementation. The Java
 **Question:** Is Python in scope for this document, or should it be governed by a separate standard?
 
 If Python services process audio and governed jobs, async job rules, bounded execution, and no-silent-failure expectations likely apply; however, there are no Python-specific enforcement rules. This should be explicitly scoped in or scoped out.
+
+---
+
+## OQ-009 — Composer lock regeneration: which Composer version is authoritative?
+
+**Status:** OPEN — owner ruling recorded 2026-11-13, pending ADR.
+
+**Context.** Composer's `Locker::getContentHash()` includes the whole `extra`
+object, so any metadata edit under `extra` invalidates the committed lock hash.
+Regenerating is routine; regenerating *with the wrong Composer* is not, because
+`plugin-api-version` is rewritten as a side effect. That field records
+`PluginInterface::PLUGIN_API_VERSION`, which is bumped only when the plugin API
+changes, so it cannot be derived from the Composer version by pattern — verified
+against the release artifacts: 2.8.12 writes `2.6.0`, 2.9.8 writes `2.9.0`.
+
+**Owner ruling, 2026-11-13.** Lock regeneration uses the Composer release whose
+plugin API version equals the `plugin-api-version` recorded in the lock being
+regenerated, read from the lock rather than assumed. Recorded in
+`docs/php-wordpress-standard.md` §10.3 as SPECIFIED.
+
+**Open for the ADR to settle:**
+
+1. Should the platform instead pin one Composer version for every repo, making
+   `plugin-api-version` uniform and this rule unnecessary?
+2. Should a CI gate enforce the `content-hash`-only diff, and in which job? The
+   check is cheap (compare the lock's changed keys against an allowlist) but needs
+   a home.
+3. Should the pinned version be declared in each repo (`config.platform`, a
+   toolchain file) so CI and contributors resolve it the same way, rather than
+   each reader inspecting the lock?

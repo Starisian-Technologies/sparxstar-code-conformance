@@ -16,6 +16,11 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ### Added
 
+- `docs/php-wordpress-standard.md` §10.3: how `composer.lock` is regenerated (owner ruling
+  2026-11-13, OQ-009, pending ADR), SPECIFIED until a CI gate checks it. Composer folds all of
+  `extra` into the lock content hash, so a metadata-only edit invalidates the lock. Regeneration
+  must use the Composer release matching the lock's recorded `plugin-api-version`, read from the
+  lock rather than assumed, and must produce a `content-hash`-only diff. Matrix row `PHP-009`.
 - First-screen page weight and platform fonts (owner ruling 2026-11-04, OQ-008, pending ADR), recorded platform-wide and SPECIFIED until a CI gate checks them:
   - `docs/standards-handbook.md` §0.4: 100 KB compressed cap for a UI's whole first screen, web fonts and inline SVG included; no images on the first screen.
   - `docs/css-standard.md` §6.2: Inter as one subsetted WOFF2 file covering Latin, Latin Extended and African-orthography characters (verify ŋ, ɲ, ɛ, ɔ and tone-marked vowels; report the size). Google Sans and Fira only where Inter can't cover a character, reported in the PR. No Noto. `font-display: swap` only; `optional` is no longer allowed.
