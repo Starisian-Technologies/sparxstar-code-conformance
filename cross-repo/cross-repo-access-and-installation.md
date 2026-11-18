@@ -175,6 +175,7 @@ Does your workflow touch a repo OTHER than the one it runs in?
 - **Yes, writing/pushing** → Block B.
 - **You are the Claude PR reviewer caller** → Block C. The reviewer reads the two internal registries itself; your caller only passes it the credentials.
 - **A Claude Code agent session needs to read a repo it is not cloned into** → Block D.
+- **Publishing or installing a private npm package** → Block E. It uses each workflow's own `GITHUB_TOKEN`, no App.
 
 **Scope every token to the minimum the run needs** — only the repositories it touches (`repositories:`) and only the access it uses. A read-only workflow mints a read token (composer-resolver); it never mints or receives a write token (contract-sync). *(Moved here from the product-spec registry's cross-repo standard, AC-002.)*
 
@@ -249,6 +250,41 @@ Use this when an agent session in a workflow must read a repository it is not cl
 
 This is not Block C. Block C is a caller of the published reviewer workflow, which mints its own tokens; Block D is for a workflow that runs an agent session itself.
 
+### Block E — Private npm packages (GitHub Packages)
+
+*Owner ruling, 2026-11-18.* A repository that ships an npm package other repositories install publishes it **privately** to GitHub Packages' npm registry, `https://npm.pkg.github.com`, from its own release workflow. Consumers' CI installs it with the consumer's **own** `GITHUB_TOKEN`, after a one-time read grant. No App token and no personal access token are involved.
+
+**Publish (the package's own repository).**
+
+- **`package.json`:**
+  - `name` is scoped with the organisation, in lower case: `@starisian-technologies/<package>`. GitHub Packages accepts only scoped packages, and scopes are lower case.
+  - `repository` is the repository's URL, which links the package to its repository.
+  - `publishConfig.registry` is `https://npm.pkg.github.com`, so nothing can reach the public npm registry by accident.
+- **The workflow:**
+  - runs only for a release tag, never for a branch;
+  - declares `permissions: contents: read, packages: write`;
+  - sets up Node with `registry-url: 'https://npm.pkg.github.com'` and `scope: '@starisian-technologies'`, which writes the project `.npmrc`;
+  - publishes with `NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`.
+- **A first publish is private.** Keep it that way.
+
+**Grant each consumer read access (organisation owner, once per consumer, after the first publish).**
+
+1. Open the package's settings, then **Manage Actions access**.
+2. Choose **Add Repository** and add the consuming repository with the **Read** role.
+
+Without this grant, the consumer's `GITHUB_TOKEN` cannot see the package.
+
+**Install (the consuming repository's CI).** Declare `permissions: packages: read` on the job and map the scope to the registry. Either use the setup-node step with the same `registry-url` and `scope` inputs, or write the project `.npmrc` yourself:
+
+```text
+@starisian-technologies:registry=https://npm.pkg.github.com
+//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}
+```
+
+Run the install with `NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`. Never commit a token into `.npmrc`. Pin an exact version in the lockfile, as for any dependency.
+
+**Not covered: installing on a developer's own machine.** GitHub's documentation requires a personal access token (classic) with `read:packages` to install a private package outside Actions. This document forbids personal access tokens for cross-repo access ("Never" below). Until the owner rules otherwise, a developer builds the package from a checkout of its repository, using Block A's access, and installs it as a local path dependency.
+
 ---
 
 ## Reusable-workflow sequencing rules (violating these looks like an auth failure)
@@ -274,6 +310,8 @@ An App being installed org-wide is NOT the same as being scoped to the repo bein
 
 - Never `secrets: inherit`. Pass only named secrets.
 - Never a PAT for cross-repo access.
+- Never publish a private package to the public npm registry. Pin `publishConfig.registry` to GitHub Packages (Block E).
+- Never grant a package's read access to more repositories than install it.
 - Never an API key in Variables — keys are Secrets.
 - Never define a token a workflow doesn't use.
 - Never pass a write token to a read-only workflow. Scope every token to the minimum needed.
