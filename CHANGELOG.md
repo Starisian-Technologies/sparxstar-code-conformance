@@ -6,6 +6,10 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ## [Unreleased]
 
+### Added
+
+- `cross-repo/cross-repo-access-and-installation.md` Block E, private npm packages (owner ruling 2026-11-18). A package is published privately to GitHub Packages' npm registry from its own release workflow (organisation scope, `publishConfig.registry`, `packages: write`). Each consumer is granted read access once in the package's **Manage Actions access**, and its CI installs with its own `GITHUB_TOKEN` and `packages: read`; no App or personal token is used. Installing on a developer machine is not covered: it would need a personal token, which this document forbids. The decision tree and the "Never" list gain matching entries.
+
 ### Changed
 
 - `caller-templates/standards-*.yml`: every `sparxstar-code-conformance` pin and `contract_ref` move `v1.0.4` → `v1.0.6`, so new callers get the drift-record push retry. No callee's declared secrets or inputs changed between the two tags.
