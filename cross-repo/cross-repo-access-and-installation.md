@@ -147,6 +147,26 @@ Maintained by the owner. An agent cannot read Actions secrets or variables, so i
 
 ---
 
+## Central review migration (owner instruction, 2026-11-21)
+
+Block C below describes the **legacy consumer-executed reviewer** only. A
+consumer is migrated when its agent instructions contain the central-review
+pointer and its request relay is on the default branch.
+
+Migrated consumers MUST NOT provision or pass AI provider keys. Their existing
+contract-sync App credentials dispatch reference-only requests to private
+execution. The execution repository alone holds provider keys and uses the
+existing read App for source/governance access and the existing write App for
+PR comments. No new App or PAT is introduced.
+
+Private reusable-workflow sharing and the App's actual repository scopes and
+permissions must be verified before activation. A successful dispatch, skipped
+job or billing rejection is not a completed review. Retain legacy review until
+the consumer's first successful central result, then remove its provider key
+and legacy job. The agent pointer identifies the service's cost-tier,
+draft-to-ready, budget and two-hour unavailability rules; those rules are not
+duplicated here. Other governance App credentials are still required.
+
 ## The canonical mint block
 
 Pattern verified 2026-09-10 against live workflows in the registry, contracts-registry, and claude-pr-review — all use `@v3` / `client-id:`. The enforcement workflows in code-conformance now use this pattern too: a SHA-pinned v3 release with `client-id:` (owner ruling 2026-11-04, resolving OD-2). SHA-pinning is still preferred over the bare `@v3` shown below; the pinned SHA lives in the workflow files. The Drive docs' unpinned `@v1` / `app-id:` block matches neither live pattern and is retired.
