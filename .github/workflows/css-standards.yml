@@ -44,8 +44,16 @@ jobs:
           cache: 'pnpm'
 
       - name: Enable Corepack (pnpm)
-        run: corepack enable
-
+        run: |
+          # Node 25+ no longer bundles corepack; install a pinned copy when absent.
+          if ! command -v corepack >/dev/null 2>&1; then
+            npm install -g corepack@0.36.0
+          fi
+          # Node 25+ no longer bundles corepack; install a pinned copy when absent.
+          if ! command -v corepack >/dev/null 2>&1; then
+            npm install -g corepack@0.36.0
+          fi
+          corepack enable
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 

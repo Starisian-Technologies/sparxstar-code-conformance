@@ -31,6 +31,11 @@ on:
         required: false
         type: string
         default: draft
+      node-version:
+        description: 'Node.js version for the install dry run. Empty (default) keeps the runner image default, as before this input existed.'
+        required: false
+        type: string
+        default: ''
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY:
         required: true
@@ -142,6 +147,18 @@ jobs:
               --include='Dockerfile*' --include='Makefile*' --include='package.json' --include='README*' --include='*.md' \
               --exclude-dir=.git --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=dist --exclude-dir=build \
               -e "$patterns" . 2>/dev/null || true)
+          # Node 25+ no longer bundles corepack, the tool that provides pnpm.
+          # Installing corepack itself globally is how pnpm is bootstrapped, so
+          # a line whose only npm install is `npm install -g corepack[@x.y.z]`
+          # is not a non-pnpm package-manager invocation. Any other npm/yarn
+          # install on the same line is still reported.
+          corepack_boot='npm[[:space:]]+(install|i)[[:space:]]+(-g|--global)[[:space:]]+corepack(@[0-9]+\.[0-9]+\.[0-9]+)?([[:space:]]|$|[)`;&|])'
+          if [ -n "$hits" ]; then
+            hits=$(printf '%s\n' "$hits" | while IFS= read -r line; do
+              rest=$(printf '%s' "$line" | sed -E "s/$corepack_boot/ /g")
+              if printf '%s' "$rest" | grep -Eq -e "$patterns"; then printf '%s\n' "$line"; fi
+            done)
+          fi
           if [ -n "$hits" ]; then
             msg=$'ADR-017 (NODE-PKG-001): non-pnpm package manager invocation found:\n'"$hits"
             if [ "$BLOCK_MODE" = "true" ]; then
@@ -152,6 +169,16 @@ jobs:
             fi
           fi
 
+      - name: Setup Node.js
+        if: inputs['node-version'] != '' && hashFiles('package.json') != ''
+        uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: ${{ inputs['node-version'] }}
+          # pnpm is only enabled by corepack in the next step, so setup-node's
+          # automatic package-manager cache would fail here (same as the other
+          # enforcement workflows).
+          package-manager-cache: false
+
       - name: NODE-PKG-004 — pnpm install --frozen-lockfile dry run
         if: hashFiles('package.json') != ''
         env:
@@ -160,6 +187,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          # Node 25+ no longer bundles corepack; install a pinned copy when absent.
+          if ! command -v corepack >/dev/null 2>&1; then
+            npm install -g corepack@0.36.0
+          fi
           corepack enable
           em="$INPUT_EM"
           lm="$INPUT_LM"
