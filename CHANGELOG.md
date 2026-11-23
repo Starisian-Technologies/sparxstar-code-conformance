@@ -8,6 +8,12 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ### Added
 
+- `pnpm-enforcement.yml`: optional `node-version` input. When set, the job runs `actions/setup-node` (the same pinned v5
+  SHA as the other enforcement workflows, `package-manager-cache: false`) before the `NODE-PKG-004` install dry run.
+  Empty, the default, keeps the runner image's Node exactly as before, so existing callers are unchanged. Repositories
+  with `engine-strict=true` and an `engines.node` above the runner default (3iAtlas on Node 26) can now pass their
+  floor.
+
 - `cross-repo/cross-repo-access-and-installation.md` Block E, private npm packages (owner ruling 2026-11-18). A package is published privately to GitHub Packages' npm registry from its own release workflow (organisation scope, `publishConfig.registry`, `packages: write`). Each consumer is granted read access once in the package's **Manage Actions access**, and its CI installs with its own `GITHUB_TOKEN` and `packages: read`; no App or personal token is used. Installing on a developer machine is not covered: it would need a personal token, which this document forbids. The decision tree and the "Never" list gain matching entries.
 
 ### Changed
@@ -16,6 +22,17 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ### Fixed
 
+- Node 25 and later no longer bundle corepack, so every enforcement and standards workflow that ran `corepack enable`
+  failed on `node-version: '26'`. `css-enforcement.yml`, `css-standards.yml`, `formatting.yml`, `js-standards.yml`,
+  `node-enforcement.yml`, `pnpm-enforcement.yml` and `react-enforcement.yml` now install `corepack@0.36.0` first when
+  the runtime has no `corepack`. On Node 24 and earlier the install is skipped and behaviour is unchanged.
+- `css-standards.yml`, `formatting.yml`, `js-standards.yml`: `actions/setup-node` no longer sets `cache: 'pnpm'`.
+  pnpm only exists after the corepack step that follows it, so the cache lookup could not find `pnpm`. They now use
+  `package-manager-cache: false`, like the enforcement workflows.
+- `pnpm-enforcement.yml` `NODE-PKG-001`: a line whose only npm install is `npm install -g corepack[@x.y.z]` (also `npm
+  i`, `--global`) is no longer reported. On Node 25 and later that is how pnpm itself is bootstrapped. Any other
+  `npm`/`yarn` install, including one chained on the same line, an unpinned package such as `corepack-evil`, or a bare
+  `npm i`, is still reported.
 - `version-drift-enforcement.yml` (released in `v1.0.6`; `v1.0.5` predates it): the drift-record push now retries. On a rejected push it refetches `sparxstar-architecture-governance-registry` `main`, regenerates the caller's record on top of it, and pushes again: up to 5 attempts with a short backoff, then the step fails with an explicit error. Each caller writes its own file, so retries never conflict on content, and callers need no `concurrency:` group for the write. Replaces the single `git pull --rebase` + push, which failed an otherwise passing check when two runs overlapped.
 
 ### Added
