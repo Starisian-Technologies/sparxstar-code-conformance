@@ -45,14 +45,13 @@ jobs:
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
         with:
           node-version: ${{ inputs.node-version }}
-          cache: 'pnpm'
+          # pnpm only exists after the corepack step below, so setup-node's
+          # package-manager cache cannot run here (same as the enforcement
+          # workflows).
+          package-manager-cache: false
 
       - name: Enable Corepack (pnpm)
         run: |
-          # Node 25+ no longer bundles corepack; install a pinned copy when absent.
-          if ! command -v corepack >/dev/null 2>&1; then
-            npm install -g corepack@0.36.0
-          fi
           # Node 25+ no longer bundles corepack; install a pinned copy when absent.
           if ! command -v corepack >/dev/null 2>&1; then
             npm install -g corepack@0.36.0

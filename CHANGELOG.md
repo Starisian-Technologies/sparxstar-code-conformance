@@ -26,6 +26,9 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
   failed on `node-version: '26'`. `css-enforcement.yml`, `css-standards.yml`, `formatting.yml`, `js-standards.yml`,
   `node-enforcement.yml`, `pnpm-enforcement.yml` and `react-enforcement.yml` now install `corepack@0.36.0` first when
   the runtime has no `corepack`. On Node 24 and earlier the install is skipped and behaviour is unchanged.
+- `css-standards.yml`, `formatting.yml`, `js-standards.yml`: `actions/setup-node` no longer sets `cache: 'pnpm'`.
+  pnpm only exists after the corepack step that follows it, so the cache lookup could not find `pnpm`. They now use
+  `package-manager-cache: false`, like the enforcement workflows.
 - `pnpm-enforcement.yml` `NODE-PKG-001`: a line whose only npm install is `npm install -g corepack[@x.y.z]` (also `npm
   i`, `--global`) is no longer reported. On Node 25 and later that is how pnpm itself is bootstrapped. Any other
   `npm`/`yarn` install, including one chained on the same line, an unpinned package such as `corepack-evil`, or a bare
