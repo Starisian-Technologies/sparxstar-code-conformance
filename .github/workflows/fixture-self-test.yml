@@ -11,6 +11,7 @@ permissions:
 
 on:
   push:
+    branches: [main]
     paths:
       - '.github/workflows/*-enforcement.yml'
       - '.github/workflows/full-quality-gate.yml'
@@ -29,6 +30,11 @@ on:
       - 'scripts/**'
       - '**/*.xml'
   workflow_dispatch:
+
+# A newer push to the same PR or branch cancels the run it supersedes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   # ── XML well-formedness ──────────────────────────────────────────────────────
@@ -705,6 +711,19 @@ jobs:
           php-version: '8.3'
           coverage: none
           tools: composer
+
+      # No composer.lock is committed, so cache Composer's download cache
+      # (keyed on composer.json) rather than vendor/.
+      - name: Locate Composer cache
+        id: composer-cache
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-php8.3-${{ hashFiles('composer.json') }}
+          restore-keys: composer-${{ runner.os }}-php8.3-
 
       - name: Install dependencies
         run: composer install --no-interaction --no-progress
