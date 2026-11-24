@@ -8,6 +8,17 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ### Added
 
+- `semver-release.yml`: the one reusable release workflow every repository calls (ADR-053). It validates the caller's
+  release-please config, runs release-please (`googleapis/release-please-action`, pinned by commit SHA) to keep
+  `CHANGELOG.md` and open the release pull request, and on merge creates the `vX.Y.Z` tag and GitHub Release. With
+  `image_name` set it pushes the image to GHCR tagged with the version and the full commit SHA, never `latest`, and
+  refuses to rebuild an existing version. Optional App credential for release pull requests (OQ-025, open).
+- `caller-templates/release.yml`, `caller-templates/release-please-config.json`,
+  `caller-templates/.release-please-manifest.json`: the caller and config templates. The template's `uses:` pin is a
+  lookup placeholder, not a hand-written version.
+- `release-self-test.yml` and `fixtures/release/`: prove the config check passes the template and fails each bad
+  fixture, and that every action in `semver-release.yml` is SHA-pinned.
+
 - `pnpm-enforcement.yml`: optional `node-version` input. When set, the job runs `actions/setup-node` (the same pinned v5
   SHA as the other enforcement workflows, `package-manager-cache: false`) before the `NODE-PKG-004` install dry run.
   Empty, the default, keeps the runner image's Node exactly as before, so existing callers are unchanged. Repositories

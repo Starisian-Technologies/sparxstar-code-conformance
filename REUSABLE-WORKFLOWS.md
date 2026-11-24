@@ -334,6 +334,57 @@ jobs:
       profile_version: v1
 ```
 
+## Releases (ADR-053)
+
+Every repository releases through one reusable workflow,
+`.github/workflows/semver-release.yml`, decided by ADR-053. It is separate
+from `standards.yml`: it runs on pushes to the default branch, not on pull
+requests.
+
+What it does:
+
+- Validates `release-please-config.json` against ADR-053 (tags `vX.Y.Z`, one
+  root package, `bump-minor-pre-major: true`, a 0.x `initial-version`).
+- Runs release-please, which keeps `CHANGELOG.md` and opens or updates the
+  release pull request from Conventional Commits. Merging that pull request
+  creates the `vX.Y.Z` tag and the GitHub Release.
+- If `image_name` is set, builds the image from the tagged commit and pushes
+  it to `ghcr.io/<owner>/<image_name>` tagged with the version (`X.Y.Z`) and
+  the full commit SHA, with the matching OCI `version` and `revision` labels.
+  It never pushes `latest` and refuses to rebuild a version that already
+  exists. Hosts deploy the version tag and record the commit; rollback is the
+  previous version tag.
+
+Adopting it:
+
+1. Copy `caller-templates/release.yml` to `.github/workflows/release.yml`,
+   and `caller-templates/release-please-config.json` and
+   `caller-templates/.release-please-manifest.json` to the repository root.
+2. Replace `RELEASE_TAG` in the `uses:` line with this repository's latest
+   release tag that contains `semver-release.yml`. The template shows the
+   lookup command; do not copy a version from any document.
+3. In `release-please-config.json`, set `release-type` to the one that matches
+   the repository's package manifest (for example `node` for
+   `package.json`), so release-please keeps that manifest's `version`. Keep
+   `simple` if there is none.
+4. If the repository already has `vX.Y.Z` tags, seed the manifest once with
+   its latest tag (`git describe --tags --abbrev=0`, without the `v`).
+5. Set `image_name` if the repository ships a container image; otherwise
+   leave it empty and drop `packages: write`.
+6. Remove any repository-local release or tagging workflow, and replace
+   hand-written version numbers in docs with instructions to look the version
+   up (latest GitHub Release, latest tag, or the top of `CHANGELOG.md`).
+
+Release pull requests opened with `GITHUB_TOKEN` do not run CI, so the merge
+gate (ADR-037) cannot pass on them. The workflow accepts an App credential
+(`app_client_id` input, `app_private_key` secret) scoped to the calling
+repository only. Which App is used is not yet decided (OQ-025 in the
+architecture registry); until it is, leave both unset.
+
+`release-self-test.yml` proves the config check passes the template and
+fails each fixture in `fixtures/release/`, and that every action in
+`semver-release.yml` is pinned by full commit SHA.
+
 ## Mode input
 
 The `mode` input on workflows that support it maps to the enforcement

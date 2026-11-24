@@ -1,0 +1,253 @@
+# ============================================================
+# semver-release — the one release workflow every repository calls (ADR-053)
+#
+# Reusable workflow. On every push to the caller's default branch it:
+#   1. validates the caller's release-please config against ADR-053;
+#   2. runs release-please, which keeps CHANGELOG.md and opens or updates the
+#      release pull request from Conventional Commits;
+#   3. when that release pull request has just been merged, release-please
+#      creates the vX.Y.Z tag and the GitHub Release;
+#   4. if the caller ships a container image, builds it from the tagged commit
+#      and pushes it to GHCR tagged with the version (X.Y.Z) and the full
+#      40-character commit SHA, and nothing else (never `latest`).
+#
+# Versions are never written by hand. Hosts deploy a version tag and record
+# the commit (the SHA tag, or the image's org.opencontainers.image.revision
+# label). Rollback is redeploying the previous version's image. A released
+# image tag is never rebuilt: the build refuses if the version tag exists.
+#
+# Caller: copy caller-templates/release.yml to .github/workflows/release.yml,
+# and caller-templates/release-please-config.json and
+# caller-templates/.release-please-manifest.json to the repository root.
+# See REUSABLE-WORKFLOWS.md "Releases (ADR-053)".
+#
+# Token: by default release-please uses the caller's GITHUB_TOKEN. A pull
+# request opened with GITHUB_TOKEN does not start `pull_request` workflows, so
+# required checks never report on the release pull request. Passing
+# app_client_id and the app_private_key secret mints a GitHub App token scoped
+# to the calling repository only. Which App is used is not yet decided
+# (architecture registry OQ-025).
+#
+# Every third-party action is pinned by full commit SHA (ADR-053 decision 5).
+# ============================================================
+
+name: SemVer release (ADR-053)
+
+on:
+  workflow_call:
+    inputs:
+      config_file:
+        description: Path of the release-please config in the calling repository.
+        required: false
+        type: string
+        default: release-please-config.json
+      manifest_file:
+        description: Path of the release-please manifest in the calling repository.
+        required: false
+        type: string
+        default: .release-please-manifest.json
+      image_name:
+        description: >
+          Container image name under ghcr.io/<owner>/. Empty (the default) means
+          the repository ships no image; only the tag and GitHub Release are
+          created.
+        required: false
+        type: string
+        default: ''
+      image_context:
+        description: Docker build context, relative to the repository root.
+        required: false
+        type: string
+        default: .
+      dockerfile:
+        description: Dockerfile path, relative to the repository root.
+        required: false
+        type: string
+        default: Dockerfile
+      app_client_id:
+        description: >
+          Optional GitHub App client ID. When set together with the
+          app_private_key secret, release-please runs with an App token scoped
+          to the calling repository only, so CI runs on the release pull
+          request. Empty uses GITHUB_TOKEN.
+        required: false
+        type: string
+        default: ''
+    secrets:
+      app_private_key:
+        description: Private key of the App named by app_client_id.
+        required: false
+    outputs:
+      release_created:
+        description: "'true' when this run created a release."
+        value: ${{ jobs.release.outputs.release_created }}
+      tag_name:
+        description: The release tag (vX.Y.Z), when a release was created.
+        value: ${{ jobs.release.outputs.tag_name }}
+      version:
+        description: The release version (X.Y.Z), when a release was created.
+        value: ${{ jobs.release.outputs.version }}
+      sha:
+        description: Full commit SHA the release was tagged at.
+        value: ${{ jobs.release.outputs.sha }}
+      image:
+        description: Pushed image by digest (registry/name@sha256:...), when an image was built.
+        value: ${{ jobs.image.outputs.image }}
+
+jobs:
+  release:
+    name: release-please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      release_created: ${{ steps.rp.outputs.release_created }}
+      tag_name: ${{ steps.rp.outputs.tag_name }}
+      version: ${{ steps.rp.outputs.version }}
+      sha: ${{ steps.rp.outputs.sha }}
+    steps:
+      - name: Checkout (config validation only)
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      # release-self-test.yml runs this step's script against the template and
+      # the fail fixtures in fixtures/release/. Keep the step id.
+      - name: Validate release config against ADR-053
+        id: validate-config
+        env:
+          CONFIG_FILE: ${{ inputs.config_file }}
+          MANIFEST_FILE: ${{ inputs.manifest_file }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          fail=0
+          err() { echo "::error file=${CONFIG_FILE}::$1"; fail=1; }
+          if [ ! -f "$CONFIG_FILE" ]; then
+            echo "::error::release-please config '$CONFIG_FILE' not found; copy caller-templates/release-please-config.json (ADR-053)."
+            exit 1
+          fi
+          if [ ! -f "$MANIFEST_FILE" ]; then
+            echo "::error::release-please manifest '$MANIFEST_FILE' not found; copy caller-templates/.release-please-manifest.json (ADR-053)."
+            exit 1
+          fi
+          jq -e . "$CONFIG_FILE" >/dev/null || { echo "::error file=${CONFIG_FILE}::not valid JSON"; exit 1; }
+          jq -e 'type == "object"' "$MANIFEST_FILE" >/dev/null || { echo "::error file=${MANIFEST_FILE}::not a JSON object"; exit 1; }
+          # Tags are vX.Y.Z (ADR-053 decision 2). Absent keys take release-please's defaults.
+          [ "$(jq -r 'if has("include-v-in-tag") then ."include-v-in-tag" else true end' "$CONFIG_FILE")" = "true" ] \
+            || err "include-v-in-tag must be true: tags are vX.Y.Z (ADR-053 decision 2)."
+          [ "$(jq -r 'if has("include-component-in-tag") then ."include-component-in-tag" else false end' "$CONFIG_FILE")" = "false" ] \
+            || err "include-component-in-tag must be false: tags are vX.Y.Z (ADR-053 decision 2)."
+          [ "$(jq -r '(.packages // {}) | keys | join(",")' "$CONFIG_FILE")" = "." ] \
+            || err "packages must hold exactly one root package \".\": one version per repository (ADR-053)."
+          # A breaking change in 0.x must not release 1.0.0 (ADR-053 decision 1).
+          [ "$(jq -r '."bump-minor-pre-major" // false' "$CONFIG_FILE")" = "true" ] \
+            || err "bump-minor-pre-major must be true: 1.0.0 is public go-live, never an accident (ADR-053)."
+          # A repository's first release is 0.x; release-please otherwise starts at 1.0.0.
+          jq -r '."initial-version" // ""' "$CONFIG_FILE" | grep -Eq '^0\.[0-9]+\.[0-9]+$' \
+            || err "initial-version must be a 0.x version; release-please otherwise starts at 1.0.0 (ADR-053)."
+          [ "$fail" -eq 0 ] || exit 1
+          echo "OK: $CONFIG_FILE conforms to ADR-053"
+
+      - name: Mint App token (calling repository only)
+        id: app-token
+        if: inputs.app_client_id != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          client-id: ${{ inputs.app_client_id }}
+          private-key: ${{ secrets.app_private_key }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: release-please
+        id: rp
+        uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        with:
+          token: ${{ steps.app-token.outputs.token || github.token }}
+          config-file: ${{ inputs.config_file }}
+          manifest-file: ${{ inputs.manifest_file }}
+
+      - name: Summary
+        if: steps.rp.outputs.release_created == 'true'
+        env:
+          TAG: ${{ steps.rp.outputs.tag_name }}
+          SHA: ${{ steps.rp.outputs.sha }}
+        shell: bash
+        run: |
+          {
+            echo "### Released ${TAG}"
+            echo ""
+            echo "- Commit: \`${SHA}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  image:
+    name: Container image (version + commit)
+    needs: release
+    if: needs.release.outputs.release_created == 'true' && inputs.image_name != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.push.outputs.image }}
+    steps:
+      - name: Checkout the tagged commit
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          ref: ${{ needs.release.outputs.sha }}
+          persist-credentials: false
+
+      - name: Build and push
+        id: push
+        env:
+          VERSION: ${{ needs.release.outputs.version }}
+          SHA: ${{ needs.release.outputs.sha }}
+          IMAGE_NAME: ${{ inputs.image_name }}
+          IMAGE_CONTEXT: ${{ inputs.image_context }}
+          DOCKERFILE: ${{ inputs.dockerfile }}
+          OWNER: ${{ github.repository_owner }}
+          SOURCE_URL: ${{ github.server_url }}/${{ github.repository }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' \
+            || { echo "::error::release version '$VERSION' is not a SemVer version usable as an image tag"; exit 1; }
+          echo "$SHA" | grep -Eq '^[0-9a-f]{40}$' \
+            || { echo "::error::release commit '$SHA' is not a full 40-character SHA"; exit 1; }
+          echo "$IMAGE_NAME" | grep -Eq '^[a-z0-9]+([._-][a-z0-9]+)*(/[a-z0-9]+([._-][a-z0-9]+)*)*$' \
+            || { echo "::error::image_name '$IMAGE_NAME' is not a valid lowercase image name"; exit 1; }
+          repo="ghcr.io/${OWNER,,}/${IMAGE_NAME}"
+
+          printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io -u "$REGISTRY_USER" --password-stdin
+
+          # A released image tag is never rebuilt or moved (ADR-053 decision 4).
+          if docker manifest inspect "${repo}:${VERSION}" >/dev/null 2>&1; then
+            echo "::error::${repo}:${VERSION} already exists; a released image is never rebuilt (ADR-053)."
+            exit 1
+          fi
+
+          docker build \
+            --file "$DOCKERFILE" \
+            --label "org.opencontainers.image.version=${VERSION}" \
+            --label "org.opencontainers.image.revision=${SHA}" \
+            --label "org.opencontainers.image.source=${SOURCE_URL}" \
+            --tag "${repo}:${VERSION}" \
+            --tag "${repo}:${SHA}" \
+            "$IMAGE_CONTEXT"
+          docker push "${repo}:${VERSION}"
+          docker push "${repo}:${SHA}"
+
+          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "${repo}:${VERSION}")
+          echo "image=${digest}" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Image ${repo}"
+            echo ""
+            echo "- Tags: \`${VERSION}\`, \`${SHA}\`"
+            echo "- Digest: \`${digest}\`"
+            echo ""
+            echo "Deploy the version tag and record the commit. Roll back by deploying the previous version tag."
+          } >> "$GITHUB_STEP_SUMMARY"
+          docker logout ghcr.io
