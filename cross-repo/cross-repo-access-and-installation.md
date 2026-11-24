@@ -100,6 +100,13 @@ These names exist at org level. **Whether a repo can read the org-level copies d
 
 Without these copies, every credential-gated job skips or fails on Dependabot PRs.
 
+The failure reads as a broken credential but is not one. *Variables* do reach a
+Dependabot run, so the client id resolves normally while the private key beside
+it arrives empty, and the mint step fails on the key alone. Do not rotate or
+re-issue anything on the strength of that: the key is fine, the run is reading a
+different store. Check **Settings → Secrets and variables → Dependabot** for a
+copy under the identical name before diagnosing anything else.
+
 "Never recreate" applies to the org-level values only. A private repo's repository-level copies are required, not a violation.
 
 ### Adding a private repo
