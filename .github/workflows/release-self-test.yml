@@ -1,0 +1,116 @@
+# ============================================================
+# release-self-test — proves semver-release.yml's ADR-053 config check
+# passes the shipped template and fails each bad fixture, and that every
+# third-party action in semver-release.yml is pinned by full commit SHA.
+# ============================================================
+
+name: Release workflow self-test (ADR-053)
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/semver-release.yml'
+      - '.github/workflows/release-self-test.yml'
+      - 'caller-templates/release.yml'
+      - 'caller-templates/release-please-config.json'
+      - 'caller-templates/.release-please-manifest.json'
+      - 'fixtures/release/**'
+  pull_request:
+    paths:
+      - '.github/workflows/semver-release.yml'
+      - '.github/workflows/release-self-test.yml'
+      - 'caller-templates/release.yml'
+      - 'caller-templates/release-please-config.json'
+      - 'caller-templates/.release-please-manifest.json'
+      - 'fixtures/release/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  self-test:
+    name: Release config check and action pins
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Extract the validate-config script from semver-release.yml
+        shell: bash
+        run: |
+          set -euo pipefail
+          pip3 install pyyaml --quiet
+          python3 - <<'PY'
+          import yaml
+          wf = yaml.safe_load(open('.github/workflows/semver-release.yml'))
+          steps = wf['jobs']['release']['steps']
+          script = next(s['run'] for s in steps if s.get('id') == 'validate-config')
+          open('/tmp/validate-config.sh', 'w').write(script)
+          PY
+          test -s /tmp/validate-config.sh
+
+      - name: PASS — shipped template conforms
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONFIG_FILE=caller-templates/release-please-config.json \
+          MANIFEST_FILE=caller-templates/.release-please-manifest.json \
+            bash /tmp/validate-config.sh
+
+      - name: FAIL — every fixture under fixtures/release/fail-* is rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=0
+          for dir in fixtures/release/fail-*/; do
+            count=$((count + 1))
+            result=0
+            CONFIG_FILE="${dir}release-please-config.json" \
+            MANIFEST_FILE=caller-templates/.release-please-manifest.json \
+              bash /tmp/validate-config.sh || result=$?
+            if [ "$result" -eq 0 ]; then
+              echo "SELF-TEST FAIL: ${dir} should have been rejected but passed"
+              exit 1
+            fi
+            echo "OK: ${dir} rejected"
+          done
+          [ "$count" -gt 0 ] || { echo "SELF-TEST FAIL: no fail fixtures found"; exit 1; }
+
+      - name: FAIL — missing config is rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          result=0
+          CONFIG_FILE=does-not-exist.json \
+          MANIFEST_FILE=caller-templates/.release-please-manifest.json \
+            bash /tmp/validate-config.sh || result=$?
+          [ "$result" -ne 0 ] || { echo "SELF-TEST FAIL: missing config passed"; exit 1; }
+          echo "OK: missing config rejected"
+
+      - name: Every action in semver-release.yml is pinned by full commit SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          bad=$(grep -nE '^\s*(-\s*)?uses:' .github/workflows/semver-release.yml \
+                | grep -vE 'uses:\s*[^@[:space:]]+@[0-9a-f]{40}(\s|$)' || true)
+          if [ -n "$bad" ]; then
+            echo "SELF-TEST FAIL: action not pinned by full commit SHA (ADR-053 decision 5):"$'\n'"$bad"
+            exit 1
+          fi
+          echo "OK: all actions SHA-pinned"
+
+      - name: Caller template pins no hand-written release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The pin is a placeholder the adopter replaces by lookup (ADR-053 decision 3).
+          grep -q 'semver-release.yml@RELEASE_TAG' caller-templates/release.yml \
+            || { echo "SELF-TEST FAIL: caller-templates/release.yml must pin @RELEASE_TAG"; exit 1; }
+          echo "OK: caller template pin is the lookup placeholder"

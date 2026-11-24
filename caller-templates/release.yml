@@ -1,0 +1,59 @@
+# Drop this file into any consuming repo at:
+#   .github/workflows/release.yml
+# and copy, to the repository root:
+#   caller-templates/release-please-config.json   -> release-please-config.json
+#   caller-templates/.release-please-manifest.json -> .release-please-manifest.json
+#
+# ADR-053: every repository releases through this one workflow. Commits on the
+# default branch follow Conventional Commits; release-please keeps CHANGELOG.md
+# and opens a release pull request; merging it creates the vX.Y.Z tag and the
+# GitHub Release. Never tag, write a release, or edit a version by hand.
+#
+# Pin: replace RELEASE_TAG below with the latest release tag of
+# sparxstar-code-conformance that contains .github/workflows/semver-release.yml.
+# Look it up; do not copy a number from any document:
+#   git ls-remote --tags --refs https://github.com/Starisian-Technologies/sparxstar-code-conformance \
+#     | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+# After that, caller-templates/dependabot.yml keeps the pin current by PR.
+#
+# Before 1.0.0: a breaking change bumps MINOR. Public go-live is a commit with
+# the footer `Release-As: 1.0.0`, approved by the owner (ADR-053).
+#
+# A repository that already has vX.Y.Z tags: before the first run, set
+# .release-please-manifest.json to {".": "<latest tag without the v>"}, read
+# with `git describe --tags --abbrev=0`. From then on only release-please
+# writes it.
+
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# One release run at a time; never cancel one that may be tagging.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/semver-release.yml@RELEASE_TAG
+    permissions:
+      contents: write        # tag, GitHub Release, CHANGELOG commit on the release branch
+      pull-requests: write   # open and update the release pull request
+      packages: write        # push the image to GHCR; remove if image_name is empty
+    with:
+      # Container image name under ghcr.io/<owner>/ (lowercase). Leave empty if
+      # the repository ships no image.
+      image_name: ''
+      # image_context: .
+      # dockerfile: Dockerfile
+
+      # Release pull requests opened with GITHUB_TOKEN do not run CI, so the
+      # merge gate (ADR-037) cannot pass on them. Which GitHub App opens them
+      # instead is open (architecture registry OQ-025). Until it is decided,
+      # leave these unset; once an App is named, take its client-ID variable
+      # and private-key secret names from organisation settings, not from here.
+      # app_client_id: ${{ vars.<APP_CLIENT_ID_VARIABLE> }}
+    # secrets:
+    #   app_private_key: ${{ secrets.<APP_PRIVATE_KEY_SECRET> }}
