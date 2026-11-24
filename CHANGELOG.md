@@ -18,6 +18,11 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ### Changed
 
+- `node-enforcement.yml`, `react-enforcement.yml`, `pnpm-enforcement.yml`: the `node-version` input now defaults to
+  `'26'`, the platform runtime (Active LTS). It was `'22'` for Node and React, and empty (the runner image's Node) for
+  pnpm. Callers that pass `node-version` are unchanged. A caller that relied on the old default and must stay on it
+  passes `node-version: '22'` (or `''` for pnpm). All three install corepack themselves when the runtime lacks it.
+
 - This repository's own CI uses fewer Actions minutes. `fixture-self-test.yml` runs on pushes to `main` only (it also ran on
   every branch and tag push, so each PR commit ran it twice), and `composer install` in its config-fixtures job reuses a
   cached Composer download directory. `fixture-self-test.yml` and `dependency-review.yml` cancel a run superseded by a
