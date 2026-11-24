@@ -136,18 +136,26 @@ jobs:
           fi
           jq -e . "$CONFIG_FILE" >/dev/null || { echo "::error file=${CONFIG_FILE}::not valid JSON"; exit 1; }
           jq -e 'type == "object"' "$MANIFEST_FILE" >/dev/null || { echo "::error file=${MANIFEST_FILE}::not a JSON object"; exit 1; }
-          # Tags are vX.Y.Z (ADR-053 decision 2). Absent keys take release-please's defaults.
-          [ "$(jq -r 'if has("include-v-in-tag") then ."include-v-in-tag" else true end' "$CONFIG_FILE")" = "true" ] \
-            || err "include-v-in-tag must be true: tags are vX.Y.Z (ADR-053 decision 2)."
-          [ "$(jq -r 'if has("include-component-in-tag") then ."include-component-in-tag" else false end' "$CONFIG_FILE")" = "false" ] \
-            || err "include-component-in-tag must be false: tags are vX.Y.Z (ADR-053 decision 2)."
+          # Effective value of a setting: the root package's own value overrides the
+          # top-level default, which overrides release-please's default. has() is
+          # used, not //, because // treats an explicit false as absent.
+          eff() {
+            jq -r --arg k "$1" --argjson d "$2" \
+              '(.packages["."] // {}) as $p
+               | if ($p | has($k)) then $p[$k] elif has($k) then .[$k] else $d end' "$CONFIG_FILE"
+          }
           [ "$(jq -r '(.packages // {}) | keys | join(",")' "$CONFIG_FILE")" = "." ] \
             || err "packages must hold exactly one root package \".\": one version per repository (ADR-053)."
+          # Tags are vX.Y.Z (ADR-053 decision 2).
+          [ "$(eff include-v-in-tag true)" = "true" ] \
+            || err "include-v-in-tag must be true: tags are vX.Y.Z (ADR-053 decision 2)."
+          [ "$(eff include-component-in-tag false)" = "false" ] \
+            || err "include-component-in-tag must be false: tags are vX.Y.Z (ADR-053 decision 2)."
           # A breaking change in 0.x must not release 1.0.0 (ADR-053 decision 1).
-          [ "$(jq -r '."bump-minor-pre-major" // false' "$CONFIG_FILE")" = "true" ] \
+          [ "$(eff bump-minor-pre-major false)" = "true" ] \
             || err "bump-minor-pre-major must be true: 1.0.0 is public go-live, never an accident (ADR-053)."
           # A repository's first release is 0.x; release-please otherwise starts at 1.0.0.
-          jq -r '."initial-version" // ""' "$CONFIG_FILE" | grep -Eq '^0\.[0-9]+\.[0-9]+$' \
+          eff initial-version '""' | grep -Eq '^0\.[0-9]+\.[0-9]+$' \
             || err "initial-version must be a 0.x version; release-please otherwise starts at 1.0.0 (ADR-053)."
           [ "$fail" -eq 0 ] || exit 1
           echo "OK: $CONFIG_FILE conforms to ADR-053"
@@ -252,10 +260,14 @@ jobs:
             --tag "${repo}:${VERSION}" \
             --tag "${repo}:${SHA}" \
             "$IMAGE_CONTEXT"
-          docker push "${repo}:${VERSION}"
+          push_out=$(docker push "${repo}:${VERSION}")
+          printf '%s\n' "$push_out"
           docker push "${repo}:${SHA}"
 
-          digest=$(docker inspect --format '{{index .RepoDigests 0}}' "${repo}:${VERSION}")
+          # The registry digest, from the push itself (local RepoDigests can be empty).
+          sha256=$(printf '%s\n' "$push_out" | grep -oE 'digest: sha256:[0-9a-f]{64}' | tail -n1 | cut -d' ' -f2)
+          [ -n "$sha256" ] || { echo "::error::could not read the pushed digest for ${repo}:${VERSION}"; exit 1; }
+          digest="${repo}@${sha256}"
           echo "image=${digest}" >> "$GITHUB_OUTPUT"
           {
             echo "### Image ${repo}"
