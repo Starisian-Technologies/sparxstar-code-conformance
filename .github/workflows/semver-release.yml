@@ -97,6 +97,8 @@ on:
 jobs:
   release:
     name: release-please
+    # Releases are cut only from pushes to the default branch (ADR-053).
+    if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -192,11 +194,24 @@ jobs:
     outputs:
       image: ${{ steps.push.outputs.image }}
     steps:
-      - name: Checkout the tagged commit
+      # Build only the pushed default-branch commit, and only if it is the one
+      # release-please just tagged. No ref is taken from step outputs.
+      - name: Checkout the pushed commit
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          ref: ${{ needs.release.outputs.sha }}
           persist-credentials: false
+
+      - name: Require the pushed commit to be the release commit
+        env:
+          RELEASE_SHA: ${{ needs.release.outputs.sha }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          head=$(git rev-parse HEAD)
+          if [ "$head" != "$RELEASE_SHA" ]; then
+            echo "::error::pushed commit ${head} is not the release commit ${RELEASE_SHA}; refusing to build (ADR-053)."
+            exit 1
+          fi
 
       - name: Build and push
         id: push
