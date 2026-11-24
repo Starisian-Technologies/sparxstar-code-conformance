@@ -3,9 +3,18 @@ name: Dependency review
 on:
   pull_request:
     branches: ["**"]
+    # Documentation cannot change a dependency.
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'LICENSE*'
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
 
 jobs:
   dependency-review:
