@@ -59,10 +59,10 @@ on:
         type: string
         default: draft
       node-version:
-        description: 'Node.js LTS version to use.'
+        description: 'Node.js version to use. Default 26 (the platform runtime). Node 25 and later ship without corepack; the workflow installs it.'
         required: false
         type: string
-        default: '22'
+        default: '26'
 
 jobs:
   enforce:

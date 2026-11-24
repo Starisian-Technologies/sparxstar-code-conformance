@@ -18,6 +18,11 @@ The format is based on Keep a Changelog and this repository follows Semantic Ver
 
 ### Changed
 
+- `node-enforcement.yml`, `react-enforcement.yml`, `pnpm-enforcement.yml`: the `node-version` input now defaults to
+  `'26'`, the platform runtime (Active LTS). It was `'22'` for Node and React, and empty (the runner image's Node) for
+  pnpm. Callers that pass `node-version` are unchanged. A caller that relied on the old default and must stay on it
+  passes `node-version: '22'` (or `''` for pnpm). All three install corepack themselves when the runtime lacks it.
+
 - `caller-templates/standards-*.yml`: every `sparxstar-code-conformance` pin and `contract_ref` move `v1.0.4` → `v1.0.6`, so new callers get the drift-record push retry. No callee's declared secrets or inputs changed between the two tags.
 
 ### Fixed
