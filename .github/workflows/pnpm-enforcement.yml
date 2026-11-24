@@ -32,10 +32,10 @@ on:
         type: string
         default: draft
       node-version:
-        description: 'Node.js version for the install dry run. Empty (default) keeps the runner image default, as before this input existed.'
+        description: 'Node.js version for the install dry run. Default 26 (the platform runtime). Pass an empty string to keep the runner image default.'
         required: false
         type: string
-        default: ''
+        default: '26'
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY:
         required: true
