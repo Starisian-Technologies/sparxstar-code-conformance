@@ -117,12 +117,11 @@ deprecated legacy `mode` input that is scheduled for removal on 2027-01-01.
 **Immutable pins never move on their own — plan for that.** Every current caller
 template includes a `version-check` job (`version-drift-enforcement.yml`) that warns
 when your pin falls behind the recommended patch tag and hard-fails if it drops below
-the floor in `config/version-policy.yml`, regardless of `enforcement_mode`. To find
-out via a PR instead of a CI warning, copy `caller-templates/dependabot.yml` to
-`.github/dependabot.yml` in your repo — Dependabot's `github-actions` ecosystem
-already understands any `uses: owner/repo@vX.Y.Z` line in your caller template and
-will open a bump PR whenever an upstream workflow you pin cuts a new patch tag.
-Optional but recommended; the version-check job works with or without it.
+the floor in `config/version-policy.yml`, regardless of `enforcement_mode`. Every
+repository also copies `caller-templates/dependabot.yml` to `.github/dependabot.yml`
+(required, ADR-058; see "Dependabot (ADR-058)" below). Its `github-actions` entry
+understands any `uses: owner/repo@vX.Y.Z` line and opens a bump PR when an
+upstream workflow you pin cuts a new release.
 
 ### Step 3 — Add the exceptions file (only if you need an exception)
 
@@ -425,6 +424,24 @@ floating `v1` alias is retired, and `v1` is frozen.
 fails each fixture in `fixtures/release/`, that this repository's own config
 conforms, that every action in `semver-release.yml` is pinned by full commit
 SHA, and that no caller template hand-writes a release of this repository.
+
+## Dependabot (ADR-058)
+
+Every repository copies `caller-templates/dependabot.yml` to
+`.github/dependabot.yml` and keeps only the ecosystems it uses
+(`github-actions`, `npm` for npm and pnpm, `composer`). Per ecosystem it runs
+weekly, groups minor and patch updates into one pull request, groups security
+updates into one pull request, leaves each major update as its own pull
+request, and waits 3 days before proposing a new version (version updates
+only; security updates are never delayed).
+
+How Dependabot pull requests are merged (before CI, fix-forward, never
+release or deploy from a red default branch, and the exception for
+repositories that deploy on merge) is a platform rule in the governance
+snapshot every repository receives ("Dependabot updates"), not restated
+here. This repository runs the same configuration;
+`dependabot-template-self-test.yml` checks the template's settings and that
+the two files match.
 
 ## Credential policy (ADR-056)
 

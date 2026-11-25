@@ -1,0 +1,74 @@
+# ============================================================
+# dependabot-template-self-test — checks caller-templates/dependabot.yml
+# carries the ADR-058 settings for every ecosystem, and that this
+# repository's own .github/dependabot.yml is the same configuration.
+# ============================================================
+
+name: Dependabot template self-test
+
+on:
+  pull_request:
+    paths:
+      - 'caller-templates/dependabot.yml'
+      - '.github/dependabot.yml'
+      - '.github/workflows/dependabot-template-self-test.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'caller-templates/dependabot.yml'
+      - '.github/dependabot.yml'
+      - '.github/workflows/dependabot-template-self-test.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  template:
+    name: Dependabot template (ADR-058)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Template settings and the repository's copy
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -c 'import yaml' 2>/dev/null || pip3 install pyyaml --quiet
+          python3 - <<'PY'
+          import sys, yaml
+          tpl = yaml.safe_load(open('caller-templates/dependabot.yml'))
+          own = yaml.safe_load(open('.github/dependabot.yml'))
+          errors = []
+          if tpl != own:
+              errors.append('.github/dependabot.yml differs from caller-templates/dependabot.yml')
+          if tpl.get('version') != 2:
+              errors.append('version must be 2')
+          for u in tpl.get('updates', []):
+              eco = u.get('package-ecosystem')
+              where = f'{eco}:'
+              if u.get('schedule', {}).get('interval') != 'weekly':
+                  errors.append(f'{where} schedule.interval must be weekly')
+              if u.get('cooldown', {}).get('default-days') != 3:
+                  errors.append(f'{where} cooldown.default-days must be 3')
+              groups = list((u.get('groups') or {}).values())
+              ver = [g for g in groups if g.get('applies-to') == 'version-updates']
+              sec = [g for g in groups if g.get('applies-to') == 'security-updates']
+              if len(ver) != 1 or sorted(ver[0].get('update-types', [])) != ['minor', 'patch'] or ver[0].get('patterns') != ['*']:
+                  errors.append(f'{where} needs exactly one version-updates group of all minor and patch updates')
+              if len(sec) != 1 or sec[0].get('patterns') != ['*']:
+                  errors.append(f'{where} needs exactly one security-updates group of all dependencies')
+              if any('major' in g.get('update-types', []) for g in groups):
+                  errors.append(f'{where} majors must not be grouped')
+          ecos = sorted(u.get('package-ecosystem') for u in tpl.get('updates', []))
+          if ecos != ['composer', 'github-actions', 'npm']:
+              errors.append(f'template ecosystems are {ecos}; expected composer, github-actions, npm')
+          for e in errors:
+              print(f'::error file=caller-templates/dependabot.yml::{e}')
+          if errors:
+              sys.exit(1)
+          print('OK: template carries the ADR-058 settings; the repository copy matches')
+          PY
