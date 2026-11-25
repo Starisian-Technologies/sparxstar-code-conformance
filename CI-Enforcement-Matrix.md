@@ -91,6 +91,8 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | CRED-002 | ADR-056 | No personal access tokens or ad-hoc GitHub token names; no GitHub token committed in a workflow | All repositories | ENFORCED | `credential-policy.yml` |
 | CRED-003 | ADR-048, ADR-056 | No AI provider keys outside the central review repository | All repositories | ENFORCED | `credential-policy.yml` |
 | CRED-004 | cross-repo access doc, ADR-056 | No `secrets: inherit`, no dynamic secret lookups, no keys in variables; deploy secrets declared in `.github/credential-policy.yml` | All repositories | ENFORCED | `credential-policy.yml` |
+| DEP-001 | ADR-058 | Every repository carries the shared `.github/dependabot.yml` (weekly; minor/patch and security grouped per ecosystem; majors separate; 3-day cooldown) | All repositories | SPECIFIED | `caller-templates/dependabot.yml`; checked only in this repository (`dependabot-template-self-test.yml`) — no consumer-side check ships yet |
+| DEP-002 | ADR-058 | Dependabot PRs merge before CI; a red default branch is fixed forward or the update reverted at once; no release or deploy from a red default branch; repos that deploy on merge require green CI | All repositories | SPECIFIED | Merge procedure (governance snapshot `review-rules`); no automated gate ships |
 | REF-001 | docs/enforcement-matrix.md | Existing CI/CD matrix remains reference mapping for stage execution | All | REFERENCE | Documentation cross-reference |
 
 ## Notes for CI Implementers
