@@ -42,8 +42,9 @@ beside the workflows they call, so they are correct by construction. A
 hand-written caller is how a repo ends up passing a secret the pinned tag does
 not declare.
 
-**2. Pin an immutable patch tag, and move `contract_ref` with it.**
-D1 is immutable patch tags only — never `@main`, never the moving `@v1` alias.
+**2. Pin an exact release tag, and move `contract_ref` with it.**
+Pin the latest `vX.Y.Z` release tag, looked up (`REUSABLE-WORKFLOWS.md`, "Pin an
+exact release tag") — never `@main`, never the frozen `@v1` alias.
 The `version-check` job's `contract_ref` **must equal** the `@vX.Y.Z` your
 other jobs pin; bare `v1` is rejected at validation. Bump both in one commit.
 `caller-templates/dependabot.yml` opens the PRs that move them.
@@ -57,9 +58,10 @@ never stall a team, and leaving it advisory forever must never become normal.
 
 ## Two known sharp edges
 
-- **`react-enforcement.yml` and `node-enforcement.yml` at `@v1.0.2` declare no
+- **`react-enforcement.yml` and `node-enforcement.yml` declare no
   `workflow_call` secrets** and set up no git auth, although they run
-  `pnpm install`. Do **not** add a `secrets:` block to those jobs at that tag —
+  `pnpm install`. Do **not** add a `secrets:` block to those jobs unless the
+  tag you pin declares one —
   workflow validation rejects a secret the callee does not declare, and the
   call fails at startup. A repo with private GitHub-hosted JS dependencies will
   fail in those jobs even when the `pnpm` job passes. Known platform gap; check
@@ -72,12 +74,14 @@ never stall a team, and leaving it advisory forever must never become normal.
 
 ## Editing a workflow in this repo
 
-**New edit, new tag, in the same sitting.** After any change to a reusable
-workflow, cut a new immutable patch tag on the commit containing the edit.
-Never move an existing semver tag (D1). Then verify the new tag exists:
+**A change reaches consumers only through a release.** Nobody tags by hand
+(ADR-053). Merge the change with a Conventional Commit message; release-please
+opens or updates the release pull request, and merging that creates the new
+`vX.Y.Z` tag and GitHub Release. Never move an existing tag. Then verify the
+new tag exists:
 
 ```bash
-git ls-remote origin 'refs/tags/v1*'
+git ls-remote --tags --refs origin | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
 ```
 
 Verify from that command, never from memory. A consumer pinned to a tag that
@@ -86,8 +90,8 @@ broken.
 
 **Declare before callers pass.** A secret must appear in the callee's
 `on.workflow_call.secrets` *and* be inside the tag a caller pins, before that
-caller can pass it. Order is always: declare → cut a new patch tag → callers
-bump their pin and pass.
+caller can pass it. Order is always: declare → release (merge the release
+pull request) → callers bump their pin and pass.
 
 **Mint steps use the canonical pattern.** Every `create-github-app-token`
 step in this repo is SHA-pinned to a v3 release with a `# v3` comment and passes

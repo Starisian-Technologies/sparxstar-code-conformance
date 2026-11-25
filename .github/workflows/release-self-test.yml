@@ -19,6 +19,10 @@ on:
       - 'caller-templates/release-please-config.json'
       - 'caller-templates/.release-please-manifest.json'
       - 'fixtures/release/**'
+      - '.github/workflows/release.yml'
+      - 'release-please-config.json'
+      - '.release-please-manifest.json'
+      - 'caller-templates/standards-*.yml'
   pull_request:
     paths:
       - '.github/workflows/semver-release.yml'
@@ -27,6 +31,10 @@ on:
       - 'caller-templates/release-please-config.json'
       - 'caller-templates/.release-please-manifest.json'
       - 'fixtures/release/**'
+      - '.github/workflows/release.yml'
+      - 'release-please-config.json'
+      - '.release-please-manifest.json'
+      - 'caller-templates/standards-*.yml'
   workflow_dispatch:
 
 concurrency:
@@ -63,6 +71,18 @@ jobs:
           CONFIG_FILE=caller-templates/release-please-config.json \
           MANIFEST_FILE=caller-templates/.release-please-manifest.json \
             bash /tmp/validate-config.sh
+
+      - name: PASS — this repository's own config conforms
+        shell: bash
+        run: |
+          set -euo pipefail
+          CONFIG_FILE=release-please-config.json \
+          MANIFEST_FILE=.release-please-manifest.json \
+            bash /tmp/validate-config.sh
+          # The manifest was seeded once from the latest exact tag (ADR-053
+          # consequences); from then on only release-please writes it.
+          jq -e '.["."] | test("^[0-9]+\\.[0-9]+\\.[0-9]+$")' .release-please-manifest.json >/dev/null \
+            || { echo "SELF-TEST FAIL: .release-please-manifest.json must hold the root version"; exit 1; }
 
       - name: FAIL — every fixture under fixtures/release/fail-* is rejected
         shell: bash
@@ -114,3 +134,16 @@ jobs:
           grep -q 'semver-release.yml@RELEASE_TAG' caller-templates/release.yml \
             || { echo "SELF-TEST FAIL: caller-templates/release.yml must pin @RELEASE_TAG"; exit 1; }
           echo "OK: caller template pin is the lookup placeholder"
+
+      - name: Caller templates hand-write no release of this repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          # ADR-053 decision 3: templates carry the RELEASE_TAG lookup
+          # placeholder, never a version number.
+          hits=$(grep -nE 'sparxstar-code-conformance/\.github/workflows/[^@[:space:]]+@v[0-9]|contract_ref:[[:space:]]*v[0-9]' caller-templates/*.yml || true)
+          if [ -n "$hits" ]; then
+            echo "SELF-TEST FAIL: hand-written version in a caller template:"$'\n'"$hits"
+            exit 1
+          fi
+          echo "OK: caller templates pin by lookup placeholder"

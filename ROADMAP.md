@@ -1,7 +1,8 @@
 # sparxstar-code-conformance — Roadmap & Maintenance Reference
 
 Last updated: 2026-06-25
-State at time of writing: `v1.0.0` / `v1` tags at `64b0ccf`, `2b534ac` merged to main.
+Current release: read it from the latest GitHub Release, the latest `vX.Y.Z` tag, or the
+top of `CHANGELOG.md` (ADR-053). Never from this file.
 
 This document is the memory of where this repo is, what it still owes, and
 what ongoing maintenance it requires so nothing silently rots. It is written
@@ -29,7 +30,8 @@ for whoever touches this repo next — human or agent.
 - `caller-templates/standards-node.yml`
 - `caller-templates/standards-react.yml`
 
-All templates ship with `enforcement_mode: gate` and pin `@v1`. The adoption
+All templates ship with `enforcement_mode: gate` and a `RELEASE_TAG` placeholder the
+adopter replaces with the latest release tag, looked up. The adoption
 guide in `REUSABLE-WORKFLOWS.md` tells new consumers to switch each job to
 `advisory` during onboarding and flip to `gate` once violations are zero.
 
@@ -37,12 +39,13 @@ guide in `REUSABLE-WORKFLOWS.md` tells new consumers to switch each job to
 
 - **Blocking mode value:** `gate` (not `required` — renamed in v1.0.0)
 - **Warn-only mode value:** `advisory`
-- **Org-locked pin:** `@v1.0.0` (immutable). `@v1` alias also exists.
+- **Pin:** the latest exact release tag (`@vX.Y.Z`), looked up. The `v1` alias is frozen.
 - **Legacy `mode` input removal date:** 2027-01-01 — all callers on the old
   `mode` input must migrate to `enforcement_mode` before that date.
-- **Floor:** `v1.0.0` (set in `config/version-policy.yml`)
-- **Drift records:** written to `drift/<slug>.json` on main via contract-sync
-  App on each `version-drift-enforcement` run.
+- **Floor:** read `floor:` in `config/version-policy.yml`
+- **Drift records:** written to the internal governance registry via the
+  contract-sync App on each `version-drift-enforcement` run; never to this
+  public repo (cross-repo/cross-repo-access-and-installation.md).
 
 ---
 
@@ -231,38 +234,30 @@ with full awareness of the migration window.
 
 ---
 
-### Tagging discipline — every merge that changes workflow behaviour
+### Releases — release-please only (ADR-053)
 
-The `v1` alias must move to every merge commit that changes reusable workflow
-logic, inputs, or secrets. The process:
+Nobody tags, writes a GitHub Release, or moves a tag by hand. Every merge to
+`main` runs `.github/workflows/release.yml`, which calls `semver-release.yml`;
+release-please keeps the release pull request current from Conventional
+Commits, and merging it creates the `vX.Y.Z` tag and GitHub Release. The
+contract-sync App opens the release pull request so CI runs on it (OQ-025).
 
-1. Merge PR to main.
-2. From an authenticated local clone: `git tag v1.x.y <sha>` (new immutable
-   tag) and `git tag -f v1 <sha>` (move alias).
-3. Push both: `git push origin v1.x.y` and `git push -f origin v1`.
-4. Update `config/version-policy.yml` `floor:` only if the change is a
-   breaking contract change that older pinned callers cannot safely run.
+The floating `v1` alias is frozen at its last position. The retired manual
+release workflow used to move it; nothing does now.
 
-Raising the floor is a breaking change for any consumer still on an older
-pin. Do not raise it without notifying all consuming repos first and giving
-them a migration window.
-
-**Never push tags through the GitHub Actions proxy** — it blocks `refs/tags/`
-pushes with 403. Tags must be pushed from an authenticated local clone with
-push access to the repo.
+Update `config/version-policy.yml` `floor:` only if a change is a breaking
+contract change that older pinned callers cannot safely run. Raising the
+floor is a breaking change for any consumer still on an older pin. Do not
+raise it without notifying all consuming repos first and giving them a
+migration window.
 
 ---
 
 ### Drift record concurrency
 
-`version-drift-enforcement.yml` uses `git pull --rebase && git push` to commit
-drift records to `drift/` on main. Multiple consumers running simultaneously
-will queue-rebase correctly. If a drift commit fails (push rejection after
-rebase), the run will error — this is intentional; the caller should re-run.
-
-If the `drift/` directory grows large (many consuming repos), consider a
-periodic cleanup PR that archives or removes drift records for repos that
-have been decommissioned. There is no automated cleanup today.
+`version-drift-enforcement.yml` writes each caller's record to the governance
+registry. A rejected push refetches, regenerates the record and retries with a
+short backoff before failing; see the workflow and the cross-repo document.
 
 ---
 
@@ -299,19 +294,18 @@ worth repeating verbally to teams onboarding for the first time.
 
 ### `config/version-policy.yml` — floor is a breaking change
 
-The floor is currently `v1.0.0`. Raising it means any consumer pinned to an
+Read the current floor from `config/version-policy.yml`. Raising it means any consumer pinned to an
 older immutable tag (if one existed below the floor) would start failing
 version-drift-enforcement immediately, with no grace period.
 
-Today all consumers should be on `v1.0.0` or `v1` since those are the only
-tags. But as new releases are cut and some consumers lag, raising the floor
-without notice will break those callers. The rule:
+As new releases are cut and some consumers lag, raising the floor without
+notice will break those callers. The rule:
 
 - Do not raise the floor without a platform announcement with a minimum
   four-week notice window.
 - Raise it in a dedicated PR with a clear subject line so it is visible in
   history.
-- After raising, cut a new semver tag and move `v1` to that commit.
+- The raise ships in the next release-please release. No tag is cut or moved by hand.
 
 ---
 

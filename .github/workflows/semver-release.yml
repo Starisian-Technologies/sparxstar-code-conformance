@@ -21,12 +21,14 @@
 # caller-templates/.release-please-manifest.json to the repository root.
 # See REUSABLE-WORKFLOWS.md "Releases (ADR-053)".
 #
-# Token: by default release-please uses the caller's GITHUB_TOKEN. A pull
-# request opened with GITHUB_TOKEN does not start `pull_request` workflows, so
-# required checks never report on the release pull request. Passing
-# app_client_id and the app_private_key secret mints a GitHub App token scoped
-# to the calling repository only. Which App is used is not yet decided
-# (architecture registry OQ-025).
+# Token: a pull request opened with GITHUB_TOKEN does not start
+# `pull_request` workflows, so required checks never report on the release
+# pull request. The contract-sync GitHub App opens release pull requests
+# (OQ-025, owner decision 2026-11-25): callers pass its client ID as
+# app_client_id and its private key as the app_private_key secret, and this
+# workflow mints a token scoped to the calling repository only, with Contents
+# and Pull requests write and nothing else. Without them release-please falls
+# back to GITHUB_TOKEN, which works but leaves the release PR without CI.
 #
 # Every third-party action is pinned by full commit SHA (ADR-053 decision 5).
 # ============================================================
@@ -66,10 +68,11 @@ on:
         default: Dockerfile
       app_client_id:
         description: >
-          Optional GitHub App client ID. When set together with the
-          app_private_key secret, release-please runs with an App token scoped
-          to the calling repository only, so CI runs on the release pull
-          request. Empty uses GITHUB_TOKEN.
+          Client ID of the GitHub App that opens release pull requests (the
+          contract-sync App, OQ-025). With the app_private_key secret,
+          release-please runs with an App token scoped to the calling
+          repository only, so CI runs on the release pull request. Empty falls
+          back to GITHUB_TOKEN, and CI does not run on the release PR.
         required: false
         type: string
         default: ''
@@ -160,6 +163,22 @@ jobs:
           [ "$fail" -eq 0 ] || exit 1
           echo "OK: $CONFIG_FILE conforms to ADR-053"
 
+      - name: Require the App private key with the App client ID
+        if: inputs.app_client_id != ''
+        env:
+          HAS_KEY: ${{ secrets.app_private_key != '' }}
+        shell: bash
+        run: |
+          if [ "$HAS_KEY" != "true" ]; then
+            echo "::error::app_client_id is set but the app_private_key secret is empty. Pass the App's private key by name (see caller-templates/release.yml); a Dependabot-triggered run reads the Dependabot secret store."
+            exit 1
+          fi
+
+      - name: Warn when release PRs will not run CI
+        if: inputs.app_client_id == ''
+        shell: bash
+        run: echo "::warning::No app_client_id; release-please uses GITHUB_TOKEN, so CI will not run on the release pull request (OQ-025)."
+
       - name: Mint App token (calling repository only)
         id: app-token
         if: inputs.app_client_id != ''
@@ -169,6 +188,8 @@ jobs:
           private-key: ${{ secrets.app_private_key }}
           owner: ${{ github.repository_owner }}
           repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
 
       - name: release-please
         id: rp

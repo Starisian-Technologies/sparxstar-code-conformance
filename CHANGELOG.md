@@ -2,9 +2,13 @@
 
 All notable changes to this repository are documented in this file.
 
-The format is based on Keep a Changelog and this repository follows Semantic Versioning for tagged releases.
+release-please writes every entry above the hand-kept section below, from Conventional Commits (ADR-053).
+Do not edit release entries by hand.
 
-## [Unreleased]
+## Before release-please (hand-kept)
+
+These entries were written by hand before this repository adopted `semver-release.yml`. They cover changes up to and
+including the adoption, and are not tied to a single release.
 
 ### Added
 

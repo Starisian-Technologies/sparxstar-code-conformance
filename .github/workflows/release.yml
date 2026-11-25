@@ -1,107 +1,48 @@
 # ============================================================
-# Release automation
-# Manually cuts a new immutable vX.Y.Z tag from main, moves the
-# floating major tag (vN) to match, and publishes a GitHub Release.
-# Matches the pin strategy documented in README.md: consumers pin
-# to @vX.Y.Z (exact) or @vN (floating), never @main.
-# ============================================================
+# Release — this repository's own caller of semver-release.yml (ADR-053)
 #
-# Usage: Actions tab -> Release -> Run workflow (from main), choose
-# the version bump. Use dry_run to preview the computed version
-# without pushing any tags or creating a release.
+# Replaces the retired manual release workflow. Nobody tags or writes a
+# release by hand: release-please opens a release pull request from
+# Conventional Commits; merging it creates the vX.Y.Z tag and the GitHub
+# Release. Find the current version from the latest GitHub Release, the latest
+# vX.Y.Z tag, or the top of CHANGELOG.md, never from a document.
+#
+# The reusable workflow is called by local path, so each release runs the
+# semver-release.yml on the commit being released. Consumers pin a tag
+# instead (caller-templates/release.yml).
+#
+# The floating `v1` alias is frozen at its last position. Nothing moves it
+# any more (ADR-053: a released tag is never moved); consumers pin exact tags.
+#
+# Credentials: the contract-sync App opens release pull requests so CI runs on
+# them (OQ-025, owner decision 2026-11-25). This repo is public, so it reads
+# the organisation-level CONTRACT_SYNC_CLIENT_ID variable and
+# CONTRACT_SYNC_PRIVATE_KEY secret (cross-repo/cross-repo-access-and-installation.md).
+# ============================================================
 
 name: Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: 'Version bump'
-        required: true
-        type: choice
-        options:
-          - patch
-          - minor
-          - major
-      dry_run:
-        description: 'Preview the next version only; do not tag or publish'
-        required: false
-        type: boolean
-        default: false
+  push:
+    branches: [main]
 
-permissions:
-  contents: write
+permissions: {}
 
+# One release run at a time; never cancel one that may be tagging.
 concurrency:
   group: release
   cancel-in-progress: false
 
 jobs:
   release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Require main
-        if: github.ref != 'refs/heads/main'
-        run: |
-          echo "::error::Releases must be run from main (was ${{ github.ref }})."
-          exit 1
-
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          fetch-depth: 0
-
-      - name: Compute next version
-        id: version
-        run: |
-          set -euo pipefail
-          latest=$(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
-          if [ -z "$latest" ]; then
-            echo "::error::No existing vX.Y.Z tag found to bump from."
-            exit 1
-          fi
-
-          version=${latest#v}
-          IFS='.' read -r major minor patch <<< "$version"
-
-          case "${{ inputs.bump }}" in
-            major) major=$((major + 1)); minor=0; patch=0 ;;
-            minor) minor=$((minor + 1)); patch=0 ;;
-            patch) patch=$((patch + 1)) ;;
-          esac
-
-          new_version="v${major}.${minor}.${patch}"
-          new_major="v${major}"
-
-          if git rev-parse --verify --quiet "refs/tags/$new_version" >/dev/null; then
-            echo "::error::Tag $new_version already exists."
-            exit 1
-          fi
-
-          echo "Previous: $latest -> New: $new_version (floating $new_major)"
-          echo "previous_version=$latest" >> "$GITHUB_OUTPUT"
-          echo "new_version=$new_version" >> "$GITHUB_OUTPUT"
-          echo "new_major=$new_major" >> "$GITHUB_OUTPUT"
-
-      - name: Create and push tags
-        if: ${{ !inputs.dry_run }}
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-          git tag -a "${{ steps.version.outputs.new_version }}" \
-            -m "Release ${{ steps.version.outputs.new_version }}"
-          git push origin "${{ steps.version.outputs.new_version }}"
-
-          new_major="${{ steps.version.outputs.new_major }}"
-          old_major_sha=$(git rev-parse --verify --quiet "refs/tags/${new_major}" || true)
-          git tag -f "$new_major"
-          git push --force-with-lease="refs/tags/${new_major}:${old_major_sha}" origin "$new_major"
-
-      - name: Publish GitHub Release
-        if: ${{ !inputs.dry_run }}
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3
-        with:
-          tag_name: ${{ steps.version.outputs.new_version }}
-          name: ${{ steps.version.outputs.new_version }}
-          generate_release_notes: true
+    uses: ./.github/workflows/semver-release.yml
+    permissions:
+      contents: write        # tag, GitHub Release
+      pull-requests: write   # release pull request (GITHUB_TOKEN fallback only)
+      packages: write        # declared by semver-release.yml's image job; a caller
+                             # must grant it even though no image is built here
+    with:
+      image_name: ''         # this repository ships no container image
+      app_client_id: ${{ vars.CONTRACT_SYNC_CLIENT_ID }}
+    secrets:
+      app_private_key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}

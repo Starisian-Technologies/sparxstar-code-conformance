@@ -16,9 +16,10 @@ Create one file in your repo: `.github/workflows/standards.yml`
 This single file can call one or more reusable workflows. You don't need
 a separate workflow file per check — one file, multiple jobs.
 
-> **Pin an immutable patch tag in every example below.** The D1 ruling is
-> immutable patch tags only — never `@main`, never the moving `@v1` alias. See
-> "Why you pin to an immutable patch tag".
+> **Pin an exact release tag in every example below.** `vX.Y.Z` in the
+> examples stands for the latest release tag of this repository; look it up
+> (see "Pin an exact release tag") and never copy a number from a document.
+> Never `@main`, never the frozen `@v1` alias.
 
 ```yaml
 # .github/workflows/standards.yml
@@ -31,7 +32,7 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@vX.Y.Z
     with:
       enforcement_mode: gate
 
@@ -72,9 +73,9 @@ Confirm two things:
   - `wp-plugin` — a WordPress plugin or mu-plugin (PHP).
   - `standalone-react` — a React app or component library (TypeScript/JS).
   - `standalone-node` — a Node service or library, no React (TypeScript/JS).
-- The **`v1.0.0` tag exists** on `sparxstar-code-conformance`. You pin to it
-  in step 2. If no semver tag exists yet, stop — adoption is not yet possible
-  and pinning to `@main` is not allowed (see "Why you pin to a tag" below).
+- You have looked up the **latest release tag** of `sparxstar-code-conformance`
+  (see "Pin an exact release tag" below). You pin to it in step 2. Pinning to
+  `@main` is not allowed.
 
 ### Step 1 — Copy the caller template for your repo type
 
@@ -95,9 +96,9 @@ workflows themselves — they live here and your caller references them.
 
 Open the file you just copied. Two things must be set correctly:
 
-1. **The `uses:` line is pinned to `@v1.0.0`**, not `@main`. Update the
-   template pin from `@v1` to the current immutable patch tag — that is the org-locked
-   recommendation (immutable; never moves). Do not change it to `@main`.
+1. **Every `RELEASE_TAG` placeholder is replaced with the latest release
+   tag**, on each `uses:` line and in `contract_ref`. Look the tag up (see "Pin
+   an exact release tag"); do not change it to `@main` or `@v1`.
 2. **`enforcement_mode` is set to `advisory` for new consumers.** New repos
    start advisory (warn-only) so onboarding is never blocked by a gate the
    repo does not yet pass. Switch to `gate` only when all violations are
@@ -167,21 +168,21 @@ on:
     branches: [main]
 jobs:
   php:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@vX.Y.Z
     with:
       repo_type: wp-plugin
       enforcement_mode: gate
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
   css:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@vX.Y.Z
     with:
       repo_type: wp-plugin
       enforcement_mode: gate
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@vX.Y.Z
     with:
       repo_type: wp-plugin
       enforcement_mode: gate
@@ -189,9 +190,10 @@ jobs:
 ```
 
 **2. Update pins and set advisory mode.** Update every `uses:` line to end in
-`@v1.0.0`. Set every `enforcement_mode` to `advisory` for a new consumer —
-do not flip to `gate` until violations are zero (see "Advisory first,
-gate when clean" below). Set `repo_type` to `wp-plugin` everywhere.
+the latest release tag, looked up as in "Pin an exact release tag". Set
+every `enforcement_mode` to `advisory` for a new consumer — do not flip to
+`gate` until violations are zero (see "Advisory first, gate when clean"
+below). Set `repo_type` to `wp-plugin` everywhere.
 
 **3. Clean up violations in advisory mode.** With `enforcement_mode: advisory`,
 merge the caller file, let the gate run, and fix all reported violations.
@@ -204,26 +206,35 @@ push the branch, open the PR. The three jobs (php, css, media) run. In
 annotation — the job still passes so the PR is not blocked. Resolve all
 warnings, then switch to `enforcement_mode: gate` in a follow-up PR.
 
-That is a wp-plugin repo fully adopted: one file added, pinned to `@v1.0.0`,
+That is a wp-plugin repo fully adopted: one file added, pinned to an exact release tag,
 advisory mode for onboarding, blocking gate once clean.
 
 ---
 
-### Why you pin to an immutable patch tag, not `@main` or `@v1`
+### Pin an exact release tag
 
-A `vMAJOR.MINOR.PATCH` tag is an immutable, released version of these workflows — it resolves
-to the same commit forever. Pinning to it means your enforcement only changes
-when you deliberately update the pin. `@v1` is the moving major alias; it
-advances automatically to future `v1.x.x` releases, which means a standards
-update can silently change your CI behaviour. `@main` is never permitted — it
-is the integration branch and breaking changes land there first.
+A `vX.Y.Z` release tag is immutable: it resolves to the same commit forever,
+so your enforcement only changes when you deliberately update the pin. Releases
+are cut by release-please (ADR-053); a released tag is never moved.
 
-**Org-locked pin recommendation: the highest published patch tag.** As of
-2026-09-10 that is `@v1.0.2`, which is what every file in `caller-templates/`
-pins and what `version-drift-enforcement` treats as "recommended". Read the
-current value from the tag list (`git ls-remote --tags`) or from
-`caller-templates/` rather than from this sentence — a version written into
-prose is a version that goes stale.
+Use the **latest release tag**. Look it up each time; a version written into a
+document goes stale:
+
+```bash
+git ls-remote --tags --refs https://github.com/Starisian-Technologies/sparxstar-code-conformance \
+  | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+```
+
+The latest GitHub Release and the top entry of `CHANGELOG.md` give the same
+answer.
+
+- **`@main`** is never permitted. It is the integration branch, and breaking
+  changes land there first.
+- **`@v1` is frozen.** The floating major alias was moved by the retired
+  manual release workflow. Under ADR-053 nothing moves it any more, so it stays
+  at its last position and never receives a fix. A caller still on `@v1` should
+  move to an exact release tag. `version-drift-enforcement` rejects a bare `v1`
+  as `contract_ref`.
 
 ---
 
@@ -264,11 +275,11 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@vX.Y.Z
     with:
       enforcement_mode: gate
   php:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@vX.Y.Z
     with:
       repo_type: wp-plugin
       profile_version: v1
@@ -286,23 +297,23 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@vX.Y.Z
     with:
       enforcement_mode: gate
   react:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/react-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/react-enforcement.yml@vX.Y.Z
     with:
       repo_type: standalone-react
       profile_version: v1
       enforcement_mode: gate
   css:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@vX.Y.Z
     with:
       repo_type: standalone-react
       profile_version: v1
       enforcement_mode: gate
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@vX.Y.Z
     with:
       enforcement_mode: gate
       profile_version: v1
@@ -318,17 +329,17 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@vX.Y.Z
     with:
       enforcement_mode: gate
   node:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/node-enforcement.yml@vX.Y.Z
     with:
       repo_type: standalone-node
       profile_version: v1
       enforcement_mode: gate
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@vX.Y.Z
     with:
       enforcement_mode: gate
       profile_version: v1
@@ -370,20 +381,32 @@ Adopting it:
 4. If the repository already has `vX.Y.Z` tags, seed the manifest once with
    its latest tag (`git describe --tags --abbrev=0`, without the `v`).
 5. Set `image_name` if the repository ships a container image; otherwise
-   leave it empty and drop `packages: write`.
+   leave it empty. Keep `packages: write` either way: the image job declares
+   it, and a caller that grants less fails at startup.
 6. Remove any repository-local release or tagging workflow, and replace
    hand-written version numbers in docs with instructions to look the version
    up (latest GitHub Release, latest tag, or the top of `CHANGELOG.md`).
 
 Release pull requests opened with `GITHUB_TOKEN` do not run CI, so the merge
-gate (ADR-037) cannot pass on them. The workflow accepts an App credential
-(`app_client_id` input, `app_private_key` secret) scoped to the calling
-repository only. Which App is used is not yet decided (OQ-025 in the
-architecture registry); until it is, leave both unset.
+gate (ADR-037) cannot pass on them. The contract-sync GitHub App opens them
+instead (OQ-025, owner decision 2026-11-25). The template passes
+`vars.CONTRACT_SYNC_CLIENT_ID` as `app_client_id` and
+`secrets.CONTRACT_SYNC_PRIVATE_KEY` as `app_private_key`; the workflow mints a
+token for the calling repository only, with Contents and Pull requests write.
+Where those values come from (organisation level for a public repository,
+repository-level copies for a private one) is in
+[`cross-repo/cross-repo-access-and-installation.md`](cross-repo/cross-repo-access-and-installation.md).
+The App must be installed on the repository. Without the credential, the
+workflow warns and falls back to `GITHUB_TOKEN`.
+
+This repository releases the same way: `.github/workflows/release.yml` calls
+`semver-release.yml` by local path. The manual tagging workflow that moved the
+floating `v1` alias is retired, and `v1` is frozen.
 
 `release-self-test.yml` proves the config check passes the template and
-fails each fixture in `fixtures/release/`, and that every action in
-`semver-release.yml` is pinned by full commit SHA.
+fails each fixture in `fixtures/release/`, that this repository's own config
+conforms, that every action in `semver-release.yml` is pinned by full commit
+SHA, and that no caller template hand-writes a release of this repository.
 
 ## Mode input
 
@@ -415,17 +438,17 @@ copies. The names, where each is set, and the auth block itself live in
 
 | Pin | When to use |
 |-----|-------------|
-| `@v1.0.0` | **Recommended (org-locked).** Immutable — resolves to the same commit forever. Update the pin deliberately to adopt a new release. |
-| `@v1` | Moving alias — advances automatically to each new `v1.x.x` release. Available but not the documented recommendation. |
-| `@main` | Never — breaking changes land here first; not for consumers. |
+| `@vX.Y.Z` (latest release tag) | **Always.** Immutable. Update deliberately, or merge the Dependabot bump PR. |
+| `@v1` | Never for new pins. Frozen at its last position; it receives no further releases. |
+| `@main` | Never. Breaking changes land here first; not for consumers. |
 
 ## Rules
 
 - **One `standards.yml` file per repo.** Don't create separate workflow
   files per check.
-- **Always pin to an immutable semver tag (`@v1.0.0` or later).** `@v1.0.0`
-  is the org-locked recommendation. Never pin to `@main` — breaking changes
-  land there first. See STD-TOOLCHAIN-001 §3 for the three-axis versioning
+- **Always pin an exact release tag (`@vX.Y.Z`), looked up, never copied
+  from a document.** Never pin to `@main` (breaking changes land there first)
+  or to the frozen `@v1`. See STD-TOOLCHAIN-001 §3 for the three-axis versioning
   model.
 - **Don't duplicate checks.** If the reusable workflow checks phpcs,
   don't also run phpcs separately in another workflow. One source of

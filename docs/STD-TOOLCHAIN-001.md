@@ -44,7 +44,7 @@ Each consuming repo's `standards.yml` caller has three independent version axes:
 
 | Axis | Where Set | What It Controls |
 |------|-----------|-----------------|
-| Workflow ref (`@v1`) | `uses:` line | The executable — bugfixes only |
+| Workflow ref (`@vX.Y.Z`) | `uses:` line | The executable — bugfixes only |
 | `profile_version` (e.g. `v1`) | `with:` input | Dependency/config contract |
 | `enforcement_mode` | `with:` input | `gate` (fail-closed) or `advisory` |
 
@@ -52,8 +52,8 @@ Each consuming repo's `standards.yml` caller has three independent version axes:
 
 | Pin | When to use |
 |-----|-------------|
-| `@v1` | Recommended — tracks latest compatible v1 workflow; receives bugfixes automatically |
-| `@v1.2.0` | Maximum reproducibility — exact immutable release; requires manual updates |
+| `@vX.Y.Z` | Always — the latest exact release tag, looked up (`REUSABLE-WORKFLOWS.md`, "Pin an exact release tag"); update deliberately or by Dependabot PR |
+| `@v1` | Never — the floating alias is frozen and receives no further releases |
 | `@main` | Never — breaking changes land here first; not for consumers |
 
 Never pin to `@main` in production. Move axes independently.

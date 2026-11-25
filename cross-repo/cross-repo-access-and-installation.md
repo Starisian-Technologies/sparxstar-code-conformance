@@ -18,7 +18,7 @@ All six names verified against the live org 2026-09-10.
 | --- | --- | --- |
 | sparxstar-architecture-governance-registry | auth required (internal) | ADRs, invariants, open questions, contracts, conformance enforcement, governance-sync |
 | sparxstar-product-specification-registry | auth required (internal) | Product tech specs — one per product, fetched on demand |
-| sparxstar-code-conformance | public | Reusable enforcement workflows (tag-pinned: v1 / semver) |
+| sparxstar-code-conformance | public | Reusable enforcement workflows (pin an exact `vX.Y.Z` release tag; the `v1` alias is frozen) |
 | sparxstar-contracts-registry | public | Shared PHP interfaces — auto-synced from source repos |
 | sparxstar-claude-pr-review | public | AI PR reviewer — reviews against ADRs and specs |
 | starisian-technologies-coding-standards | public | Coding standards catalog, enforcement matrix, installable configs |
@@ -44,7 +44,7 @@ There is no third app. Never create a PAT to solve cross-repo access.
 
 **No concurrency group needed (from `v1.0.6`).** Each caller writes only its own `drift/<owner>-<repo>.json`, so writes from different repos never conflict on content, only on push timing. From `v1.0.6`, a rejected push refetches the registry's `main`, regenerates the record on top of it, and pushes again: up to 5 attempts with a short backoff, then the step fails with an explicit error. Two runs from the same repo simply write the same up-to-date record, and the last one wins. Callers therefore need **no** `concurrency:` group on their `version-check` job for the drift record. A caller that added one as a stop-gap on `v1.0.4` can remove it when it moves to `v1.0.6`. (`v1.0.5` was cut before this change and does not retry.)
 
-**Turning the drift record on in a caller.** The maintained caller templates (`caller-templates/standards-*.yml`) pin `v1.0.6`, set `write_drift_record: true`, and pass `CONTRACT_SYNC_PRIVATE_KEY` by name (owner ruling, 2026-11-04). A caller copied from an earlier template still sets `write_drift_record: false` and passes only `COMPOSER_RESOLVER_PRIVATE_KEY`, so setting the credentials alone records nothing there. To turn it on in such a caller:
+**Turning the drift record on in a caller.** The maintained caller templates (`caller-templates/standards-*.yml`) carry a `RELEASE_TAG` placeholder for the latest release (looked up, and always at least `v1.0.6`), set `write_drift_record: true`, and pass `CONTRACT_SYNC_PRIVATE_KEY` by name (owner ruling, 2026-11-04). A caller copied from an earlier template still sets `write_drift_record: false` and passes only `COMPOSER_RESOLVER_PRIVATE_KEY`, so setting the credentials alone records nothing there. To turn it on in such a caller:
 
 1. Set the contract-sync values in the repo (table below, including the Dependabot copy where Dependabot runs).
 2. Pin every `sparxstar-code-conformance` workflow **and** `contract_ref` to `v1.0.6` or later. `v1.0.4` is the first release that writes to the registry; `v1.0.6` adds the push retry, so go straight to it.
@@ -316,8 +316,8 @@ Run the install with `NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`. Never commi
 
 ## Reusable-workflow sequencing rules (violating these looks like an auth failure)
 
-1. **Registry declares first.** A caller passing a secret the pinned reusable workflow doesn't declare in `on.workflow_call.secrets` fails at startup. Order is always: callee declares → callee cuts a new patch tag → caller bumps its pin and passes.
-2. **New edit, new tag.** After any edit to a reusable workflow, **cut a new immutable patch tag** on the commit containing the edit. Never move an existing semver tag (D1). Patch tags never move; the release workflow advances the `vN` alias. Verify the new tag exists with `git ls-remote origin 'refs/tags/v1*'` — never from memory.
+1. **Registry declares first.** A caller passing a secret the pinned reusable workflow doesn't declare in `on.workflow_call.secrets` fails at startup. Order is always: callee declares → callee releases (its release pull request is merged) → caller bumps its pin and passes.
+2. **New edit, new release.** An edit to a reusable workflow reaches callers only through a release. Releases are cut by release-please through `semver-release.yml` (ADR-053); nobody tags by hand, and no tag is ever moved. In `sparxstar-code-conformance` the floating `v1` alias is frozen at its last position. Verify the new tag exists with `git ls-remote --tags --refs origin` — never from memory.
 3. **Names must match by reading, not recall.** When a secret-passing failure occurs, open the caller and the callee's `on.workflow_call.secrets` block in the same turn and compare the exact names. A mismatch there IS the bug.
 
 ## Where this document lives
