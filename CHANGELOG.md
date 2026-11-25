@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.2.0](https://github.com/Starisian-Technologies/sparxstar-code-conformance/compare/v1.1.0...v1.2.0) (2026-11-25)
+
+
+### Features
+
+* **release:** release this repo with semver-release.yml; retire manual tagging ([#61](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/61)) ([6201677](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/62016775a90123c7b05ee5556525433a29d23dab))
+* **release:** shared SemVer release workflow and config template (ADR-053) ([#58](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/58)) ([81699ff](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/81699ff517d1b2ccb7bb314cf64915d1cbdf123c))
+* **security:** shared credential-policy check for every repo (ADR-056) ([#62](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/62)) ([b7c24f4](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/b7c24f4b16955272b8ce38f08a62d77a7fae2aca))
+
+
+### Bug Fixes
+
+* **workflows:** run NODE-LOG-001 and JS-CONSOLE-001 in gate mode ([#63](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/63)) ([d6beea3](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/d6beea3dd08fb78442cc6f9d3a6b14740df65098)), closes [#59](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/59)
+
+## Changelog
+
 All notable changes to this repository are documented in this file.
 
 release-please writes every entry above the hand-kept section below, from Conventional Commits (ADR-053).
