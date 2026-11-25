@@ -87,6 +87,10 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | MEDIA-004 | media-upload-standard §5.1 | Upload chunk size <= 512 KB | Upload services | SPECIFIED | Upload API tests (per-repo) |
 | MEDIA-005 | media-upload-standard §7.1 | Controlled FFmpeg pipeline only | Backend media processing | SPECIFIED | Processing service policy checks |
 | DOC-001 | README.md §Documentation Structure | Repository documentation structure reference | This repository | REFERENCE | Documentation reference |
+| CRED-001 | cross-repo access doc, ADR-056 | Workflows reference only `GITHUB_TOKEN`, the composer-resolver (read) and contract-sync (write) App credentials, and the repository's declared deploy secrets | All repositories | ENFORCED | `credential-policy.yml` (gate; self-test `credential-policy-self-test.yml`) |
+| CRED-002 | ADR-056 | No personal access tokens or ad-hoc GitHub token names; no GitHub token committed in a workflow | All repositories | ENFORCED | `credential-policy.yml` |
+| CRED-003 | ADR-048, ADR-056 | No AI provider keys outside the central review repository | All repositories | ENFORCED | `credential-policy.yml` |
+| CRED-004 | cross-repo access doc, ADR-056 | No `secrets: inherit`, no dynamic secret lookups, no keys in variables; deploy secrets declared in `.github/credential-policy.yml` | All repositories | ENFORCED | `credential-policy.yml` |
 | REF-001 | docs/enforcement-matrix.md | Existing CI/CD matrix remains reference mapping for stage execution | All | REFERENCE | Documentation cross-reference |
 
 ## Notes for CI Implementers

@@ -20,10 +20,10 @@ All six names verified against the live org 2026-09-10.
 | sparxstar-product-specification-registry | auth required (internal) | Product tech specs — one per product, fetched on demand |
 | sparxstar-code-conformance | public | Reusable enforcement workflows (pin an exact `vX.Y.Z` release tag; the `v1` alias is frozen) |
 | sparxstar-contracts-registry | public | Shared PHP interfaces — auto-synced from source repos |
-| sparxstar-claude-pr-review | public | AI PR reviewer — reviews against ADRs and specs |
+| sparxstar-pr-review | auth required (private; renamed from `sparxstar-claude-pr-review`; checked 2026-11-25) | Central PR review service: the only repo that holds AI provider keys (ADR-048, ADR-056) |
 | starisian-technologies-coding-standards | public | Coding standards catalog, enforcement matrix, installable configs |
 
-Retired names — never use, correct on sight: `sparxstar-architecture-decision-record` (→ architecture-governance-registry), `sparxstar-platform-standards` (→ product-specification-registry).
+Retired names — never use, correct on sight: `sparxstar-architecture-decision-record` (→ architecture-governance-registry), `sparxstar-platform-standards` (→ product-specification-registry), `sparxstar-claude-pr-review` (→ `sparxstar-pr-review`).
 
 ---
 
@@ -74,9 +74,8 @@ Before changing the App's access, re-read each workflow's `repositories:` line r
 | `COMPOSER_RESOLVER_PRIVATE_KEY` | Secret | composer-resolver |
 | `CONTRACT_SYNC_CLIENT_ID` | Variable | contract-sync |
 | `CONTRACT_SYNC_PRIVATE_KEY` | Secret | contract-sync |
-| `ANTHROPIC_API_KEY` | Secret | Claude PR review |
 
-These names exist at org level. **Whether a repo can read the org-level copies depends on its visibility** (owner ruling, 2026-11-04):
+These names exist at org level. AI provider keys are not in this table: they live only in `sparxstar-pr-review` (ADR-056), and no other repo may reference one. **Whether a repo can read the org-level copies depends on its visibility** (owner ruling, 2026-11-04):
 
 - **Public repos** read the org-level values. Reference them; never recreate them.
 - **Private repos cannot.** This org's GitHub plan does not let private repositories read org-level secrets or variables, and product repos stay private — they are not made public to work around this. Each private repo carries its own **repository-level** copies of the composer-resolver and contract-sync values:
@@ -85,7 +84,6 @@ These names exist at org level. **Whether a repo can read the org-level copies d
 | --- | --- | --- | --- |
 | `COMPOSER_RESOLVER_CLIENT_ID` | Variable | Actions, repository level | always |
 | `COMPOSER_RESOLVER_PRIVATE_KEY` | Secret | Actions, repository level | always |
-| `ANTHROPIC_API_KEY` | Secret | Actions, repository level | the Claude PR reviewer runs in the repo |
 | `COMPOSER_RESOLVER_PRIVATE_KEY` *(second copy, Dependabot store)* | Secret | **Dependabot**, repository level | Dependabot runs in the repo |
 | `CONTRACT_SYNC_CLIENT_ID` | Variable | Actions, repository level | always |
 | `CONTRACT_SYNC_PRIVATE_KEY` | Secret | Actions, repository level | always |
@@ -113,7 +111,7 @@ copy under the identical name before diagnosing anything else.
 
 1. Set every row above at repository level:
    - **Actions → Variables tab:** `COMPOSER_RESOLVER_CLIENT_ID`, `CONTRACT_SYNC_CLIENT_ID`.
-   - **Actions → Secrets tab:** `COMPOSER_RESOLVER_PRIVATE_KEY`, `CONTRACT_SYNC_PRIVATE_KEY`, and `ANTHROPIC_API_KEY` where the reviewer runs.
+   - **Actions → Secrets tab:** `COMPOSER_RESOLVER_PRIVATE_KEY`, `CONTRACT_SYNC_PRIVATE_KEY`. Never an AI provider key (ADR-056).
    - **Dependabot → Secrets:** `COMPOSER_RESOLVER_PRIVATE_KEY` again, where Dependabot runs; and `CONTRACT_SYNC_PRIVATE_KEY` again, where Dependabot runs and the repo writes a drift record. The Actions and Dependabot stores are separate, so setting a key once leaves Dependabot PRs without it.
 2. Scope the composer-resolver App to every repo the new repo's workflows read (see Troubleshooting), and the contract-sync App to every repo they write to. For the drift record, that is `sparxstar-architecture-governance-registry`, once the repo is pinned to a release that writes there (see "Drift records" above).
 3. Add the repo to the list below.
@@ -123,7 +121,7 @@ copy under the identical name before diagnosing anything else.
 The owner runs this from their own machine, logged in to the GitHub CLI (`gh auth login`). It sets step 1's rows on one or more private repos at repository level, then lists each store's names and reports any expected name that is missing. It does not do steps 2 or 3; it prints a reminder for them. The names it sets come from the table above. If the script and this doc disagree, this doc wins: fix the script. The script refuses to run if a name it uses is missing from this file.
 
 ```bash
-cross-repo/set-repo-credentials.sh [--dry-run] [--anthropic-key] \
+cross-repo/set-repo-credentials.sh [--dry-run] \
   [--no-dependabot] [--no-contract-sync-dependabot] \
   --composer-resolver-client-id <CLIENT_ID> \
   --composer-resolver-key <path/to/composer-resolver.pem> \
@@ -136,7 +134,6 @@ cross-repo/set-repo-credentials.sh [--dry-run] [--anthropic-key] \
 - **Client IDs:** the Client ID strings (`Iv23…`), never the numeric App ID. A numeric value is rejected.
 - **Private keys:** read from the `.pem` files you hold and passed to `gh` on standard input. They never go on a command line, to the terminal, a log or a file, and are never read back.
 - **Default:** both Client ID variables, both private keys as Actions secrets, and both private keys as Dependabot secrets.
-- **`--anthropic-key`:** also sets `ANTHROPIC_API_KEY` as an Actions secret, for repos where the Claude PR reviewer runs. The script asks once, with input hidden, and uses the value for every repo named.
 - **`--no-dependabot`:** skips both Dependabot copies, for repos where Dependabot doesn't run. **`--no-contract-sync-dependabot`:** skips only the contract-sync Dependabot copy, for repos that write no drift record. The script notes when a repo has `.github/dependabot.yml`, or a workflow that sets `write_drift_record: false`, so you can tell which applies.
 - **`--dry-run`:** checks the inputs, the `gh` login and each repo's visibility, shows what would be set, and lists which expected names are already there. It changes nothing and does not prompt for the Anthropic key.
 - **Re-checking a repo wired by hand:** run with `--dry-run`. Every `MISSING` line is a row still to set.
@@ -156,7 +153,7 @@ Maintained by the owner. An agent cannot read Actions secrets or variables, so i
 
 ## Central review migration (owner instruction, 2026-11-21)
 
-Block C below describes the **legacy consumer-executed reviewer** only. A
+Block C below describes the **retired legacy consumer-executed reviewer**. Under ADR-056 no consumer may hold an AI provider key, and the shared credential check (`credential-policy.yml`) fails any consumer that still does. A
 consumer is migrated when its agent instructions contain the central-review
 pointer and its request relay is on the default branch.
 
@@ -200,7 +197,7 @@ Does your workflow touch a repo OTHER than the one it runs in?
 - **No** → the default `GITHUB_TOKEN` is enough. Stop.
 - **Yes, reading only** → Block A.
 - **Yes, writing/pushing** → Block B.
-- **You are the Claude PR reviewer caller** → Block C. The reviewer reads the two internal registries itself; your caller only passes it the credentials.
+- **You want an AI PR review** → Block C: request it from central review. Your repo holds no AI provider key.
 - **A Claude Code agent session needs to read a repo it is not cloned into** → Block D.
 - **Publishing or installing a private npm package** → Block E. It uses each workflow's own `GITHUB_TOKEN`, no App.
 
@@ -247,35 +244,17 @@ Same shape as Block A but mint with `CONTRACT_SYNC_CLIENT_ID` / `CONTRACT_SYNC_P
     git push
 ```
 
-### Block C — Claude PR reviewer caller
+### Block C — PR review (central review only)
 
-The reviewer **does** read other repos. Its `build-context` job mints a composer-resolver read token for the private ADR and product-spec registries, using `vars.COMPOSER_RESOLVER_CLIENT_ID` and the `COMPOSER_RESOLVER_PRIVATE_KEY` you pass it. So the caller passes **two** secrets by name, and the caller repo must be able to read `COMPOSER_RESOLVER_CLIENT_ID` as a variable: org-level for a public repo, repository-level for a private one (see above). The App must also be scoped to both registries (Troubleshooting). Delete any phantom token lines.
+AI provider keys live only in `sparxstar-pr-review` (ADR-048, ADR-056). A consumer repo holds no provider key, passes none, and runs no reviewer job. It requests reviews from the central review service, whose relay dispatches with the consumer's existing contract-sync credentials (Block B's App). Follow the service's own guide, `docs/central-review.md` in `sparxstar-pr-review`, for the request commands and the relay workflow; it is not restated here.
 
-```yaml
-jobs:
-  review:
-    permissions:
-      contents: read
-      pull-requests: write
-    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@<RELEASE-TAG>
-    secrets:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
-```
-
-`<RELEASE-TAG>` is an immutable release tag of `sparxstar-claude-pr-review` — never `@main`, and no `@v1` alias is published. Find the current one by reading, not recall:
-
-```bash
-git ls-remote --tags https://github.com/Starisian-Technologies/sparxstar-claude-pr-review
-```
-
-Before pinning, open `.github/workflows/claude-pr-review.yml` **at that tag** and confirm its `on.workflow_call.secrets` declares exactly the two names above (sequencing rule 3). This block was checked against `v1.1.1` on 2026-11-04, where both are `required: true`. The reviewer refuses to run on a public repo; see its own `docs/consumer-setup.md`.
+The legacy caller of `claude-pr-review.yml`, which passed `ANTHROPIC_API_KEY` and `COMPOSER_RESOLVER_PRIVATE_KEY`, is retired. Remove the job and the repo's provider-key secret. The shared credential check fails a repo that still references the key.
 
 ### Block D — Read token for a Claude Code agent session
 
 Use this when an agent session in a workflow must read a repository it is not cloned into. Mint with the canonical mint block above (composer-resolver, read), with `repositories:` set to the repo the agent reads. Then pass `${{ steps.read-token.outputs.token }}` to the agent session through an environment variable (for example `SPECS_TOKEN`). The agent reads; it does not write, so it never gets a contract-sync token. *(Moved here from the product-spec registry's cross-repo standard, REQ-004.)*
 
-This is not Block C. Block C is a caller of the published reviewer workflow, which mints its own tokens; Block D is for a workflow that runs an agent session itself.
+This is not Block C. Block C is a request to the central review service; Block D is for a workflow that runs an agent session itself.
 
 ### Block E — Private npm packages (GitHub Packages)
 
@@ -333,9 +312,33 @@ Run the install with `NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}`. Never commi
 
 An App being installed org-wide is NOT the same as being scoped to the repo being read. If a mint succeeds but checkout of an internal registry fails with `repository not found`, check: org Settings → GitHub Apps → composer-resolver → Repository access — the App must be scoped to include every repo the workflow reads (in particular both internal registries for the PR-review gate). This is the documented most-common misconfiguration.
 
+## Checked in CI: the credential policy (ADR-056)
+
+Every repo runs `credential-policy.yml` from this repo (caller: `caller-templates/credential-policy.yml`, or the `credentials` job in the `standards-*.yml` templates). It fails on any credential reference other than:
+
+- `GITHUB_TOKEN` (`secrets.GITHUB_TOKEN`, `github.token`);
+- the composer-resolver and contract-sync names in the table above;
+- service deploy secrets the repo declares in `.github/credential-policy.yml`, one line each, saying which service the secret deploys to:
+
+```yaml
+deploy_secrets:
+  EXAMPLE_DEPLOY_TOKEN: which service it deploys to
+```
+
+It also fails on:
+
+- any personal access token or ad-hoc GitHub token name, or a GitHub token committed in a file;
+- an AI provider key outside `sparxstar-pr-review`;
+- `secrets: inherit`;
+- a dynamic secret lookup;
+- a key held in a variable.
+
+Each failure names the App to use instead.
+
 ## Never
 
 - Never `secrets: inherit`. Pass only named secrets.
+- Never an AI provider key outside `sparxstar-pr-review` (ADR-056).
 - Never a PAT for cross-repo access.
 - Never publish a private package to the public npm registry. Pin `publishConfig.registry` to GitHub Packages (Block E).
 - Never grant a package's read access to more repositories than install it.

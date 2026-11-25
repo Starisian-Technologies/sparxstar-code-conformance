@@ -27,7 +27,6 @@ readonly CR_CLIENT_ID_VAR="COMPOSER_RESOLVER_CLIENT_ID"
 readonly CR_KEY_SECRET="COMPOSER_RESOLVER_PRIVATE_KEY"
 readonly CS_CLIENT_ID_VAR="CONTRACT_SYNC_CLIENT_ID"
 readonly CS_KEY_SECRET="CONTRACT_SYNC_PRIVATE_KEY"
-readonly ANTHROPIC_SECRET="ANTHROPIC_API_KEY"
 
 readonly SCRIPT_NAME="${0##*/}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -48,7 +47,6 @@ Sets, at repository level, on each named PRIVATE repo:
   Actions variable    ${CR_CLIENT_ID_VAR}, ${CS_CLIENT_ID_VAR}
   Actions secret      ${CR_KEY_SECRET}, ${CS_KEY_SECRET}
   Dependabot secret   ${CR_KEY_SECRET}, ${CS_KEY_SECRET}
-  Actions secret      ${ANTHROPIC_SECRET} (only with --anthropic-key; hidden prompt)
 then lists each store's names and reports any expected name that is missing.
 
 <repo> is a repo name (owner defaults to ${DEFAULT_OWNER}) or OWNER/NAME.
@@ -57,8 +55,6 @@ Client IDs are the Client ID strings (Iv23...), never the numeric App ID.
 Options:
   --dry-run                       Check inputs and repos, show what would be set,
                                   and verify current names. Changes nothing.
-  --anthropic-key                 Also set ${ANTHROPIC_SECRET}. Prompts once,
-                                  input hidden, and uses the value for every repo.
   --no-dependabot                 Skip both Dependabot copies (Dependabot does
                                   not run in these repos).
   --no-contract-sync-dependabot   Skip the Dependabot copy of ${CS_KEY_SECRET}
@@ -80,7 +76,6 @@ info() { printf '%s\n' "$*"; }
 # Arguments.
 # ---------------------------------------------------------------------------
 dry_run=0
-with_anthropic=0
 dependabot=1
 cs_dependabot=1
 cr_client_id=""
@@ -96,7 +91,7 @@ need_value() {
 while [[ $# -gt 0 ]]; do
 	case "$1" in
 	--dry-run) dry_run=1 ;;
-	--anthropic-key) with_anthropic=1 ;;
+	--anthropic-key) die "AI provider keys are never set on a consumer repo; they live only in the central review repo (ADR-056). Request reviews through central review." ;;
 	--no-dependabot) dependabot=0 ;;
 	--no-contract-sync-dependabot) cs_dependabot=0 ;;
 	--composer-resolver-client-id) need_value "$@"; cr_client_id="$2"; shift ;;
@@ -147,7 +142,7 @@ check_pem "--contract-sync-key" "$cs_key"
 # Drift guard: every name this script uses must appear in the canonical doc.
 # ---------------------------------------------------------------------------
 if [[ -f "$CANONICAL_DOC" ]]; then
-	for name in "$CR_CLIENT_ID_VAR" "$CR_KEY_SECRET" "$CS_CLIENT_ID_VAR" "$CS_KEY_SECRET" "$ANTHROPIC_SECRET"; do
+	for name in "$CR_CLIENT_ID_VAR" "$CR_KEY_SECRET" "$CS_CLIENT_ID_VAR" "$CS_KEY_SECRET"; do
 		grep -q -- "\`${name}\`" "$CANONICAL_DOC" ||
 			die "${name} is not in ${CANONICAL_DOC}. The doc wins: update this script to match it"
 	done
@@ -162,20 +157,6 @@ command -v gh >/dev/null 2>&1 ||
 	die "GitHub CLI (gh) is not installed. Install it, run 'gh auth login', then re-run"
 if ! gh auth status >/dev/null 2>&1; then
 	die "gh is not logged in. Run 'gh auth login' as the org owner, then re-run"
-fi
-
-# ---------------------------------------------------------------------------
-# Optional Anthropic key: hidden prompt, held in memory only.
-# ---------------------------------------------------------------------------
-anthropic_key=""
-cleanup() { anthropic_key=""; unset anthropic_key; }
-trap cleanup EXIT
-
-if [[ $with_anthropic -eq 1 && $dry_run -eq 0 ]]; then
-	[[ -t 0 ]] || die "--anthropic-key needs an interactive terminal for the hidden prompt"
-	IFS= read -r -s -p "${ANTHROPIC_SECRET} (input hidden): " anthropic_key
-	printf '\n'
-	[[ -n "$anthropic_key" ]] || die "${ANTHROPIC_SECRET} is empty"
 fi
 
 # ---------------------------------------------------------------------------
@@ -203,20 +184,6 @@ set_variable() { # repo name value(non-secret Client ID)
 
 set_secret_from_file() { # repo app name path
 	run "${2^} secret $3" gh secret set "$3" --repo "$1" --app "$2" <"$4"
-}
-
-set_anthropic() { # repo
-	if [[ $dry_run -eq 1 ]]; then
-		info "  [dry-run] would set Actions secret ${ANTHROPIC_SECRET} (from hidden prompt)"
-		return 0
-	fi
-	# printf is a shell builtin, so the value is never on a process command line.
-	if printf '%s' "$anthropic_key" | gh secret set "$ANTHROPIC_SECRET" --repo "$1" --app actions >/dev/null; then
-		info "  set Actions secret ${ANTHROPIC_SECRET}"
-	else
-		warn "failed to set Actions secret ${ANTHROPIC_SECRET}"
-		failures=$((failures + 1))
-	fi
 }
 
 list_names() { # kind(variable|actions|dependabot) repo
@@ -255,7 +222,6 @@ verify_repo() { # repo; sets repo_missing
 		variable) expected=("$CR_CLIENT_ID_VAR" "$CS_CLIENT_ID_VAR") ;;
 		actions)
 			expected=("$CR_KEY_SECRET" "$CS_KEY_SECRET")
-			[[ $with_anthropic -eq 1 ]] && expected+=("$ANTHROPIC_SECRET")
 			;;
 		dependabot)
 			expected=()
@@ -278,9 +244,6 @@ verify_repo() { # repo; sets repo_missing
 			fi
 		done
 	done
-	if [[ $with_anthropic -eq 0 ]] && grep -qxF -- "$ANTHROPIC_SECRET" <<<"$(list_names actions "$repo" 2>/dev/null || true)"; then
-		info "  info     actions: ${ANTHROPIC_SECRET} is present (not changed)"
-	fi
 	repo_missing=$missing
 }
 
@@ -323,17 +286,12 @@ for raw in "${repos[@]}"; do
 			set_secret_from_file "$repo" dependabot "$CS_KEY_SECRET" "$cs_key"
 		fi
 	fi
-	if [[ $with_anthropic -eq 1 ]]; then
-		set_anthropic "$repo"
-	fi
 
 	info "  verify (names only):"
 	repo_missing=0
 	verify_repo "$repo"
 	total_missing=$((total_missing + repo_missing))
 done
-
-cleanup
 
 info ""
 info "Manual steps this script does not do (see the canonical doc, \"Adding a private repo\"):"

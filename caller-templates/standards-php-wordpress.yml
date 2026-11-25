@@ -73,33 +73,16 @@ jobs:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
       CONTRACT_SYNC_PRIVATE_KEY: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
 
-  check-review:
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    outputs:
-      enabled: ${{ steps.check.outputs.enabled }}
-    steps:
-      - id: check
-        env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
-        shell: bash
-        run: |
-          if [[ -n "$ANTHROPIC_API_KEY" && -n "$COMPOSER_RESOLVER_PRIVATE_KEY" ]]; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-          fi
-
-  review:
-    needs: check-review
-    if: needs.check-review.outputs.enabled == 'true'
+  credentials:
+    # ADR-056: fails on any credential other than GITHUB_TOKEN, the two Apps and
+    # the deploy secrets declared in .github/credential-policy.yml, and names
+    # the App to use instead. Reads workflow files only; no secrets.
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/credential-policy.yml@RELEASE_TAG
     permissions:
       contents: read
-      pull-requests: write
-    # REVIEWER_TAG: an immutable release tag of sparxstar-claude-pr-review, found by
-    # lookup (cross-repo/cross-repo-access-and-installation.md, Block C).
-    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@REVIEWER_TAG
-    secrets:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
+
+  # PR review: AI provider keys live only in the central review repository
+  # (ADR-048, ADR-056), so this repository holds no provider key and runs no
+  # reviewer job. Request reviews through the central review service; its
+  # guide is docs/central-review.md in sparxstar-pr-review, and the relay uses
+  # this repository's contract-sync App credentials.

@@ -53,6 +53,7 @@ Not every repo needs every job. Include only what applies:
 | `node` | `node-enforcement.yml` | Repo is a standalone Node/TS service |
 | `css` | `css-enforcement.yml` | Repo has CSS or stylesheets |
 | `media` | `media-enforcement.yml` | Repo records, uploads, or processes audio/video |
+| `credentials` | `credential-policy.yml` | **Always** — every repo (ADR-056) |
 
 PHP-only repos (no JS) skip the `react`, `node`, and `css` jobs.
 JS/React repos (no PHP) skip the `php` job.
@@ -409,6 +410,23 @@ floating `v1` alias is retired, and `v1` is frozen.
 fails each fixture in `fixtures/release/`, that this repository's own config
 conforms, that every action in `semver-release.yml` is pinned by full commit
 SHA, and that no caller template hand-writes a release of this repository.
+
+## Credential policy (ADR-056)
+
+Every repository runs `.github/workflows/credential-policy.yml`, as the
+`credentials` job in each `standards-*.yml` template or through
+`caller-templates/credential-policy.yml`. It reads the repository's workflow
+files and fails on any credential other than `GITHUB_TOKEN`, the
+composer-resolver and contract-sync App credentials, and the deploy secrets the
+repository declares in `.github/credential-policy.yml`. Each failure names the
+App to use instead. The rules and the declaration format are in
+[`cross-repo/cross-repo-access-and-installation.md`](cross-repo/cross-repo-access-and-installation.md)
+("Checked in CI"). It takes no secrets and has no advisory mode.
+
+`credential-policy-self-test.yml` runs the checker against every fixture in
+`fixtures/credential-policy/`, checks that a committed token is rejected
+without being echoed, checks that every caller template passes, and runs the
+real check on this repository.
 
 ## Mode input
 
