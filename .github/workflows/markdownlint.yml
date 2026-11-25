@@ -4,7 +4,9 @@ on:
   workflow_call:
     inputs:
       working-directory:
-        description: Working directory for all steps
+        description: >-
+          Default directory for the job's shell steps (mode validation). It does
+          not change what is linted: `glob` is relative to the repository root.
         type: string
         default: '.'
       mode:
@@ -37,6 +39,11 @@ jobs:
         working-directory: ${{ inputs.working-directory }}
     continue-on-error: ${{ inputs.mode == 'draft' }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
       - name: Validate mode
         env:
           WORKFLOW_MODE: ${{ inputs.mode }}
@@ -45,11 +52,6 @@ jobs:
             draft|development|production) ;;
             *) echo "::error::Invalid mode '$WORKFLOW_MODE'. Must be draft, development, or production." && exit 1 ;;
           esac
-
-      - name: Checkout
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          persist-credentials: false
 
       - name: Run markdownlint-cli2
         uses: DavidAnson/markdownlint-cli2-action@ded1f9488f68a970bc66ea5619e13e9b52e601cd # v23

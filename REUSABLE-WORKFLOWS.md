@@ -54,8 +54,14 @@ Not every repo needs every job. Include only what applies:
 | `css` | `css-enforcement.yml` | Repo has CSS or stylesheets |
 | `media` | `media-enforcement.yml` | Repo records, uploads, or processes audio/video |
 | `credentials` | `credential-policy.yml` | **Always** — every repo (ADR-056) |
+| `js` / `css` / `formatting` / `markdownlint` | `js-standards.yml`, `css-standards.yml`, `formatting.yml`, `markdownlint.yml` | ESLint + `tsc`, Stylelint, Prettier, markdownlint — template `caller-templates/standards-lint.yml`, self-test `lint-workflows-self-test.yml` |
 
 PHP-only repos (no JS) skip the `react`, `node`, and `css` jobs.
+
+Retired (owner ruling, 2026-11-25; no repository called them):
+`php-standards.yml` (use `php-enforcement.yml`), `wp-plugin-check.yml` and
+`full-quality-gate.yml`. The rules they covered are listed in
+`CI-Enforcement-Matrix.md` with their current status.
 JS/React repos (no PHP) skip the `php` job.
 
 ---
@@ -385,7 +391,16 @@ Adopting it:
    leave it empty. Keep `packages: write` either way: the image job declares
    it, and a caller that grants less fails at startup. The caller's
    `GITHUB_TOKEN` otherwise needs only `contents: read`.
-6. Remove any repository-local release or tagging workflow, and replace
+6. **Before the first run, check the repository's rulesets** (Settings →
+   Rules → Rulesets, plus any organisation ruleset that targets the
+   repository). If a ruleset that applies to all branches blocks force pushes
+   or requires code-scanning results, it must exclude `release-please--*`.
+   release-please force-updates that branch to a commit with no scan result
+   yet, so without the exclusion the first run fails with `Error updating ref
+   heads/release-please--branches--main`. Changing a ruleset is a repository
+   admin action (owner ruling, 2026-11-25). The release pull request's own
+   checks still gate the merge to the default branch (ADR-037).
+7. Remove any repository-local release or tagging workflow, and replace
    hand-written version numbers in docs with instructions to look the version
    up (latest GitHub Release, latest tag, or the top of `CHANGELOG.md`).
 

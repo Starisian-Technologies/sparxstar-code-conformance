@@ -318,7 +318,8 @@ Every repo runs `credential-policy.yml` from this repo (caller: `caller-template
 
 - `GITHUB_TOKEN` (`secrets.GITHUB_TOKEN`, `github.token`);
 - the composer-resolver and contract-sync names in the table above;
-- service deploy secrets the repo declares in `.github/credential-policy.yml`, one line each, saying which service the secret deploys to:
+- `COPILOT_MCP_*` secrets, only in `.github/workflows/copilot-setup-steps.yml` (owner ruling, 2026-11-25). These are the Copilot coding agent's own Agents secrets; its MCP configuration lives in repository settings. A workflow that uses one for cross-repo access switches to the Apps;
+- service deploy secrets the repo declares in `.github/credential-policy.yml`, one line each, saying which service the secret deploys to. An npm token that publishes to npmjs.com is a deploy secret and is declared. One that reads private org packages is replaced by `GITHUB_TOKEN` (Block E) or the composer-resolver App (owner ruling, 2026-11-25):
 
 ```yaml
 deploy_secrets:

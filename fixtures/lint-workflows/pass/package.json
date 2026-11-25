@@ -1,0 +1,16 @@
+{
+  "name": "lint-workflows-pass-fixture",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Conformant fixture for the js-standards, css-standards and formatting self-test. Not a package.",
+  "type": "module",
+  "packageManager": "pnpm@9.15.4",
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "eslint": "^9.18.0",
+    "prettier": "^3.4.2",
+    "stylelint": "^16.13.0",
+    "stylelint-config-standard": "^37.0.0",
+    "typescript": "^5.7.3"
+  }
+}

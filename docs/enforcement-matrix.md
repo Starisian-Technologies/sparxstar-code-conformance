@@ -51,9 +51,9 @@ This document maps every enforceable rule in the Starisian Technologies standard
 | Unprefixed global function, hook, CPT, taxonomy | PHPCS (custom sniff) | Lint | (W) | (B) | (B) |
 | PHPStan level < 5 violations | PHPStan | Static analysis | (W) | (B) | (B) |
 | Plugin activation not handling network-wide activation | PHPUnit (test) | Test | (W) | (B) | (B) |
-| **PHP-001** PHP file missing `declare(strict_types=1)` | `php-standards.yml` (phpcs) | CI | (W) | (B) | (B) |
-| **PHP-002** `SELECT *` in query | `php-standards.yml` (phpcs) | CI | (W) | (B) | (B) |
-| **PHP-003** DB query not using `$wpdb->prepare()` | `php-standards.yml` (phpcs) | CI | (W) | (B) | (B) |
+| **PHP-001** PHP file missing `declare(strict_types=1)` | `php-enforcement.yml` (PHP-STRICT-001) | CI | (W) | (B) | (B) |
+| **PHP-002** `SELECT *` in query | `php-enforcement.yml` (PHP-SQL-002) | CI | (W) | (B) | (B) |
+| **PHP-003** DB query not using `$wpdb->prepare()` | `php-enforcement.yml` (PHP-SQL-001 + the repo's phpcs config) | CI | (W) | (B) | (B) |
 
 ---
 
@@ -91,7 +91,7 @@ This document maps every enforceable rule in the Starisian Technologies standard
 | `SELECT *` in any query | ESLint (custom rule) | Lint | (W) | (B) | (B) |
 | Async route handler without error boundary | ESLint (custom rule) | Lint | (W) | (B) | (B) |
 | `console.log` in production code | ESLint `no-console` | Lint | (W) | (B) | (B) |
-| **WP-001** WordPress Plugin Check fails (performance, accessibility, security) | `.github/workflows/wp-plugin-check.yml` | CI | (W) | (B) | (B) |
+| **WP-001** WordPress Plugin Check fails (performance, accessibility, security) | SPECIFIED — the shared `wp-plugin-check.yml` was retired 2026-11-25 (owner ruling: no callers) | CI | (W) | (B) | (B) |
 | Package manager other than `pnpm` invoked (ADR-017) | `.github/workflows/pnpm-enforcement.yml` | CI | (W) | (B) | (B) |
 | `package-lock.json` or `yarn.lock` present (ADR-017) | `.github/workflows/pnpm-enforcement.yml` | CI | (W) | (B) | (B) |
 | `package.json` missing `packageManager: pnpm@...` (ADR-017) | `.github/workflows/pnpm-enforcement.yml` | CI | (W) | (B) | (B) |
