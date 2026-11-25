@@ -113,7 +113,7 @@ jobs:
       sha: ${{ steps.rp.outputs.sha }}
     steps:
       - name: Checkout (config validation only)
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -232,7 +232,7 @@ jobs:
       # Build only the pushed default-branch commit, and only if it is the one
       # release-please just tagged. No ref is taken from step outputs.
       - name: Checkout the pushed commit
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
