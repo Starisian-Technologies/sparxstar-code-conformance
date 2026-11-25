@@ -20,6 +20,11 @@ on:
         type: string
         default: '.'
 
+# Least privilege: these jobs only read the repository, so the token is held to
+# that whatever the calling workflow grants.
+permissions:
+  contents: read
+
 jobs:
   prettier-check:
     name: Prettier Check
@@ -40,6 +45,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5

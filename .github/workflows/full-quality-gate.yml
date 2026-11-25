@@ -107,6 +107,11 @@ on:
       COMPOSER_RESOLVER_PRIVATE_KEY:
         required: false
 
+# Least privilege: these jobs only read the repository, so the token is held to
+# that whatever the calling workflow grants.
+permissions:
+  contents: read
+
 jobs:
   # ── Input validation ──────────────────────────────────────────────────────
   validate-inputs:
@@ -191,6 +196,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
 
       - name: Parse standards exceptions
         id: exceptions
@@ -559,6 +566,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@fc06bc1257f339d1d5d8b3a19a8cae5388b55320 # v4
