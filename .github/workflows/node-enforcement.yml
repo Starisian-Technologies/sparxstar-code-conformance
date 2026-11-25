@@ -385,7 +385,7 @@ jobs:
           fi
 
       - name: NODE-LOG-001 — no console.log in production source
-        if: inputs.mode == 'production' || inputs.enforcement_mode == 'required'
+        if: inputs.mode == 'production' || inputs.enforcement_mode == 'gate'
         shell: bash
         run: |
           set -euo pipefail
