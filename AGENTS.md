@@ -5,6 +5,13 @@ This repository is policy infrastructure. Its output is enforceable standards, t
 
 **The one rule above all others:** the only repository that may be named in this repo is **`sparxstar-code-conformance` — itself**. Zero other product names, repo names, concept names, or anything trademarkable. If a rule only makes sense with another product's name attached, it belongs in that product's repo, not here. See `docs/standards-catalog.md`. **Exception: see OQ-007 in `QUESTIONS.md`** for the carve-out's exact scope and the locations it applies to.
 
+Scope of work (owner instruction, 2026-11-25)
+---------------------------------------------
+
+Work only in this repository. If a task seems to need any other
+repository, stop and ask the owner first. Bundle related changes
+into as few PRs and CI runs as possible.
+
 Repository role
 ---------------
 
