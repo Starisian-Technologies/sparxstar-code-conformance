@@ -382,22 +382,24 @@ Adopting it:
    its latest tag (`git describe --tags --abbrev=0`, without the `v`).
 5. Set `image_name` if the repository ships a container image; otherwise
    leave it empty. Keep `packages: write` either way: the image job declares
-   it, and a caller that grants less fails at startup.
+   it, and a caller that grants less fails at startup. The caller's
+   `GITHUB_TOKEN` otherwise needs only `contents: read`.
 6. Remove any repository-local release or tagging workflow, and replace
    hand-written version numbers in docs with instructions to look the version
    up (latest GitHub Release, latest tag, or the top of `CHANGELOG.md`).
 
 Release pull requests opened with `GITHUB_TOKEN` do not run CI, so the merge
 gate (ADR-037) cannot pass on them. The contract-sync GitHub App opens them
-instead (OQ-025, owner decision 2026-11-25). The template passes
+instead (ADR-054, resolving OQ-025). The template passes
 `vars.CONTRACT_SYNC_CLIENT_ID` as `app_client_id` and
 `secrets.CONTRACT_SYNC_PRIVATE_KEY` as `app_private_key`; the workflow mints a
 token for the calling repository only, with Contents and Pull requests write.
 Where those values come from (organisation level for a public repository,
 repository-level copies for a private one) is in
 [`cross-repo/cross-repo-access-and-installation.md`](cross-repo/cross-repo-access-and-installation.md).
-The App must be installed on the repository. Without the credential, the
-workflow warns and falls back to `GITHUB_TOKEN`.
+The App must be installed on the repository. Both values are required: the
+workflow fails rather than fall back to `GITHUB_TOKEN` (ADR-054 decision 3).
+Release images go to `ghcr.io` (ADR-055).
 
 This repository releases the same way: `.github/workflows/release.yml` calls
 `semver-release.yml` by local path. The manual tagging workflow that moved the

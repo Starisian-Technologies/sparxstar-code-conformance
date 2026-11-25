@@ -240,7 +240,7 @@ Nobody tags, writes a GitHub Release, or moves a tag by hand. Every merge to
 `main` runs `.github/workflows/release.yml`, which calls `semver-release.yml`;
 release-please keeps the release pull request current from Conventional
 Commits, and merging it creates the `vX.Y.Z` tag and GitHub Release. The
-contract-sync App opens the release pull request so CI runs on it (OQ-025).
+contract-sync App opens the release pull request so CI runs on it (ADR-054).
 
 The floating `v1` alias is frozen at its last position. The retired manual
 release workflow used to move it; nothing does now.

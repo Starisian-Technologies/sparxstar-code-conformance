@@ -15,7 +15,7 @@
 # any more (ADR-053: a released tag is never moved); consumers pin exact tags.
 #
 # Credentials: the contract-sync App opens release pull requests so CI runs on
-# them (OQ-025, owner decision 2026-11-25). This repo is public, so it reads
+# them, with no GITHUB_TOKEN fallback (ADR-054). This repo is public, so it reads
 # the organisation-level CONTRACT_SYNC_CLIENT_ID variable and
 # CONTRACT_SYNC_PRIVATE_KEY secret (cross-repo/cross-repo-access-and-installation.md).
 # ============================================================
@@ -37,8 +37,7 @@ jobs:
   release:
     uses: ./.github/workflows/semver-release.yml
     permissions:
-      contents: write        # tag, GitHub Release
-      pull-requests: write   # release pull request (GITHUB_TOKEN fallback only)
+      contents: read         # checkout; release-please writes with the App token
       packages: write        # declared by semver-release.yml's image job; a caller
                              # must grant it even though no image is built here
     with:

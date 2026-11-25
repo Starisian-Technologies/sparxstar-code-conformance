@@ -24,11 +24,11 @@
 # Token: a pull request opened with GITHUB_TOKEN does not start
 # `pull_request` workflows, so required checks never report on the release
 # pull request. The contract-sync GitHub App opens release pull requests
-# (OQ-025, owner decision 2026-11-25): callers pass its client ID as
-# app_client_id and its private key as the app_private_key secret, and this
-# workflow mints a token scoped to the calling repository only, with Contents
-# and Pull requests write and nothing else. Without them release-please falls
-# back to GITHUB_TOKEN, which works but leaves the release PR without CI.
+# (ADR-054): callers pass its client ID as app_client_id and its private key
+# as the app_private_key secret, and this workflow mints a token scoped to the
+# calling repository only, with Contents and Pull requests write and nothing
+# else. Both are required; there is no GITHUB_TOKEN fallback (ADR-054
+# decision 3). Images go to ghcr.io with the caller's GITHUB_TOKEN (ADR-055).
 #
 # Every third-party action is pinned by full commit SHA (ADR-053 decision 5).
 # ============================================================
@@ -68,18 +68,17 @@ on:
         default: Dockerfile
       app_client_id:
         description: >
-          Client ID of the GitHub App that opens release pull requests (the
-          contract-sync App, OQ-025). With the app_private_key secret,
-          release-please runs with an App token scoped to the calling
-          repository only, so CI runs on the release pull request. Empty falls
-          back to GITHUB_TOKEN, and CI does not run on the release PR.
-        required: false
+          Client ID of the contract-sync GitHub App, which opens release pull
+          requests (ADR-054). With the app_private_key secret, release-please
+          runs with an App token scoped to the calling repository only, so CI
+          runs on the release pull request. Required: there is no
+          GITHUB_TOKEN fallback.
+        required: true
         type: string
-        default: ''
     secrets:
       app_private_key:
         description: Private key of the App named by app_client_id.
-        required: false
+        required: true
     outputs:
       release_created:
         description: "'true' when this run created a release."
@@ -103,9 +102,10 @@ jobs:
     # Releases are cut only from pushes to the default branch (ADR-053).
     if: github.event_name == 'push' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     runs-on: ubuntu-latest
+    # GITHUB_TOKEN only checks out the config; every write goes through the
+    # App token below.
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
     outputs:
       release_created: ${{ steps.rp.outputs.release_created }}
       tag_name: ${{ steps.rp.outputs.tag_name }}
@@ -172,25 +172,22 @@ jobs:
           [ "$fail" -eq 0 ] || exit 1
           echo "OK: $CONFIG_FILE conforms to ADR-053"
 
-      - name: Require the App private key with the App client ID
-        if: inputs.app_client_id != ''
+      - name: Require the contract-sync credentials (ADR-054)
         env:
+          CLIENT_ID: ${{ inputs.app_client_id }}
           HAS_KEY: ${{ secrets.app_private_key != '' }}
         shell: bash
         run: |
-          if [ "$HAS_KEY" != "true" ]; then
-            echo "::error::app_client_id is set but the app_private_key secret is empty. Pass the App's private key by name (see caller-templates/release.yml); a Dependabot-triggered run reads the Dependabot secret store."
+          missing=""
+          [ -n "$CLIENT_ID" ] || missing="$missing app_client_id;"
+          [ "$HAS_KEY" = "true" ] || missing="$missing app_private_key;"
+          if [ -n "$missing" ]; then
+            echo "::error::Empty:$missing The contract-sync App opens release pull requests and there is no GITHUB_TOKEN fallback (ADR-054). Pass vars.CONTRACT_SYNC_CLIENT_ID and secrets.CONTRACT_SYNC_PRIVATE_KEY by name (caller-templates/release.yml); a private repo needs repository-level copies (cross-repo/cross-repo-access-and-installation.md)."
             exit 1
           fi
 
-      - name: Warn when release PRs will not run CI
-        if: inputs.app_client_id == ''
-        shell: bash
-        run: echo "::warning::No app_client_id; release-please uses GITHUB_TOKEN, so CI will not run on the release pull request (OQ-025)."
-
       - name: Mint App token (calling repository only)
         id: app-token
-        if: inputs.app_client_id != ''
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
         with:
           client-id: ${{ inputs.app_client_id }}
@@ -204,7 +201,7 @@ jobs:
         id: rp
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
-          token: ${{ steps.app-token.outputs.token || github.token }}
+          token: ${{ steps.app-token.outputs.token }}
           config-file: ${{ inputs.config_file }}
           manifest-file: ${{ inputs.manifest_file }}
 
