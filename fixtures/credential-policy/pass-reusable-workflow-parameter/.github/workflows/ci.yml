@@ -1,0 +1,15 @@
+name: reusable
+on:
+  workflow_call:
+    secrets:
+      app_private_key:
+        required: true
+permissions:
+  contents: read
+jobs:
+  x:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          KEY: ${{ secrets.app_private_key }}
+        run: echo ok

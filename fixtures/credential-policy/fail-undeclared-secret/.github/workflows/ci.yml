@@ -1,0 +1,12 @@
+name: ci
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          HOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: echo x

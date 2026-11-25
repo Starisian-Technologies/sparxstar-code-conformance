@@ -1,0 +1,9 @@
+name: ci
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  call:
+    uses: ./.github/workflows/other.yml
+    secrets: inherit

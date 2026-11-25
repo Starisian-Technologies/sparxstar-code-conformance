@@ -66,3 +66,11 @@ jobs:
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
       CONTRACT_SYNC_PRIVATE_KEY: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
+
+  credentials:
+    # ADR-056: fails on any credential other than GITHUB_TOKEN, the two Apps and
+    # the deploy secrets declared in .github/credential-policy.yml, and names
+    # the App to use instead. Reads workflow files only; no secrets.
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/credential-policy.yml@RELEASE_TAG
+    permissions:
+      contents: read

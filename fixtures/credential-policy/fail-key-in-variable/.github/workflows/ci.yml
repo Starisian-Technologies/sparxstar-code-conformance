@@ -1,0 +1,12 @@
+name: ci
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  x:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          K: ${{ vars.DEPLOY_API_KEY }}
+        run: echo x

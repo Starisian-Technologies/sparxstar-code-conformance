@@ -4,7 +4,7 @@
 
 This is a step-by-step guide for connecting **any** Starisian Technologies repo to the shared
 governance platform: the ADR registry, contracts registry, product-spec registry, shared
-code-conformance workflows, and the Claude PR reviewer. It's written from a live audit of
+code-conformance workflows, and central PR review. It's written from a live audit of
 `sparxstar-helios-trust`'s integration — including the bugs found there — so the checklist below
 exists specifically to stop you from repeating them.
 
@@ -27,7 +27,7 @@ invoke pinned, versioned logic rather than copying it — the one exception is t
 | `sparxstar-contracts-registry` | Canonical interface contracts (per-consumer, versioned, ratification status) | `.github/workflows/contract-conformance.yml` |
 | `sparxstar-code-conformance` (this repo) | Shared lint/style/standards enforcement (pnpm, php, css, media, js, etc.) | `.github/workflows/{pnpm,php,css,media,...}-enforcement.yml` |
 | `sparxstar-product-specification-registry` | Canonical per-product tech specs | `.github/workflows/fetch-specs.yml` (pull) + a propose-back template (push) |
-| `sparxstar-claude-pr-review` | Claude-powered PR review against platform rules | `.github/workflows/claude-pr-review.yml` |
+| `sparxstar-pr-review` (renamed from `sparxstar-claude-pr-review`) | Central PR review service; the only repo holding AI provider keys (ADR-048, ADR-056) | its own `docs/central-review.md` |
 
 > **Canonical names:** the repository identifiers above are the authoritative names for this platform. `.github/copilot-instructions.md`'s "Reference repositories" section lists the ADR-registry and product-spec-registry names directly (not a deferral to this document) — both must agree; this table is the source to check first if they ever drift.
 
@@ -56,7 +56,6 @@ App's Client ID (the `Iv23…` string) held in the `*_CLIENT_ID` variables below
 |---|---|
 | `COMPOSER_RESOLVER_CLIENT_ID` (var) / `COMPOSER_RESOLVER_PRIVATE_KEY` (secret) | Read-only cross-repo checkout: pulling ADR contracts, interface contracts, specs, and private Composer packages |
 | `CONTRACT_SYNC_CLIENT_ID` (var) / `CONTRACT_SYNC_PRIVATE_KEY` (secret) | Write-back flows: pushing branches and opening PRs into the contracts/spec registries |
-| `ANTHROPIC_API_KEY` (secret) | Required by the Claude PR reviewer |
 
 **An App existing in the org is not the same as it being scoped to your repo.** Both Apps must have
 your repo explicitly added under their installation's repository access — verify under org Settings
@@ -268,33 +267,22 @@ Confirm the `CONTRACT_SYNC_*` App has **Pull requests: write** on the target reg
 on either — see §2. Test it once manually via `workflow_dispatch` and check that a PR actually
 opens, not just that the branch pushes.
 
-### 4.6 Claude PR review
+### 4.6 PR review (central review)
 
-```yaml
-# .github/workflows/claude-pr-review.yml
-name: Claude PR Review
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-jobs:
-  review:
-    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@vX.Y.Z  # look up the latest tag; see §3
-    with:
-      contract_ref: vX.Y.Z   # ADR/product-spec registry tag — a SEPARATE axis, see note below
-    secrets:
-      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-      COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
-```
+AI provider keys live only in `sparxstar-pr-review` (ADR-048, ADR-056). Your repo holds no provider
+key and runs no reviewer job. The shared credential check (§4.7) fails a repo that still references
+one. Request reviews from the central review service by following its own guide,
+`docs/central-review.md` in `sparxstar-pr-review`; the relay uses your repo's contract-sync App
+credentials (§2). The legacy caller of `claude-pr-review.yml`, which passed `ANTHROPIC_API_KEY`, is
+retired: remove the job and the repo's provider-key secret.
 
-Pin the `uses:` line to whatever tag that repo's own README currently calls "the platform default" at
-the time you set this up — don't assume an earlier tag is safe just because it's the one you see in
-an example (a live audit found a consumer stuck on an older patch tag for months after a later release
-shipped a fix for a bug that broke every single run: the privileged job resolved its own
-reference-docs checkout from the caller's PR ref instead of its own workflow ref). **Don't confuse that pin with `contract_ref`** — `contract_ref`
-selects which tag of the *ADR and product-spec registries* to review against, a completely
-independent version axis from this reusable workflow's own release tag; bumping one does not require
-bumping the other. Reviews are advisory: a FAIL verdict comments on the PR but does not block merge
-by design.
+### 4.7 Credential policy (ADR-056)
+
+Every repo runs `credential-policy.yml` from this repo, as the `credentials` job in the
+`caller-templates/standards-*.yml` templates or through `caller-templates/credential-policy.yml`.
+Only `GITHUB_TOKEN`, the two Apps' credentials (§2) and deploy secrets declared in
+`.github/credential-policy.yml` may appear in workflows. The rules and the declaration format are in
+`cross-repo/cross-repo-access-and-installation.md` ("Checked in CI").
 
 ## 5. Verifying you set it up correctly
 
@@ -321,6 +309,6 @@ If you don't have the secrets in §2, or your repo isn't yet listed as a consume
 `MANIFEST.json` / dispatch config, that's an org-admin action, not something you can fix from your
 own repo. Ask a platform maintainer to:
 - Install/confirm the relevant GitHub App(s) on your repo with the permissions in §2.
-- Add your repo's secrets (`COMPOSER_RESOLVER_*`, `CONTRACT_SYNC_*`, `ANTHROPIC_API_KEY` as needed).
+- Add your repo's secrets (`COMPOSER_RESOLVER_*`, `CONTRACT_SYNC_*`; never an AI provider key).
 - Register your repo as a consumer in the relevant registry's manifest, using your exact current
   `owner/repo` name (re-confirm this after any repo rename).

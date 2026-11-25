@@ -1,0 +1,12 @@
+name: ci
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  x:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          K: ${{ secrets[format('{0}_KEY', 'X')] }}
+        run: echo x
