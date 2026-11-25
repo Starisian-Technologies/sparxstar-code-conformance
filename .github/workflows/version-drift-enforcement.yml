@@ -78,6 +78,11 @@ on:
         description: Private key for contract-sync GitHub App (write token — commit drift record). Required when write_drift_record is true.
         required: false
 
+# Least privilege: these jobs only read the repository, so the token is held to
+# that whatever the calling workflow grants.
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Contract version drift check
