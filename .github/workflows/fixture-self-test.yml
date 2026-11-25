@@ -690,7 +690,7 @@ jobs:
           set -euo pipefail
           hits=$(grep -rn 'uses:.*@main' caller-templates/ 2>/dev/null | grep -v 'sparxstar-claude-pr-review' || true)
           if [ -n "$hits" ]; then
-            echo "SELF-TEST FAIL: @main pin found in caller templates uses: line (must use @v1):"$'\n'"$hits"
+            echo "SELF-TEST FAIL: @main pin found in caller templates uses: line (pin an exact release tag):"$'\n'"$hits"
             exit 1
           fi
           echo "OK: no @main pins in caller templates"

@@ -39,9 +39,10 @@ jobs:
   release:
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/semver-release.yml@RELEASE_TAG
     permissions:
-      contents: write        # tag, GitHub Release, CHANGELOG commit on the release branch
-      pull-requests: write   # open and update the release pull request
-      packages: write        # push the image to GHCR; remove if image_name is empty
+      contents: read         # checkout; release-please writes with the App token
+      packages: write        # push the image to GHCR. Keep it even with no image:
+                             # semver-release.yml's image job declares it, and a
+                             # caller that grants less fails at startup.
     with:
       # Container image name under ghcr.io/<owner>/ (lowercase). Leave empty if
       # the repository ships no image.
@@ -49,11 +50,13 @@ jobs:
       # image_context: .
       # dockerfile: Dockerfile
 
-      # Release pull requests opened with GITHUB_TOKEN do not run CI, so the
-      # merge gate (ADR-037) cannot pass on them. Which GitHub App opens them
-      # instead is open (architecture registry OQ-025). Until it is decided,
-      # leave these unset; once an App is named, take its client-ID variable
-      # and private-key secret names from organisation settings, not from here.
-      # app_client_id: ${{ vars.<APP_CLIENT_ID_VARIABLE> }}
-    # secrets:
-    #   app_private_key: ${{ secrets.<APP_PRIVATE_KEY_SECRET> }}
+      # Required. The contract-sync GitHub App opens release pull requests, so
+      # CI runs on them and the merge gate (ADR-037) can pass; there is no
+      # GITHUB_TOKEN fallback (ADR-054). Names from
+      # cross-repo/cross-repo-access-and-installation.md: a public repo reads
+      # the organisation-level values; a private repo needs repository-level
+      # copies. The App must be installed on this repository with Contents and
+      # Pull requests write. Images go to ghcr.io (ADR-055).
+      app_client_id: ${{ vars.CONTRACT_SYNC_CLIENT_ID }}
+    secrets:
+      app_private_key: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}

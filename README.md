@@ -24,7 +24,8 @@ Every product repo enforces these standards by calling the reusable workflows in
 
 Full adoption guide: **[REUSABLE-WORKFLOWS.md](REUSABLE-WORKFLOWS.md)**
 
-Pin strategy: `@v1.0.0` (recommended) pins to an exact immutable release. `@v1` tracks the latest compatible v1 release but advances automatically. Never use `@main`.
+Pin strategy: pin the latest exact release tag (`@vX.Y.Z`), looked up as described in `REUSABLE-WORKFLOWS.md`
+("Pin an exact release tag"). The floating `@v1` alias is frozen. Never use `@main`.
 
 ---
 

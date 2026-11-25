@@ -91,35 +91,25 @@ forward the new secret until you bump the pin.
 
 ## 3. Version pinning — pick one policy and apply it everywhere
 
-Every registry publishes an immutable patch tag (`v1.0.0`, `v1.0.1`, ...). Most also publish a
-moving major alias (`v1`) that repoints on every release — whether one exists is repo-specific, not
-guaranteed (see the `sparxstar-claude-pr-review` note below: as of this writing it has no `v1` alias
-at all). **Pin to the immutable patch tag regardless** — this is what every registry's own README
-recommends, and the live audit found repos mixing patch tags and aliases inconsistently where both
-existed (some gates pinned `@v1.0.0`, others `@v1`), which means CI behavior can silently change out
-from under you the next time a registry cuts a release. Bumping the pin should be a deliberate,
-reviewed commit, not something that happens automatically.
+Every registry publishes immutable `vX.Y.Z` release tags; under ADR-053 they are cut by
+release-please and never moved. Some registries also have a floating major alias (`v1`); whether
+one exists is repo-specific, and in `sparxstar-code-conformance` it is frozen and receives no
+further releases. **Pin the latest exact release tag regardless.** The live audit found repos
+mixing patch tags and aliases inconsistently, which means CI behaviour can silently change out
+from under you. Bumping the pin should be a deliberate, reviewed commit (or a Dependabot PR).
 
-**Also verify the tag you pin to actually exists and isn't stale.** One of the five integrations in
-the audited repo had been pinned to an old tag for months after the upstream repo had already
-shipped a fix in the next patch release — the bug the old tag had was long resolved, just not where
-this consumer was pointing. Check the target repo's own README/CHANGELOG for its "current
-recommended" tag before you pin, and re-check it periodically.
+**Look the tag up; never copy one from a document, this one included** (ADR-053 decision 3).
+One of the five integrations in the audited repo had been pinned to an old tag for months after the
+upstream repo had already shipped a fix. For any registry:
 
-**A note on `sparxstar-claude-pr-review` pinning:** verified live against that repo's tags —
-currently `v1.0.0` and `v1.1.0` only, **no `v1` moving alias exists there**. Pin to the immutable
-patch tag; there is no alias to prefer it over. (This repo's own
-`caller-templates/standards-php-wordpress.yml` was found pinning that same reusable workflow to a
-moving `@v1` alias during an earlier review round — bumped to `@v1.1.0`, the current immutable tag,
-in that same commit; if you copied that template before this fix, verify your own pin points to a
-tag that actually exists on that repo.)
+```bash
+git ls-remote --tags --refs https://github.com/Starisian-Technologies/<REGISTRY> \
+  | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+```
 
-This repo's own `caller-templates/*.yml` were also found pinning their own `pnpm`/`php`/`css`/`media`/
-`react`/`node` jobs to the moving `@v1` alias — inconsistent with the immutable-pin recommendation
-above and with this repo's own `REUSABLE-WORKFLOWS.md`. Bumped to `@v1.0.2` — this repo's current
-latest patch tag as of this writing — in the same review round as the `claude-pr-review` fix, so
-copying any current caller template now matches this guidance. Re-check that tag is still current
-before you copy it; per the "verify the tag isn't stale" advice above, this doc can itself go stale.
+In the examples below, `vX.Y.Z` stands for the tag that command returns for the repository named
+on the same `uses:` line. A `contract_ref` / `contract-ref` takes the tag of the repository its
+input description names, which is not always the repository on the `uses:` line.
 
 ## 4. Setup checklist, integration by integration
 
@@ -134,10 +124,10 @@ on:
     branches: [main]
 jobs:
   adr-conformance:
-    uses: Starisian-Technologies/sparxstar-architecture-governance-registry/.github/workflows/adr-enforce.yml@v1.0.1
+    uses: Starisian-Technologies/sparxstar-architecture-governance-registry/.github/workflows/adr-enforce.yml@vX.Y.Z
     with:
       contract_version: v1
-      contract_ref: v1.0.1
+      contract_ref: vX.Y.Z
       enforcement_mode: advisory   # flip to `gate` once your repo's ADR citations are clean
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
@@ -168,9 +158,9 @@ on:
   pull_request:
 jobs:
   contract-conformance:
-    uses: Starisian-Technologies/sparxstar-contracts-registry/.github/workflows/contract-conformance.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-contracts-registry/.github/workflows/contract-conformance.yml@vX.Y.Z
     with:
-      contract-ref: v1.0.2
+      contract-ref: vX.Y.Z
       enforcement_mode: advisory
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
@@ -193,26 +183,26 @@ on:
     branches: [main]
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@vX.Y.Z
     with: { enforcement_mode: advisory }
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
   php:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@vX.Y.Z
     with:
       repo_type: wp-plugin   # wp-plugin | wp-module — php-enforcement.yml's only two valid values
       enforcement_mode: advisory
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
   css:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@vX.Y.Z
     with:
       repo_type: wp-plugin
       enforcement_mode: advisory
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.2
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@vX.Y.Z
     with:
       repo_type: wp-plugin
       enforcement_mode: advisory
@@ -250,11 +240,11 @@ enforcement paths for the same rules, one versioned and one not. Retire the inli
 # part of governance.yml
 jobs:
   pull-spec:
-    uses: Starisian-Technologies/sparxstar-product-specification-registry/.github/workflows/fetch-specs.yml@v1.0.1
+    uses: Starisian-Technologies/sparxstar-product-specification-registry/.github/workflows/fetch-specs.yml@vX.Y.Z
     with:
       specs: '<your-repo-short-name>'
       agent-ref: main
-      contract-ref: v1.0.1
+      contract-ref: vX.Y.Z
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 ```
@@ -288,9 +278,9 @@ on:
     types: [opened, synchronize, reopened]
 jobs:
   review:
-    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@v1.1.0  # pin to current tag from repo README
+    uses: Starisian-Technologies/sparxstar-claude-pr-review/.github/workflows/claude-pr-review.yml@vX.Y.Z  # look up the latest tag; see §3
     with:
-      contract_ref: v1.0.1   # ADR/product-spec registry tag — a SEPARATE axis, see note below
+      contract_ref: vX.Y.Z   # ADR/product-spec registry tag — a SEPARATE axis, see note below
     secrets:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}

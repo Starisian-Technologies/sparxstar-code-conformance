@@ -88,28 +88,19 @@ consumer's version state without querying each repo individually.
 ## Section 2 — The `uses:` line
 
 ```yaml
-uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.0
+uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@vX.Y.Z
 ```
-
-### Tags that currently exist
-
-| Tag | Commit | Type | Meaning |
-|---|---|---|---|
-| `v1.0.0` | `64b0ccf` | Immutable semver release | Exact point-in-time snapshot. Never moves. |
-| `v1` | `64b0ccf` | Moving major alias | Advances to each new `v1.x.x` release. |
 
 ### Which to pin
 
-**Pin `@v1.0.0`.** This is the org-wide locked recommendation.
+Pin the **latest release tag** (`vX.Y.Z`), looked up, never copied from a
+document. The lookup command and the reasons are in `REUSABLE-WORKFLOWS.md`,
+"Pin an exact release tag". Release tags are immutable: they always resolve to
+the same commit, so your pinned gate is stable until you deliberately upgrade
+the pin, which makes audit, rollback and incident diagnosis straightforward.
 
-The `v1.0.0` tag is immutable — it always resolves to the same commit. When
-a new release is cut (e.g. `v1.1.0`), `v1.0.0` does not move. This means your
-pinned gate is stable until you deliberately upgrade the pin, which makes
-audit, rollback, and incident diagnosis straightforward.
-
-`@v1` is the moving major alias — it will advance to future `v1.x.x` releases
-automatically. It is available and will continue to work, but it is not the
-documented recommendation for consumers. Do not use `@main`.
+The floating `v1` alias is frozen and receives no further releases. Do not use
+`@v1` or `@main`.
 
 ---
 
@@ -120,7 +111,7 @@ Read from `on.workflow_call.inputs` in
 
 | Input | Required | Type | Default | Purpose and valid values |
 |---|---|---|---|---|
-| `contract_ref` | **yes** | `string` | — | The ref the calling repo pins its enforcement workflow calls to. Must be an existing tag matching `vMAJOR`, `vMAJOR.MINOR`, or `vMAJOR.MINOR.PATCH` (e.g. `v1.0.0`). Hard-fails if the tag does not exist on `sparxstar-code-conformance` or falls below the floor in `config/version-policy.yml`. |
+| `contract_ref` | **yes** | `string` | — | The ref the calling repo pins its enforcement workflow calls to. Must be an existing exact tag `vMAJOR.MINOR.PATCH`; bare `vMAJOR` and `vMAJOR.MINOR` are rejected. Hard-fails if the tag does not exist on `sparxstar-code-conformance` or falls below the floor in `config/version-policy.yml`. |
 | `calling_repo` | no | `string` | `''` | Full `owner/repo` of the caller. Defaults to `github.repository` when empty. Override only when the caller needs to report a different identity — this is rare. |
 | `write_drift_record` | no | `boolean` | `true` | Whether to commit a JSON drift record to `drift/` in `sparxstar-architecture-governance-registry` via contract-sync. Set `false` for read-only runs. Omit on normal wiring. |
 
@@ -216,9 +207,9 @@ because it only checks the version tag you pin, which you control.
 ```yaml
 jobs:
   version-check:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.0
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@vX.Y.Z
     with:
-      contract_ref: v1.0.0        # ← the ref you pin your other enforcement jobs to
+      contract_ref: vX.Y.Z        # ← the ref you pin your other enforcement jobs to
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
       CONTRACT_SYNC_PRIVATE_KEY:     ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
@@ -226,7 +217,7 @@ jobs:
 
 **Values to substitute:** `contract_ref` — set this to the same ref you
 pass to `@` when calling other enforcement workflows in this same caller
-file. If your other jobs are pinned `@v1.0.0`, pass `v1.0.0` here.
+file: the same `vX.Y.Z` on both.
 
 Everything else is literal. Do not add `secrets: inherit`.
 

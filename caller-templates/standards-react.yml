@@ -1,9 +1,13 @@
 # Drop this file into a standalone-react consuming repo at:
 #   .github/workflows/standards.yml
 #
-# Pin the workflow ref to an immutable patch tag (e.g. @v1.0.0), never @main in
-# production and never the moving @v1 major alias — see REUSABLE-WORKFLOWS.md
-# "Why you pin to @v1.0.0, not @main or @v1".
+# Pin: replace every RELEASE_TAG below (each `uses:` line and `contract_ref`)
+# with the latest release tag of sparxstar-code-conformance. Look it up; do not
+# copy a number from any document (ADR-053 decision 3):
+#   git ls-remote --tags --refs https://github.com/Starisian-Technologies/sparxstar-code-conformance \
+#     | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+# Never @main, and never the frozen `v1` alias (REUSABLE-WORKFLOWS.md "Pin an exact
+# release tag"). After that, caller-templates/dependabot.yml keeps the pin current by PR.
 #
 # enforcement_mode: start advisory (warn-only); flip to gate (fail-closed) only once
 # violations are zero. See REUSABLE-WORKFLOWS.md "Advisory first, gate when clean."
@@ -17,7 +21,7 @@ on:
 
 jobs:
   pnpm:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@v1.0.6
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@RELEASE_TAG
     with:
       enforcement_mode: advisory
     secrets:
@@ -28,11 +32,11 @@ jobs:
     # and performs no git-auth setup. Repos with private GitHub-hosted JS dependencies will
     # hit a git-auth failure in this job even if the pnpm job above succeeds. This is a known
     # platform gap requiring a change to the reusable workflow itself. Do not pass
-    # COMPOSER_RESOLVER_PRIVATE_KEY here — @v1.0.6 does not declare it and workflow
-    # validation will reject it. See the platform setup doc (docs/platform-setup/) §4.3
+    # COMPOSER_RESOLVER_PRIVATE_KEY here unless the pinned tag's node-enforcement.yml
+    # declares it under on.workflow_call.secrets; otherwise workflow validation rejects it. See the platform setup doc (docs/platform-setup/) §4.3
     # for details and check this repo's tags for a release that ships the fix.
     needs: pnpm
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/react-enforcement.yml@v1.0.6
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/react-enforcement.yml@RELEASE_TAG
     with:
       repo_type: standalone-react
       profile_version: v1
@@ -42,7 +46,7 @@ jobs:
 
   css:
     needs: pnpm
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@v1.0.6
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@RELEASE_TAG
     with:
       repo_type: standalone-react
       profile_version: v1
@@ -51,7 +55,7 @@ jobs:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   media:
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@v1.0.6
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@RELEASE_TAG
     with:
       repo_type: standalone-react
       enforcement_mode: advisory
@@ -59,16 +63,16 @@ jobs:
 
   version-check:
     # Warns (or hard-fails below the floor) if this file's pins fall behind the
-    # recommended patch tag. contract_ref MUST match the @vX.Y.Z pin on the jobs above --
+    # recommended patch tag. contract_ref MUST match the tag pinned on the jobs above --
     # bump both together. Drift record ON (owner ruling, 2026-11-04): this repo's
     # version state is recorded in sparxstar-architecture-governance-registry (internal)
     # via contract-sync. Set CONTRACT_SYNC_CLIENT_ID (variable) and
     # CONTRACT_SYNC_PRIVATE_KEY (secret) first -- see
     # cross-repo/cross-repo-access-and-installation.md. The callee reads the client ID
     # as a variable itself, so only the secret is passed.
-    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.6
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@RELEASE_TAG
     with:
-      contract_ref: v1.0.6
+      contract_ref: RELEASE_TAG
       write_drift_record: true
     secrets:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
