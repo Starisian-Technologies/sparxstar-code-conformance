@@ -11,5 +11,10 @@
   "scripts": {
     "lint": "pnpm -r --if-present run lint",
     "test": "pnpm -r --if-present run test"
+  },
+  "pnpm": {
+    "overrides": {
+      "js-yaml@>=4.0.0 <4.3.2": "^4.3.2"
+    }
   }
 }
