@@ -114,6 +114,18 @@ jobs:
           [ "$result" -ne 0 ] || { echo "SELF-TEST FAIL: missing config passed"; exit 1; }
           echo "OK: missing config rejected"
 
+      - name: FAIL — unsafe config paths are rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          for bad in '../release-please-config.json' $'x\n::warning::injected' 'x%0A.json' 'a:b.json'; do
+            result=0
+            CONFIG_FILE="$bad" MANIFEST_FILE=caller-templates/.release-please-manifest.json \
+              bash /tmp/validate-config.sh >/dev/null || result=$?
+            [ "$result" -ne 0 ] || { echo "SELF-TEST FAIL: unsafe path accepted"; exit 1; }
+          done
+          echo "OK: unsafe config paths rejected"
+
       - name: Every action in semver-release.yml is pinned by full commit SHA
         shell: bash
         run: |
