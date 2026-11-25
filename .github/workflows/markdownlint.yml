@@ -4,7 +4,9 @@ on:
   workflow_call:
     inputs:
       working-directory:
-        description: Working directory for all steps
+        description: >-
+          Default directory for the job's shell steps (mode validation). It does
+          not change what is linted: `glob` is relative to the repository root.
         type: string
         default: '.'
       mode:

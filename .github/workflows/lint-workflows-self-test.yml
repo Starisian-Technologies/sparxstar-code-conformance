@@ -1,0 +1,79 @@
+# ============================================================
+# lint-workflows-self-test — runs js-standards.yml, css-standards.yml,
+# formatting.yml and markdownlint.yml, each by local path, against the
+# conformant project in fixtures/lint-workflows/pass. Each call must pass.
+#
+# Pass-side only: a reusable workflow that fails turns its caller job red,
+# so a "must fail" case cannot be asserted without making this check red.
+# ============================================================
+
+name: Lint workflows self-test
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/js-standards.yml'
+      - '.github/workflows/css-standards.yml'
+      - '.github/workflows/formatting.yml'
+      - '.github/workflows/markdownlint.yml'
+      - '.github/workflows/lint-workflows-self-test.yml'
+      - 'fixtures/lint-workflows/**'
+      - 'caller-templates/standards-lint.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/js-standards.yml'
+      - '.github/workflows/css-standards.yml'
+      - '.github/workflows/formatting.yml'
+      - '.github/workflows/markdownlint.yml'
+      - '.github/workflows/lint-workflows-self-test.yml'
+      - 'fixtures/lint-workflows/**'
+      - 'caller-templates/standards-lint.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  js:
+    name: js-standards on the pass fixture
+    uses: ./.github/workflows/js-standards.yml
+    permissions:
+      contents: read
+    with:
+      working-directory: fixtures/lint-workflows/pass
+      mode: production
+
+  css:
+    name: css-standards on the pass fixture
+    uses: ./.github/workflows/css-standards.yml
+    permissions:
+      contents: read
+    with:
+      working-directory: fixtures/lint-workflows/pass
+      mode: production
+
+  formatting:
+    name: formatting on the pass fixture
+    uses: ./.github/workflows/formatting.yml
+    permissions:
+      contents: read
+    with:
+      working-directory: fixtures/lint-workflows/pass
+      mode: production
+
+  markdownlint:
+    name: markdownlint on the pass fixture
+    uses: ./.github/workflows/markdownlint.yml
+    permissions:
+      contents: read
+    with:
+      mode: production
+      # Globs are relative to the repository root; working-directory does not
+      # change them (it only sets the shell default for run steps).
+      glob: |
+        fixtures/lint-workflows/pass/**/*.md

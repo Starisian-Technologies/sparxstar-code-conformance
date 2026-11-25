@@ -14,17 +14,11 @@
 
 * **workflows:** run NODE-LOG-001 and JS-CONSOLE-001 in gate mode ([#63](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/63)) ([d6beea3](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/d6beea3dd08fb78442cc6f9d3a6b14740df65098)), closes [#59](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/59)
 
-## Changelog
-
-All notable changes to this repository are documented in this file.
-
-release-please writes every entry above the hand-kept section below, from Conventional Commits (ADR-053).
-Do not edit release entries by hand.
-
 ## Before release-please (hand-kept)
 
-These entries were written by hand before this repository adopted `semver-release.yml`. They cover changes up to and
-including the adoption, and are not tied to a single release.
+Every entry above this section is written by release-please from Conventional Commits (ADR-053); do not edit release
+entries by hand. The entries below were written by hand before this repository adopted `semver-release.yml`. They cover
+changes up to and including the adoption, and are not tied to a single release.
 
 ### Added
 

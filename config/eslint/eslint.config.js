@@ -57,7 +57,7 @@ export default [
       },
     },
     rules: {
-      // JS bundle size is enforced by the full-quality-gate workflow (VITE-001 / build gate).
+      // JS bundle size (VITE-001) has no shared CI gate since full-quality-gate.yml was retired; see the matrix.
       // No direct provider SDK imports without the abstraction layer (SYS-007).
       // Enforce no localStorage for critical offline data — use IndexedDB (JS-002 / DIST-005).
       'no-restricted-globals': [

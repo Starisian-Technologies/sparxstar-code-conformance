@@ -1,0 +1,12 @@
+name: ci
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - env:
+          COMPOSER_AUTH_TOKEN: ${{ secrets.COPILOT_MCP_TOKEN }}
+        run: composer install

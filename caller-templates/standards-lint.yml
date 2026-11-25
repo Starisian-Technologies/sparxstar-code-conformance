@@ -1,0 +1,68 @@
+# Drop this file into a consuming repo at:
+#   .github/workflows/lint.yml
+# Keep only the jobs that apply:
+#   js          — ESLint (`eslint . --max-warnings 0`) and `tsc --noEmit`
+#   css         — Stylelint on **/*.css
+#   formatting  — `prettier --check`
+#   markdownlint — markdownlint-cli2 on the given globs
+# The js, css and formatting jobs run `pnpm install --frozen-lockfile` in
+# `working-directory`, so that directory needs package.json, pnpm-lock.yaml,
+# the packageManager field, and each tool and its config as devDependencies.
+#
+# mode: draft (warn-only: the job never fails) | development | production.
+#
+# Pin: replace every RELEASE_TAG with the latest release tag of
+# sparxstar-code-conformance. Look it up; do not copy a number from any
+# document (ADR-053 decision 3):
+#   git ls-remote --tags --refs https://github.com/Starisian-Technologies/sparxstar-code-conformance \
+#     | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+# Never @main, and never the frozen `v1` alias.
+
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  js:
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/js-standards.yml@RELEASE_TAG
+    permissions:
+      contents: read
+    with:
+      working-directory: .
+      mode: production
+      # node-version: 'lts/*'
+
+  css:
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-standards.yml@RELEASE_TAG
+    permissions:
+      contents: read
+    with:
+      working-directory: .
+      mode: production
+
+  formatting:
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/formatting.yml@RELEASE_TAG
+    permissions:
+      contents: read
+    with:
+      working-directory: .
+      mode: production
+      # file-pattern: '.'
+
+  markdownlint:
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/markdownlint.yml@RELEASE_TAG
+    permissions:
+      contents: read
+    with:
+      mode: production
+      # Globs are relative to the repository root. working-directory does not
+      # change them; it only sets the shell default for the job's run steps.
+      # glob: |
+      #   **/*.md
+      #   !node_modules/**/*.md

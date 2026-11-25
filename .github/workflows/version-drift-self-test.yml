@@ -1,0 +1,88 @@
+# ============================================================
+# version-drift-self-test — runs version-drift-enforcement.yml's
+# "Resolve floor, recommended, and validate requested ref" step (id
+# `versions`) against this repository's real tags and config:
+#   - the latest release tag      → tier ok
+#   - the floor tag (if older)    → tier warn
+#   - bare `v1`, `RELEASE_TAG`    → rejected (not an exact patch tag)
+#   - a tag that does not exist   → rejected
+# No credentials: the App-token and drift-record steps are not exercised.
+# Versions are read at run time, never written here (ADR-053 decision 3).
+# ============================================================
+
+name: Version-drift self-test
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/version-drift-enforcement.yml'
+      - '.github/workflows/version-drift-self-test.yml'
+      - 'config/version-policy.yml'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/version-drift-enforcement.yml'
+      - '.github/workflows/version-drift-self-test.yml'
+      - 'config/version-policy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  versions:
+    name: Ref validation and tiering
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          fetch-depth: 0    # all tags, as the real step sees them
+          persist-credentials: false
+
+      - name: Extract the versions step
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -c 'import yaml' 2>/dev/null || pip3 install pyyaml --quiet
+          python3 - <<'PY'
+          import yaml
+          wf = yaml.safe_load(open('.github/workflows/version-drift-enforcement.yml'))
+          step = next(s for s in wf['jobs']['check']['steps'] if s.get('id') == 'versions')
+          open('/tmp/versions.sh', 'w').write(step['run'])
+          PY
+          test -s /tmp/versions.sh
+
+      - name: Each ref gets the expected tier or is rejected
+        shell: bash
+        run: |
+          set -euo pipefail
+          latest=$(git tag --list | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1)
+          floor=$(grep -E '^floor:' config/version-policy.yml | awk '{print $2}' | tr -d "\"'")
+          [ -n "$latest" ] && [ -n "$floor" ] || { echo "SELF-TEST FAIL: no tags or no floor"; exit 1; }
+          run_ref() { # ref -> prints "rc tier"
+            local out rc=0
+            out=$(mktemp)
+            CONTRACT_REF_INPUT="$1" CALLING_REPO_INPUT='' \
+            GITHUB_REPOSITORY_CALLER=Starisian-Technologies/self-test GITHUB_OUTPUT="$out" \
+              bash /tmp/versions.sh >/dev/null 2>&1 || rc=$?
+            echo "$rc $(sed -n 's/^tier=//p' "$out")"
+          }
+          expect() { # ref expected_rc expected_tier
+            read -r rc tier <<<"$(run_ref "$1")"
+            if [ "$rc" != "$2" ] || [ "$tier" != "$3" ]; then
+              echo "SELF-TEST FAIL: $1 gave rc=$rc tier='$tier', expected rc=$2 tier='$3'"; exit 1
+            fi
+            echo "OK: $1 → rc=$rc tier='$tier'"
+          }
+          expect "$latest" 0 ok
+          if [ "$floor" != "$latest" ] && git rev-parse -q --verify "refs/tags/$floor" >/dev/null; then
+            expect "$floor" 0 warn
+          fi
+          expect v1 1 ''
+          expect RELEASE_TAG 1 ''
+          expect v999.0.0 1 ''
