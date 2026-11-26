@@ -449,6 +449,9 @@ through its findings can pass `cost_policy: advisory` for a while.
      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
    ```
 
+   Use this expression as written: the check cannot evaluate expressions, so
+   it accepts only a `cancel-in-progress` expression that tests for
+   `pull_request`, or a boolean (quoted or not).
    The release workflow and anything that deploys never cancel
    (`cancel-in-progress: false`), and nothing cancels a run on `main`.
    Reusable workflows take the caller's concurrency and declare none of their
