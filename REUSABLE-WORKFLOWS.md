@@ -398,12 +398,21 @@ Adopting it:
    or requires code-scanning results, it must exclude `release-please--*`.
    release-please force-updates that branch to a commit with no scan result
    yet, so without the exclusion the first run fails with `Error updating ref
-   heads/release-please--branches--main`. Changing a ruleset is a repository
-   admin action (owner ruling, 2026-11-25). The release pull request's own
-   checks still gate the merge to the default branch (ADR-037).
+   heads/release-please--branches--main`. If the exclusion is missing, tell
+   the owner in one line to exclude `release-please--*`, and wait. Do not
+   work around it: changing a ruleset is a repository admin action (owner
+   ruling, 2026-11-25). The release pull request's own checks still gate the
+   merge to the default branch (ADR-037).
 7. Remove any repository-local release or tagging workflow, and replace
    hand-written version numbers in docs with instructions to look the version
    up (latest GitHub Release, latest tag, or the top of `CHANGELOG.md`).
+
+Versioning:
+
+- Commits follow Conventional Commits; release-please derives the next
+  version and the `CHANGELOG.md` entry from them.
+- A new repository starts at 0.x and stays there until it is publicly live.
+- A repository that already has `vX.Y.Z` tags continues its line (step 4).
 
 Release pull requests opened with `GITHUB_TOKEN` do not run CI, so the merge
 gate (ADR-037) cannot pass on them. The contract-sync GitHub App opens them
@@ -426,6 +435,37 @@ floating `v1` alias is retired, and `v1` is frozen.
 fails each fixture in `fixtures/release/`, that this repository's own config
 conforms, that every action in `semver-release.yml` is pinned by full commit
 SHA, and that no caller template hand-writes a release of this repository.
+
+### When to release
+
+Ordinary pull requests merge as usual. A release is separate, and it is a
+production update.
+
+1. **The agent decides when merged work warrants a release:** a user-facing
+   change, a fix that should reach production, or a database migration.
+2. **The agent tells the owner, and posts the same message on the release
+   pull request:**
+
+   ```text
+   Ready to release vX.Y.Z
+   - <what changes for users, one line each>
+   Database changes: yes | no
+   This goes to production when you reply release.
+   ```
+
+   For a library or tooling repository, the last line is instead: "This
+   publishes a new version; nothing in production changes." Take `vX.Y.Z`
+   from the release pull request's title; never write it from memory.
+3. **Only the owner's reply "release" merges the release pull request.** No
+   agent merges one on its own judgement.
+4. **What a release does depends on the repository:**
+   - A repository that deploys on every merge to `main` switches to deploying
+     on release (the `vX.Y.Z` tag or GitHub Release), not on merge.
+   - A repository that deploys through the droplet process runs it right after
+     the release.
+   - Libraries and tooling only publish the version.
+
+WordPad is outside this process.
 
 ## CI cost rules
 
@@ -472,7 +512,8 @@ through its findings can pass `cost_policy: advisory` for a while.
    `schedule`, never on every push.** Use `caller-templates/codeql.yml`.
    GitHub's CodeQL *default setup* runs on every push to the default branch,
    so a repository using it switches to advanced setup (Settings → Code
-   security) before adopting the template. *Checked for workflow-based scans
+   security) before adopting the template. This repository runs the same
+   workflow as `.github/workflows/codeql.yml`. *Checked for workflow-based scans
    (COST-004); default setup is a repository setting, not a file, and is not
    checked.*
 5. **Cache dependencies.** Every job that runs `pnpm install`, `npm ci`,
@@ -499,13 +540,12 @@ through its findings can pass `cost_policy: advisory` for a while.
    requests run CI like any other pull request; merge them when green.
    *Checked (DEP-001): the file exists, is weekly, groups minor and patch
    updates and all security updates, and sets the limit to 5 or less.*
-   (Owner instruction 2026-11-27, replacing 2026-11-26's "all updates in one
-   group".)
+   (A later owner instruction on 2026-11-26 replaced the earlier "all updates
+   in one group".)
 
    This supersedes, for this repository and its templates, ADR-058's
-   "merge before CI" and "majors as separate pull requests". The governance
-   registry's ADR-058 and its review rules still state the older rule and need
-   amending there.
+   "merge before CI". The governance registry's ADR-058 and its review rules
+   still state the older rule and need amending there.
 
 `changed-paths.yml` reads the changed files from the GitHub compare API with
 the caller's token. Anything it cannot classify safely (a new branch, a manual
