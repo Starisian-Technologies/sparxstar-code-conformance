@@ -1,14 +1,18 @@
 # Drop this file into any repository at:
 #   .github/dependabot.yml
 #
-# The one Dependabot configuration every repository adopts (owner instruction,
-# 2026-11-26: CI cost rules; REUSABLE-WORKFLOWS.md "CI cost rules").
+# The one Dependabot configuration every repository adopts (owner instructions
+# 2026-11-26 and 2026-11-27: CI cost rules; REUSABLE-WORKFLOWS.md "CI cost rules").
 #
 # What this file sets, for each ecosystem:
 #   - weekly version updates;
-#   - ALL version updates (major, minor and patch) in ONE grouped pull request
-#     per ecosystem, so CI runs once per ecosystem per week;
+#   - minor and patch updates in ONE grouped pull request per ecosystem;
+#   - each major update as its own pull request (not grouped, so each breaking
+#     change is reviewed on its own);
 #   - security updates in ONE grouped pull request per ecosystem;
+#   - at most 5 open version-update pull requests per ecosystem
+#     (open-pull-requests-limit; security-update pull requests have GitHub's
+#     own separate limit);
 #   - a 3-day cooldown before a new version is proposed. Cooldown applies to
 #     version updates only; security updates are never delayed by it.
 #
@@ -31,12 +35,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     cooldown:
       default-days: 3
     groups:
-      github-actions-all:
+      github-actions-minor-patch:
         applies-to: version-updates
         patterns: ["*"]
+        update-types: ["minor", "patch"]
       github-actions-security:
         applies-to: security-updates
         patterns: ["*"]
@@ -45,12 +51,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     cooldown:
       default-days: 3
     groups:
-      npm-all:
+      npm-minor-patch:
         applies-to: version-updates
         patterns: ["*"]
+        update-types: ["minor", "patch"]
       npm-security:
         applies-to: security-updates
         patterns: ["*"]
@@ -59,12 +67,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     cooldown:
       default-days: 3
     groups:
-      composer-all:
+      composer-minor-patch:
         applies-to: version-updates
         patterns: ["*"]
+        update-types: ["minor", "patch"]
       composer-security:
         applies-to: security-updates
         patterns: ["*"]

@@ -437,8 +437,9 @@ rules marked **checked** on every pull request, in the same job as the
 credential check, so the check costs no extra runner. A repository working
 through its findings can pass `cost_policy: advisory` for a while.
 
-1. **CI runs only on pull requests and pushes to `main`.** No push trigger on
-   other branches or on tags; publish from the release workflow (or the
+1. **CI runs only on pull requests and pushes to the default branch.** One
+   literal branch name under `push.branches` (normally `main`); no push trigger
+   on other branches or on tags. Keep `workflow_dispatch` where it exists; publish from the release workflow (or the
    `release` event) instead of a tag push. *Checked (COST-001).*
 2. **Concurrency on every workflow.** Group by workflow and PR number or ref;
    cancel in-progress runs for pull requests only:
@@ -449,9 +450,11 @@ through its findings can pass `cost_policy: advisory` for a while.
      cancel-in-progress: ${{ github.event_name == 'pull_request' }}
    ```
 
-   Use this expression as written: the check cannot evaluate expressions, so
-   it accepts only a `cancel-in-progress` expression that tests for
-   `pull_request`, or a boolean (quoted or not).
+   A new push to a pull request cancels the older run of that pull request;
+   a run on the default branch is never cancelled. The check cannot evaluate
+   expressions, so it accepts a boolean (quoted or not) or one of these two
+   forms as written: `${{ github.event_name == 'pull_request' }}`, or
+   `${{ github.ref != format('refs/heads/{0}', github.event.repository.default_branch) }}`.
    The release workflow and anything that deploys never cancel
    (`cancel-in-progress: false`), and nothing cancels a run on `main`.
    Reusable workflows take the caller's concurrency and declare none of their
@@ -486,15 +489,18 @@ through its findings can pass `cost_policy: advisory` for a while.
    something outside the code** (budget, permissions, a missing review).
    Report what blocks it and wait. A push re-runs every check. *Not
    checkable; agent rule (this repository's `AGENTS.md`).*
-8. **Dependabot: weekly, one grouped pull request per ecosystem.** Copy
+8. **Dependabot: weekly, minor and patch grouped per ecosystem.** Copy
    `caller-templates/dependabot.yml` to `.github/dependabot.yml` and keep the
    ecosystems the repository uses (`github-actions`, `npm` for npm and pnpm,
-   `composer`). Each ecosystem gets one pull request for **all** version
-   updates (major, minor and patch together) and one for security updates,
-   with a 3-day cooldown on version updates (security updates are never
-   delayed). Dependabot pull requests run CI like any other pull request;
-   merge them when green. *Checked (DEP-001): the file exists, is weekly, and
-   groups every version update and all security updates.*
+   `composer`). Each ecosystem gets one pull request for its minor and patch
+   updates, each major update as its own pull request, one pull request for
+   security updates, `open-pull-requests-limit: 5`, and a 3-day cooldown on
+   version updates (security updates are never delayed). Dependabot pull
+   requests run CI like any other pull request; merge them when green.
+   *Checked (DEP-001): the file exists, is weekly, groups minor and patch
+   updates and all security updates, and sets the limit to 5 or less.*
+   (Owner instruction 2026-11-27, replacing 2026-11-26's "all updates in one
+   group".)
 
    This supersedes, for this repository and its templates, ADR-058's
    "merge before CI" and "majors as separate pull requests". The governance

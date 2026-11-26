@@ -6,12 +6,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     cooldown:
       default-days: 3
     groups:
-      github-actions-all:
+      github-actions-minor-patch:
         applies-to: version-updates
         patterns: ["*"]
+        update-types: ["minor", "patch"]
       github-actions-security:
         applies-to: security-updates
         patterns: ["*"]
@@ -20,12 +22,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     cooldown:
       default-days: 3
     groups:
-      npm-all:
+      npm-minor-patch:
         applies-to: version-updates
         patterns: ["*"]
+        update-types: ["minor", "patch"]
       npm-security:
         applies-to: security-updates
         patterns: ["*"]
@@ -34,12 +38,14 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    open-pull-requests-limit: 5
     cooldown:
       default-days: 3
     groups:
-      composer-all:
+      composer-minor-patch:
         applies-to: version-updates
         patterns: ["*"]
+        update-types: ["minor", "patch"]
       composer-security:
         applies-to: security-updates
         patterns: ["*"]
