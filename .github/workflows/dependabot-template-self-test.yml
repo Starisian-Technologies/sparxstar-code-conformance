@@ -1,7 +1,8 @@
 # ============================================================
 # dependabot-template-self-test — checks caller-templates/dependabot.yml
-# carries the CI-cost settings for every ecosystem (weekly; every version
-# update in one group; security updates in one group; 3-day cooldown), and
+# carries the CI-cost settings for every ecosystem (weekly; minor and patch
+# updates in one group, majors not grouped; security updates in one group;
+# open-pull-requests-limit 5; 3-day cooldown), and
 # that this repository's own .github/dependabot.yml is the same configuration.
 # ============================================================
 
@@ -47,8 +48,10 @@ jobs:
               groups = list((u.get('groups') or {}).values())
               ver = [g for g in groups if g.get('applies-to') == 'version-updates']
               sec = [g for g in groups if g.get('applies-to') == 'security-updates']
-              if len(ver) != 1 or ver[0].get('patterns') != ['*'] or ver[0].get('update-types'):
-                  errors.append(f'{where} needs exactly one version-updates group of every dependency and every update type')
+              if len(ver) != 1 or ver[0].get('patterns') != ['*'] or sorted(ver[0].get('update-types') or []) != ['minor', 'patch']:
+                  errors.append(f'{where} needs exactly one version-updates group of all minor and patch updates (majors stay separate)')
+              if u.get('open-pull-requests-limit') != 5:
+                  errors.append(f'{where} open-pull-requests-limit must be 5')
               if len(sec) != 1 or sec[0].get('patterns') != ['*']:
                   errors.append(f'{where} needs exactly one security-updates group of all dependencies')
           ecos = sorted(u.get('package-ecosystem') for u in tpl.get('updates', []))
