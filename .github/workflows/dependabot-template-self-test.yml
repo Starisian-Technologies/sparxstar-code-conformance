@@ -46,7 +46,7 @@ jobs:
               if u.get('cooldown', {}).get('default-days') != 3:
                   errors.append(f'{where} cooldown.default-days must be 3')
               groups = list((u.get('groups') or {}).values())
-              ver = [g for g in groups if g.get('applies-to') == 'version-updates']
+              ver = [g for g in groups if g.get('applies-to', 'version-updates') == 'version-updates']
               sec = [g for g in groups if g.get('applies-to') == 'security-updates']
               if len(ver) != 1 or ver[0].get('patterns') != ['*'] or sorted(ver[0].get('update-types') or []) != ['minor', 'patch']:
                   errors.append(f'{where} needs exactly one version-updates group of all minor and patch updates (majors stay separate)')
