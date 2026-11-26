@@ -53,7 +53,9 @@ Not every repo needs every job. Include only what applies:
 | `node` | `node-enforcement.yml` | Repo is a standalone Node/TS service |
 | `css` | `css-enforcement.yml` | Repo has CSS or stylesheets |
 | `media` | `media-enforcement.yml` | Repo records, uploads, or processes audio/video |
-| `credentials` | `credential-policy.yml` | **Always** — every repo (ADR-056) |
+| `changes` | `changed-paths.yml` | **Always** — first job; gates every other job (CI cost rules) |
+| `credentials` | `credential-policy.yml` | **Always** — every repo (ADR-056; also checks the CI cost rules) |
+| `analyze` | `caller-templates/codeql.yml` | Repo has CodeQL-supported code (CI cost rules: PRs + weekly, not on push) |
 | `js` / `css` / `formatting` / `markdownlint` | `js-standards.yml`, `css-standards.yml`, `formatting.yml`, `markdownlint.yml` | ESLint + `tsc`, Stylelint, Prettier, markdownlint — template `caller-templates/standards-lint.yml`, self-test `lint-workflows-self-test.yml` |
 
 PHP-only repos (no JS) skip the `react`, `node`, and `css` jobs.
@@ -119,7 +121,7 @@ template includes a `version-check` job (`version-drift-enforcement.yml`) that w
 when your pin falls behind the recommended patch tag and hard-fails if it drops below
 the floor in `config/version-policy.yml`, regardless of `enforcement_mode`. Every
 repository also copies `caller-templates/dependabot.yml` to `.github/dependabot.yml`
-(required, ADR-058; see "Dependabot (ADR-058)" below). Its `github-actions` entry
+(required; see "CI cost rules" below). Its `github-actions` entry
 understands any `uses: owner/repo@vX.Y.Z` line and opens a bump PR when an
 upstream workflow you pin cuts a new release.
 
@@ -425,23 +427,83 @@ fails each fixture in `fixtures/release/`, that this repository's own config
 conforms, that every action in `semver-release.yml` is pinned by full commit
 SHA, and that no caller template hand-writes a release of this repository.
 
-## Dependabot (ADR-058)
+## CI cost rules
 
-Every repository copies `caller-templates/dependabot.yml` to
-`.github/dependabot.yml` and keeps only the ecosystems it uses
-(`github-actions`, `npm` for npm and pnpm, `composer`). Per ecosystem it runs
-weekly, groups minor and patch updates into one pull request, groups security
-updates into one pull request, leaves each major update as its own pull
-request, and waits 3 days before proposing a new version (version updates
-only; security updates are never delayed).
+Owner instruction, 2026-11-26: the Actions budget is limited. These rules apply
+to this repository and to every repository that adopts the caller templates;
+the templates already follow them, so a repository that copies a template gets
+them by default. The `credentials` job (`credential-policy.yml`) checks the
+rules marked **checked** on every pull request, in the same job as the
+credential check, so the check costs no extra runner. A repository working
+through its findings can pass `cost_policy: advisory` for a while.
 
-How Dependabot pull requests are merged (before CI, fix-forward, never
-release or deploy from a red default branch, and the exception for
-repositories that deploy on merge) is a platform rule in the governance
-snapshot every repository receives ("Dependabot updates"), not restated
-here. This repository runs the same configuration;
-`dependabot-template-self-test.yml` checks the template's settings and that
-the two files match.
+1. **CI runs only on pull requests and pushes to `main`.** No push trigger on
+   other branches or on tags; publish from the release workflow (or the
+   `release` event) instead of a tag push. *Checked (COST-001).*
+2. **Concurrency on every workflow.** Group by workflow and PR number or ref;
+   cancel in-progress runs for pull requests only:
+
+   ```yaml
+   concurrency:
+     group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+     cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+   ```
+
+   The release workflow and anything that deploys never cancel
+   (`cancel-in-progress: false`), and nothing cancels a run on `main`.
+   Reusable workflows take the caller's concurrency and declare none of their
+   own (a called workflow sharing the caller's group would cancel itself).
+   *Checked (COST-002).*
+3. **Path filters at the job level, never on the `pull_request` trigger.**
+   A docs-only change (Markdown, `docs/**`, `.github/instructions/**`,
+   licences) runs no code, security or browser job. Every template starts
+   with one `changes` job calling `changed-paths.yml` (no checkout, one small
+   job) and gates each job on `needs.changes.outputs.code == 'true'`. A
+   skipped job still reports and counts as passing, so required checks never
+   leave a pull request waiting on a check that never runs. *Checked
+   (COST-003).*
+4. **CodeQL and other security scans: pull requests to `main` plus a weekly
+   `schedule`, never on every push.** Use `caller-templates/codeql.yml`.
+   GitHub's CodeQL *default setup* runs on every push to the default branch,
+   so a repository using it switches to advanced setup (Settings → Code
+   security) before adopting the template. *Checked for workflow-based scans
+   (COST-004); default setup is a repository setting, not a file, and is not
+   checked.*
+5. **Cache dependencies.** Every job that runs `pnpm install`, `npm ci`,
+   `npm install`, `yarn` or `composer install` restores a cache keyed on the
+   lockfile (`actions/cache`, or the setup action's `cache:` input). The
+   reusable workflows here cache the pnpm store and Composer downloads.
+   *Checked (COST-005).*
+6. **Browser (Playwright) and database tests run only when the code they
+   cover changes.** Give `changed-paths.yml` a named filter for that code and
+   gate the job on `fromJSON(needs.changes.outputs.matches).<name>`. *Checked
+   (COST-006): a job that runs Playwright or declares `services:` must be
+   gated by an `if:` on a `needs` output.*
+7. **Do not push to a pull request just to re-run a check that is blocked by
+   something outside the code** (budget, permissions, a missing review).
+   Report what blocks it and wait. A push re-runs every check. *Not
+   checkable; agent rule (this repository's `AGENTS.md`).*
+8. **Dependabot: weekly, one grouped pull request per ecosystem.** Copy
+   `caller-templates/dependabot.yml` to `.github/dependabot.yml` and keep the
+   ecosystems the repository uses (`github-actions`, `npm` for npm and pnpm,
+   `composer`). Each ecosystem gets one pull request for **all** version
+   updates (major, minor and patch together) and one for security updates,
+   with a 3-day cooldown on version updates (security updates are never
+   delayed). Dependabot pull requests run CI like any other pull request;
+   merge them when green. *Checked (DEP-001): the file exists, is weekly, and
+   groups every version update and all security updates.*
+
+   This supersedes, for this repository and its templates, ADR-058's
+   "merge before CI" and "majors as separate pull requests". The governance
+   registry's ADR-058 and its review rules still state the older rule and need
+   amending there.
+
+`changed-paths.yml` reads the changed files from the GitHub compare API with
+the caller's token. Anything it cannot classify safely (a new branch, a manual
+run, 300 or more changed files, an API error) counts as changed, so it never
+skips work it cannot prove unnecessary. This repository's own `ci.yml` is the
+worked example: one `changes` job, then each self-test suite as a reusable
+workflow gated on its own named filter.
 
 ## Credential policy (ADR-056)
 

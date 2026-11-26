@@ -177,7 +177,7 @@ jobs:
           # setup-node v5 turns caching on when package.json has a packageManager
           # field. pnpm is only enabled by corepack in the next step, so the cache
           # step would fail here. Keep v4's behaviour: no caching.
-          package-manager-cache: false
+          package-manager-cache: false   # the pnpm store is cached explicitly below
 
       - name: Enable corepack (pnpm)
         if: hashFiles('package.json') != ''
@@ -204,6 +204,18 @@ jobs:
         shell: bash
         run: |
           git config --global url."https://x-access-token:${GH_TOKEN}@github.com/".insteadOf "https://github.com/"
+
+      - name: Use a cacheable pnpm store
+        shell: bash
+        run: echo "npm_config_store_dir=$RUNNER_TEMP/pnpm-store" >> "$GITHUB_ENV"
+
+      - name: Cache the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
 
       - name: Install dependencies
         if: hashFiles('package.json') != ''

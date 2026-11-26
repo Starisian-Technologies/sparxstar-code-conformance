@@ -1,0 +1,171 @@
+# ============================================================
+# changed-paths — which kinds of files a pull request or push changed
+# (CI cost rules, owner instruction 2026-11-26).
+#
+# Reusable workflow. One small job, no checkout: it reads the changed file
+# list from the GitHub compare API with the caller's GITHUB_TOKEN and reports
+#   - code:    'true' unless EVERY changed file is docs-only
+#              (docs_only_globs: Markdown, docs/**, .github/instructions/**,
+#              licence files by default);
+#   - matches: a JSON object, one boolean per named filter in `filters`.
+#
+# Callers gate jobs at the JOB level, so required checks still report
+# (a skipped job counts as passing) and a PR never waits on a check that
+# never runs:
+#
+#   jobs:
+#     changes:
+#       uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/changed-paths.yml@RELEASE_TAG
+#       with:
+#         filters: |
+#           {"browser": ["src/**", "e2e/**", "playwright.config.*"]}
+#     test:
+#       needs: changes
+#       if: needs.changes.outputs.code == 'true'
+#     e2e:
+#       needs: changes
+#       if: fromJSON(needs.changes.outputs.matches).browser
+#
+# Anything it cannot classify safely counts as changed: a push that creates a
+# branch, a manual or scheduled run, a compare with 300 or more files (the API
+# cap), or an API error. It never skips work it cannot prove unnecessary.
+#
+# Glob syntax: `**` crosses directories, `*` and `?` stay within one path
+# segment. A glob without a slash matches the file name at any depth.
+# ============================================================
+
+name: Changed paths
+
+on:
+  workflow_call:
+    inputs:
+      filters:
+        description: >
+          JSON object of filter name → list of globs, e.g.
+          {"browser": ["src/**", "e2e/**"]}. Each name becomes a boolean in
+          the `matches` output. Empty means no named filters.
+        required: false
+        type: string
+        default: '{}'
+      docs_only_globs:
+        description: >
+          JSON list of globs for files that never run code, security or
+          browser jobs. A change made only of these sets code to 'false'.
+        required: false
+        type: string
+        default: '["**/*.md", "docs/**", ".github/instructions/**", "LICENSE*", "**/LICENSE*"]'
+    outputs:
+      code:
+        description: "'true' unless every changed file is docs-only."
+        value: ${{ jobs.changes.outputs.code }}
+      matches:
+        description: JSON object of filter name → boolean.
+        value: ${{ jobs.changes.outputs.matches }}
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    name: Changed paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      code: ${{ steps.classify.outputs.code }}
+      matches: ${{ steps.classify.outputs.matches }}
+    steps:
+      - name: List changed files
+        id: files
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.event.after }}
+        shell: bash
+        run: |
+          set -uo pipefail
+          out="$RUNNER_TEMP/changed-files.txt"
+          : > "$out"
+          case "$EVENT" in
+            pull_request|pull_request_target) base="$PR_BASE"; head="$PR_HEAD" ;;
+            push) base="$PUSH_BEFORE"; head="$PUSH_AFTER" ;;
+            *) base=""; head="" ;;
+          esac
+          # Unknown range (manual/scheduled run, new branch): everything counts.
+          if [[ ! "$base" =~ ^[0-9a-f]{40}$ || ! "$head" =~ ^[0-9a-f]{40}$ || "$base" =~ ^0+$ ]]; then
+            echo "all=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if ! gh api "repos/${REPO}/compare/${base}...${head}" --jq '.files[].filename' > "$out" 2>/dev/null; then
+            echo "::warning::compare API failed; treating every path as changed"
+            echo "all=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          # The compare API returns at most 300 files: past that, assume all.
+          if [ "$(wc -l < "$out")" -ge 300 ]; then
+            echo "all=true" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          echo "all=false" >> "$GITHUB_OUTPUT"
+          echo "file_list=$out" >> "$GITHUB_OUTPUT"
+
+      # changed-paths-self-test runs CLASSIFY_PY against fixtures. Keep the
+      # step id and the env name.
+      - name: Classify
+        id: classify
+        env:
+          ALL: ${{ steps.files.outputs.all }}
+          FILE_LIST: ${{ steps.files.outputs.file_list }}
+          FILTERS: ${{ inputs.filters }}
+          DOCS_ONLY_GLOBS: ${{ inputs.docs_only_globs }}
+          CLASSIFY_PY: |
+            import json, os, re, sys
+
+            def glob_re(g):
+                out, i = [], 0
+                while i < len(g):
+                    if g.startswith('**/', i):
+                        out.append('(?:.*/)?'); i += 3
+                    elif g.startswith('**', i):
+                        out.append('.*'); i += 2
+                    elif g[i] == '*':
+                        out.append('[^/]*'); i += 1
+                    elif g[i] == '?':
+                        out.append('[^/]'); i += 1
+                    else:
+                        out.append(re.escape(g[i])); i += 1
+                body = ''.join(out)
+                # A glob with no slash matches the file name at any depth.
+                return re.compile(('(?:.*/)?' if '/' not in g else '') + body + r'\Z')
+
+            def any_match(path, globs):
+                return any(glob_re(g).match(path) for g in globs)
+
+            def fail(msg):
+                print(f"::error::{msg}"); sys.exit(1)
+
+            try:
+                filters = json.loads(os.environ.get('FILTERS') or '{}')
+                docs = json.loads(os.environ.get('DOCS_ONLY_GLOBS') or '[]')
+            except json.JSONDecodeError as e:
+                fail(f"filters and docs_only_globs must be JSON: {e}")
+            if not isinstance(filters, dict) or not all(
+                    isinstance(k, str) and re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*', k)
+                    and isinstance(v, list) and all(isinstance(x, str) for x in v)
+                    for k, v in filters.items()):
+                fail("filters must be an object of identifier → list of glob strings")
+            if not isinstance(docs, list) or not all(isinstance(x, str) for x in docs):
+                fail("docs_only_globs must be a list of glob strings")
+
+            if os.environ.get('ALL') == 'true':
+                code, matches = True, {k: True for k in filters}
+            else:
+                files = [l.strip() for l in open(os.environ['FILE_LIST']) if l.strip()]
+                code = any(not any_match(f, docs) for f in files)
+                matches = {k: any(any_match(f, v) for f in files) for k, v in filters.items()}
+            with open(os.environ['GITHUB_OUTPUT'], 'a') as fh:
+                fh.write(f"code={'true' if code else 'false'}\n")
+                fh.write(f"matches={json.dumps(matches, separators=(',', ':'))}\n")
+            print(f"code={code} matches={matches}")
+        shell: bash
+        run: python3 -c "$CLASSIFY_PY"

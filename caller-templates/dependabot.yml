@@ -1,21 +1,19 @@
 # Drop this file into any repository at:
 #   .github/dependabot.yml
 #
-# The one Dependabot configuration every repository adopts (ADR-058).
-# How Dependabot pull requests are merged is a platform rule, not part of this
-# file. It is in the governance snapshot (.github/instructions/governance/,
-# "Dependabot updates"): merge without waiting for CI, fix a red default branch
-# forward at once, never release or deploy from a red default branch. A
-# repository that deploys automatically on merge merges them only on green CI.
+# The one Dependabot configuration every repository adopts (owner instruction,
+# 2026-11-26: CI cost rules; REUSABLE-WORKFLOWS.md "CI cost rules").
 #
 # What this file sets, for each ecosystem:
 #   - weekly version updates;
-#   - minor and patch updates in ONE grouped pull request per ecosystem;
+#   - ALL version updates (major, minor and patch) in ONE grouped pull request
+#     per ecosystem, so CI runs once per ecosystem per week;
 #   - security updates in ONE grouped pull request per ecosystem;
-#   - major updates as separate pull requests, one per dependency (not
-#     grouped, so each breaking change is reviewed on its own);
 #   - a 3-day cooldown before a new version is proposed. Cooldown applies to
 #     version updates only; security updates are never delayed by it.
+#
+# Dependabot pull requests run CI like any other pull request; merge them when
+# CI is green.
 #
 # Keep only the ecosystems the repository uses: Dependabot reports an error
 # for an entry whose directory has no manifest.
@@ -36,10 +34,9 @@ updates:
     cooldown:
       default-days: 3
     groups:
-      github-actions-minor-patch:
+      github-actions-all:
         applies-to: version-updates
         patterns: ["*"]
-        update-types: ["minor", "patch"]
       github-actions-security:
         applies-to: security-updates
         patterns: ["*"]
@@ -51,10 +48,9 @@ updates:
     cooldown:
       default-days: 3
     groups:
-      npm-minor-patch:
+      npm-all:
         applies-to: version-updates
         patterns: ["*"]
-        update-types: ["minor", "patch"]
       npm-security:
         applies-to: security-updates
         patterns: ["*"]
@@ -66,10 +62,9 @@ updates:
     cooldown:
       default-days: 3
     groups:
-      composer-minor-patch:
+      composer-all:
         applies-to: version-updates
         patterns: ["*"]
-        update-types: ["minor", "patch"]
       composer-security:
         applies-to: security-updates
         patterns: ["*"]

@@ -1,0 +1,12 @@
+name: Publish
+on:
+  push:
+    tags: ['v*']
+concurrency:
+  group: publish
+  cancel-in-progress: false
+jobs:
+  t:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo ok

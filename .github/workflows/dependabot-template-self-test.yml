@@ -1,31 +1,21 @@
 # ============================================================
 # dependabot-template-self-test — checks caller-templates/dependabot.yml
-# carries the ADR-058 settings for every ecosystem, and that this
-# repository's own .github/dependabot.yml is the same configuration.
+# carries the CI-cost settings for every ecosystem (weekly; every version
+# update in one group; security updates in one group; 3-day cooldown), and
+# that this repository's own .github/dependabot.yml is the same configuration.
 # ============================================================
 
 name: Dependabot template self-test
 
 on:
-  pull_request:
-    paths:
-      - 'caller-templates/dependabot.yml'
-      - '.github/dependabot.yml'
-      - '.github/workflows/dependabot-template-self-test.yml'
-  push:
-    branches: [main]
-    paths:
-      - 'caller-templates/dependabot.yml'
-      - '.github/dependabot.yml'
-      - '.github/workflows/dependabot-template-self-test.yml'
-  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
   template:
-    name: Dependabot template (ADR-058)
+    name: Dependabot template
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -57,12 +47,10 @@ jobs:
               groups = list((u.get('groups') or {}).values())
               ver = [g for g in groups if g.get('applies-to') == 'version-updates']
               sec = [g for g in groups if g.get('applies-to') == 'security-updates']
-              if len(ver) != 1 or sorted(ver[0].get('update-types', [])) != ['minor', 'patch'] or ver[0].get('patterns') != ['*']:
-                  errors.append(f'{where} needs exactly one version-updates group of all minor and patch updates')
+              if len(ver) != 1 or ver[0].get('patterns') != ['*'] or ver[0].get('update-types'):
+                  errors.append(f'{where} needs exactly one version-updates group of every dependency and every update type')
               if len(sec) != 1 or sec[0].get('patterns') != ['*']:
                   errors.append(f'{where} needs exactly one security-updates group of all dependencies')
-              if any('major' in g.get('update-types', []) for g in groups):
-                  errors.append(f'{where} majors must not be grouped')
           ecos = sorted(u.get('package-ecosystem') for u in tpl.get('updates', []))
           if ecos != ['composer', 'github-actions', 'npm']:
               errors.append(f'template ecosystems are {ecos}; expected composer, github-actions, npm')
@@ -70,5 +58,5 @@ jobs:
               print(f'::error file=caller-templates/dependabot.yml::{e}')
           if errors:
               sys.exit(1)
-          print('OK: template carries the ADR-058 settings; the repository copy matches')
+          print('OK: template carries the CI-cost settings; the repository copy matches')
           PY

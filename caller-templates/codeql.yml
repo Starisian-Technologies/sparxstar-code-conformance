@@ -1,0 +1,72 @@
+# Drop this file into a repository at:
+#   .github/workflows/codeql.yml
+#
+# CI cost rules: CodeQL runs on pull requests to main plus once a week, never
+# on every push. A docs-only pull request skips the analysis job (it still
+# reports, as skipped).
+#
+# GitHub's CodeQL "default setup" (Settings → Code security → Code scanning)
+# runs on every push to the default branch, so it does not meet this rule.
+# Switch the repository to "advanced" setup before adding this file: results
+# from an advanced workflow are rejected while default setup is enabled.
+#
+# Set `language` below to the languages the repository contains (CodeQL names:
+# actions, javascript-typescript, python, java-kotlin, go, csharp, cpp, ruby,
+# swift). PHP is not a CodeQL language.
+#
+# Pin: replace RELEASE_TAG with the latest release tag of
+# sparxstar-code-conformance. Look it up; do not copy a number from any
+# document (ADR-053 decision 3):
+#   git ls-remote --tags --refs https://github.com/Starisian-Technologies/sparxstar-code-conformance \
+#     | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * 1'   # weekly; pick your own minute and hour
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/changed-paths.yml@RELEASE_TAG
+    permissions:
+      contents: read
+
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [actions, javascript-typescript]
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: none
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@915412ff23e8b7659517e607487dbeae018f2934 # v4.39.5
+        with:
+          category: /language:${{ matrix.language }}
