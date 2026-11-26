@@ -91,8 +91,15 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | CRED-002 | ADR-056 | No personal access tokens or ad-hoc GitHub token names; no GitHub token committed in a workflow | All repositories | ENFORCED | `credential-policy.yml` |
 | CRED-003 | ADR-048, ADR-056 | No AI provider keys outside the central review repository | All repositories | ENFORCED | `credential-policy.yml` |
 | CRED-004 | cross-repo access doc, ADR-056 | No `secrets: inherit`, no dynamic secret lookups, no keys in variables; deploy secrets declared in `.github/credential-policy.yml` | All repositories | ENFORCED | `credential-policy.yml` |
-| DEP-001 | ADR-058 | Every repository carries the shared `.github/dependabot.yml` (weekly; minor/patch and security grouped per ecosystem; majors separate; 3-day cooldown) | All repositories | SPECIFIED | `caller-templates/dependabot.yml`; checked only in this repository (`dependabot-template-self-test.yml`) — no consumer-side check ships yet |
-| DEP-002 | ADR-058 | Dependabot PRs merge before CI; a red default branch is fixed forward or the update reverted at once; no release or deploy from a red default branch; repos that deploy on merge require green CI | All repositories | SPECIFIED | Merge procedure (governance snapshot `review-rules`); no automated gate ships |
+| COST-001 | REUSABLE-WORKFLOWS "CI cost rules" (owner instruction 2026-11-26) | CI runs only on pull requests and pushes to `main`; no other push triggers | All repositories | ENFORCED | `credential-policy.yml` (CI cost step); fixtures `fixtures/cost-policy/` |
+| COST-002 | same | Workflow-level concurrency; cancel in progress for pull requests only; release/deploy never cancel | All repositories | ENFORCED | `credential-policy.yml` (CI cost step) |
+| COST-003 | same | Path filters at the job level (`changed-paths.yml`); docs-only changes run no code, security or browser job | All repositories | ENFORCED | `credential-policy.yml` (rejects pull_request path filters); `changed-paths.yml` + self-test |
+| COST-004 | same | Security scans on PRs to main plus weekly schedule, not on push | All repositories | ENFORCED | `credential-policy.yml` (workflow-based scans); CodeQL default setup is a setting and is not checked |
+| COST-005 | same | Dependency installs are cached | All repositories | ENFORCED | `credential-policy.yml` (CI cost step) |
+| COST-006 | same | Browser (Playwright) and database jobs run only when the code they cover changes | All repositories | ENFORCED | `credential-policy.yml` (job must be gated on a `needs` output) |
+| COST-007 | same | No push to a PR just to re-run a check blocked outside the code; report and wait | Agents | SPECIFIED | `AGENTS.md`; not checkable |
+| DEP-001 | same | Shared `.github/dependabot.yml`: weekly; every version update in one PR per ecosystem; security updates in one PR per ecosystem; 3-day cooldown | All repositories | ENFORCED | `credential-policy.yml` (CI cost step); template self-test `dependabot-template-self-test.yml` |
+| DEP-002 | same (supersedes ADR-058's merge-before-CI here) | Dependabot PRs run CI like any PR and merge when green | All repositories | SPECIFIED | Merge procedure; the registry's ADR-058 still states merge-before-CI and needs amending there |
 | REF-001 | docs/enforcement-matrix.md | Existing CI/CD matrix remains reference mapping for stage execution | All | REFERENCE | Documentation cross-reference |
 
 ## Notes for CI Implementers

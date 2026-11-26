@@ -10,29 +10,7 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/*-enforcement.yml'
-      - 'config/**'
-      - 'fixtures/**'
-      - 'standards/**'
-      - 'scripts/**'
-      - '**/*.xml'
-  pull_request:
-    paths:
-      - '.github/workflows/*-enforcement.yml'
-      - 'config/**'
-      - 'fixtures/**'
-      - 'standards/**'
-      - 'scripts/**'
-      - '**/*.xml'
-  workflow_dispatch:
-
-# A newer push to the same PR or branch cancels the run it supersedes.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   # ── XML well-formedness ──────────────────────────────────────────────────────
@@ -339,7 +317,6 @@ jobs:
             exit 1
           fi
           echo "OK: AUTH-001 is not fooled by a comment mentioning the gate function name"
-
 
   css:
     name: CSS fixture self-test

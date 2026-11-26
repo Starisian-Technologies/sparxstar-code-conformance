@@ -1,0 +1,12 @@
+name: Release
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: release
+  cancel-in-progress: false
+jobs:
+  r:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo release

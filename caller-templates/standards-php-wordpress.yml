@@ -19,10 +19,28 @@ name: Starisian Standards
 on:
   pull_request:
   push:
-    branches: [main, develop]
+    branches: [main]
+
+# CI cost rules: one run per PR or ref; cancel superseded runs on pull
+# requests only, never on main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # CI cost rules: one small job (no checkout) decides whether this change is
+  # docs-only. Every job below is gated on it at the JOB level, so a skipped
+  # job still reports (skipped counts as passing) and a PR never waits on a
+  # check that never runs. Add named `filters` for browser or database jobs,
+  # and gate those on `fromJSON(needs.changes.outputs.matches).<name>`.
+  changes:
+    uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/changed-paths.yml@RELEASE_TAG
+    permissions:
+      contents: read
+
   pnpm:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/pnpm-enforcement.yml@RELEASE_TAG
     with:
       enforcement_mode: advisory
@@ -30,6 +48,8 @@ jobs:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   php:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/php-enforcement.yml@RELEASE_TAG
     with:
       repo_type: wp-plugin
@@ -41,6 +61,8 @@ jobs:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   css:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/css-enforcement.yml@RELEASE_TAG
     with:
       repo_type: wp-plugin
@@ -50,6 +72,8 @@ jobs:
       COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}
 
   media:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/media-enforcement.yml@RELEASE_TAG
     with:
       repo_type: wp-plugin
@@ -57,6 +81,8 @@ jobs:
       profile_version: v1
 
   version-check:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     # Warns (or hard-fails below the floor) if this file's pins fall behind the
     # recommended patch tag. contract_ref MUST match the tag pinned on the jobs above --
     # bump both together. Drift record ON (owner ruling, 2026-11-04): this repo's
@@ -74,6 +100,8 @@ jobs:
       CONTRACT_SYNC_PRIVATE_KEY: ${{ secrets.CONTRACT_SYNC_PRIVATE_KEY }}
 
   credentials:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     # ADR-056: fails on any credential other than GITHUB_TOKEN, the two Apps and
     # the deploy secrets declared in .github/credential-policy.yml, and names
     # the App to use instead. Reads workflow files only; no secrets.

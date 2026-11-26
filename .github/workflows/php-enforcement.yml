@@ -281,6 +281,21 @@ jobs:
           echo "phpstan_level=$level" >> "$GITHUB_OUTPUT"
           echo "PHPSTAN_LEVEL=$level" >> "$GITHUB_ENV"
 
+      - name: Locate the Composer cache
+        if: hashFiles('composer.json') != ''
+        id: composer-cache
+        shell: bash
+        run: echo "dir=$(composer config --global cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Composer downloads
+        if: hashFiles('composer.json') != ''
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('**/composer.lock', '**/composer.json') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
       - name: Install Composer dependencies
         if: hashFiles('composer.json') != ''
         shell: bash

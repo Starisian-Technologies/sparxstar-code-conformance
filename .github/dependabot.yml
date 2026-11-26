@@ -1,4 +1,4 @@
-# Adopted from caller-templates/dependabot.yml (ADR-058). Keep the two in step.
+# Adopted from caller-templates/dependabot.yml. Keep the two in step.
 
 version: 2
 updates:
@@ -9,10 +9,9 @@ updates:
     cooldown:
       default-days: 3
     groups:
-      github-actions-minor-patch:
+      github-actions-all:
         applies-to: version-updates
         patterns: ["*"]
-        update-types: ["minor", "patch"]
       github-actions-security:
         applies-to: security-updates
         patterns: ["*"]
@@ -24,10 +23,9 @@ updates:
     cooldown:
       default-days: 3
     groups:
-      npm-minor-patch:
+      npm-all:
         applies-to: version-updates
         patterns: ["*"]
-        update-types: ["minor", "patch"]
       npm-security:
         applies-to: security-updates
         patterns: ["*"]
@@ -39,10 +37,9 @@ updates:
     cooldown:
       default-days: 3
     groups:
-      composer-minor-patch:
+      composer-all:
         applies-to: version-updates
         patterns: ["*"]
-        update-types: ["minor", "patch"]
       composer-security:
         applies-to: security-updates
         patterns: ["*"]

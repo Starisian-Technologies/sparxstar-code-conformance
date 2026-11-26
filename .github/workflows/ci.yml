@@ -1,0 +1,163 @@
+# ============================================================
+# ci — the one CI entry point for this repository (CI cost rules, owner
+# instruction 2026-11-26; REUSABLE-WORKFLOWS.md "CI cost rules").
+#
+# - Runs only on pull requests and pushes to main.
+# - One concurrency group per PR or ref; in-progress runs are cancelled for
+#   pull requests only, never on main.
+# - One `changes` job (changed-paths.yml, no checkout) decides which suites a
+#   change needs. Suites are gated at the JOB level, so every check reports:
+#   a skipped suite counts as passing and a PR never waits on a check that
+#   never runs. A docs-only change (Markdown, docs/**,
+#   .github/instructions/**, licences) runs no code or security job.
+# - Each suite is a reusable workflow in this directory, called here.
+# Releases are separate (release.yml) and are never cancelled.
+# CodeQL runs from the repository's code-scanning settings, not from here.
+# ============================================================
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    uses: ./.github/workflows/changed-paths.yml
+    permissions:
+      contents: read
+    with:
+      filters: |
+          {
+            "fixtures": [
+              ".github/workflows/*-enforcement.yml",
+              "config/**",
+              "fixtures/**",
+              "standards/**",
+              "scripts/**",
+              "**/*.xml",
+              ".github/workflows/ci.yml"
+            ],
+            "release": [
+              ".github/workflows/semver-release.yml",
+              ".github/workflows/release-self-test.yml",
+              "caller-templates/release.yml",
+              "caller-templates/release-please-config.json",
+              "caller-templates/.release-please-manifest.json",
+              "fixtures/release/**",
+              ".github/workflows/release.yml",
+              "release-please-config.json",
+              ".release-please-manifest.json",
+              "caller-templates/standards-*.yml",
+              ".github/workflows/ci.yml"
+            ],
+            "credentials": [
+              ".github/workflows/**",
+              ".github/actions/**",
+              ".github/credential-policy.yml",
+              "fixtures/credential-policy/**",
+              "fixtures/cost-policy/**",
+              "caller-templates/**",
+              ".github/workflows/ci.yml"
+            ],
+            "lint_workflows": [
+              ".github/workflows/js-standards.yml",
+              ".github/workflows/css-standards.yml",
+              ".github/workflows/formatting.yml",
+              ".github/workflows/markdownlint.yml",
+              ".github/workflows/lint-workflows-self-test.yml",
+              "fixtures/lint-workflows/**",
+              "caller-templates/standards-lint.yml",
+              ".github/workflows/ci.yml"
+            ],
+            "version_drift": [
+              ".github/workflows/version-drift-enforcement.yml",
+              ".github/workflows/version-drift-self-test.yml",
+              "config/version-policy.yml",
+              ".github/workflows/ci.yml"
+            ],
+            "dependabot_template": [
+              "caller-templates/dependabot.yml",
+              ".github/dependabot.yml",
+              ".github/workflows/dependabot-template-self-test.yml",
+              ".github/workflows/ci.yml"
+            ],
+            "changed_paths": [
+              ".github/workflows/changed-paths.yml",
+              ".github/workflows/changed-paths-self-test.yml",
+              ".github/workflows/ci.yml"
+            ]
+          }
+
+  fixtures:
+    name: Fixture self-test
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && fromJSON(needs.changes.outputs.matches).fixtures
+    uses: ./.github/workflows/fixture-self-test.yml
+    permissions:
+      contents: read
+
+  release:
+    name: Release workflow self-test
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && fromJSON(needs.changes.outputs.matches).release
+    uses: ./.github/workflows/release-self-test.yml
+    permissions:
+      contents: read
+
+  credentials:
+    name: Credential policy self-test
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && fromJSON(needs.changes.outputs.matches).credentials
+    uses: ./.github/workflows/credential-policy-self-test.yml
+    permissions:
+      contents: read
+
+  lint-workflows:
+    name: Lint workflows self-test
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && fromJSON(needs.changes.outputs.matches).lint_workflows
+    uses: ./.github/workflows/lint-workflows-self-test.yml
+    permissions:
+      contents: read
+
+  version-drift:
+    name: Version-drift self-test
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && fromJSON(needs.changes.outputs.matches).version_drift
+    uses: ./.github/workflows/version-drift-self-test.yml
+    permissions:
+      contents: read
+
+  dependabot-template:
+    name: Dependabot template self-test
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && fromJSON(needs.changes.outputs.matches).dependabot_template
+    uses: ./.github/workflows/dependabot-template-self-test.yml
+    permissions:
+      contents: read
+
+  changed-paths:
+    name: Changed paths self-test
+    needs: changes
+    if: needs.changes.outputs.code == 'true' && fromJSON(needs.changes.outputs.matches).changed_paths
+    uses: ./.github/workflows/changed-paths-self-test.yml
+    permissions:
+      contents: read
+
+  dependency-review:
+    name: Dependency review
+    needs: changes
+    if: github.event_name == 'pull_request' && needs.changes.outputs.code == 'true'
+    uses: ./.github/workflows/dependency-review.yml
+    permissions:
+      contents: read
+      pull-requests: write

@@ -1,0 +1,78 @@
+# ============================================================
+# changed-paths-self-test — runs changed-paths.yml's classify step (id
+# `classify`) against fixed file lists: docs-only changes set code=false,
+# anything else sets it true, named filters match as globs, an unknown range
+# counts as all changed, and malformed filters fail. Called from ci.yml.
+# ============================================================
+
+name: Changed paths self-test
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  classify:
+    name: Changed-paths classification
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      - name: Extract the classify step
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -c 'import yaml' 2>/dev/null || pip3 install pyyaml --quiet
+          python3 - <<'PY'
+          import yaml
+          wf = yaml.safe_load(open('.github/workflows/changed-paths.yml'))
+          step = next(s for s in wf['jobs']['changes']['steps'] if s.get('id') == 'classify')
+          open('/tmp/classify.py', 'w').write(step['env']['CLASSIFY_PY'])
+          open('/tmp/docs-globs.json', 'w').write(wf[True]['workflow_call']['inputs']['docs_only_globs']['default'])
+          PY
+
+      - name: Each case classifies as expected
+        shell: bash
+        run: |
+          set -euo pipefail
+          docs=$(cat /tmp/docs-globs.json)
+          filters='{"browser": ["src/**", "e2e/**", "playwright.config.*"], "xml": ["*.xml"]}'
+          run_case() { # name all files expected_code expected_matches
+            local list out
+            list=$(mktemp); out=$(mktemp)
+            printf '%b' "$3" > "$list"
+            ALL="$2" FILE_LIST="$list" FILTERS="$filters" DOCS_ONLY_GLOBS="$docs" GITHUB_OUTPUT="$out" \
+              python3 /tmp/classify.py >/dev/null
+            got_code=$(sed -n 's/^code=//p' "$out"); got_matches=$(sed -n 's/^matches=//p' "$out")
+            if [ "$got_code" != "$4" ] || [ "$got_matches" != "$5" ]; then
+              echo "SELF-TEST FAIL: $1 → code=$got_code matches=$got_matches, expected code=$4 matches=$5"; exit 1
+            fi
+            echo "OK: $1"
+          }
+          run_case "docs only"              false 'README.md\ndocs/guide.md\n' false '{"browser":false,"xml":false}'
+          run_case "governance snapshot"    false '.github/instructions/governance/rules.compiled.md\n' false '{"browser":false,"xml":false}'
+          run_case "licence only"           false 'LICENSE.md\npackages/x/LICENSE\n' false '{"browser":false,"xml":false}'
+          run_case "code change"            false 'src/app.ts\n' true '{"browser":true,"xml":false}'
+          run_case "docs plus code"         false 'README.md\nsrc/app.ts\n' true '{"browser":true,"xml":false}'
+          run_case "nested xml by name"     false 'config/phpcs/ruleset.xml\n' true '{"browser":false,"xml":true}'
+          run_case "e2e only"               false 'e2e/login.spec.ts\n' true '{"browser":true,"xml":false}'
+          run_case "workflow change"        false '.github/workflows/ci.yml\n' true '{"browser":false,"xml":false}'
+          run_case "unknown range is all"   true  '' true '{"browser":true,"xml":true}'
+
+      - name: Malformed filters fail
+        shell: bash
+        run: |
+          set -euo pipefail
+          for bad in '[1,2]' '{"has space": ["a"]}' '{"x": "not-a-list"}' 'not json'; do
+            out=$(mktemp); list=$(mktemp); echo 'a.ts' > "$list"
+            result=0
+            ALL=false FILE_LIST="$list" FILTERS="$bad" DOCS_ONLY_GLOBS='[]' GITHUB_OUTPUT="$out" \
+              python3 /tmp/classify.py >/dev/null 2>&1 || result=$?
+            [ "$result" -ne 0 ] || { echo "SELF-TEST FAIL: filters '$bad' accepted"; exit 1; }
+          done
+          echo "OK: malformed filters rejected"

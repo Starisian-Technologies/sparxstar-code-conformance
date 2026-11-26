@@ -47,7 +47,7 @@ Pin the latest `vX.Y.Z` release tag, looked up (`REUSABLE-WORKFLOWS.md`, "Pin an
 exact release tag") — never `@main`, never the frozen `@v1` alias.
 The `version-check` job's `contract_ref` **must equal** the `@vX.Y.Z` your
 other jobs pin; bare `v1` is rejected at validation. Bump both in one commit.
-`caller-templates/dependabot.yml` (required, ADR-058) opens the PRs that move them.
+`caller-templates/dependabot.yml` (required; REUSABLE-WORKFLOWS.md "CI cost rules") opens the PRs that move them.
 
 **3. Advisory first; gate when clean.**
 Every new gate starts `enforcement_mode: advisory` — violations warn, nothing

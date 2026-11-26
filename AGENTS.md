@@ -12,6 +12,11 @@ Work only in this repository. If a task seems to need any other
 repository, stop and ask the owner first. Bundle related changes
 into as few PRs and CI runs as possible.
 
+Do not push to a pull request just to re-run a check that is blocked by
+something outside the code (budget, permissions, a missing review). Report
+what blocks it and wait. (CI cost rules, owner instruction 2026-11-26; see
+`REUSABLE-WORKFLOWS.md`.)
+
 Repository role
 ---------------
 

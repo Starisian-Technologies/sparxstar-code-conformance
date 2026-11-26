@@ -184,7 +184,19 @@ jobs:
           # pnpm is only enabled by corepack in the next step, so setup-node's
           # automatic package-manager cache would fail here (same as the other
           # enforcement workflows).
-          package-manager-cache: false
+          package-manager-cache: false   # the pnpm store is cached explicitly below
+
+      - name: Use a cacheable pnpm store
+        shell: bash
+        run: echo "npm_config_store_dir=$RUNNER_TEMP/pnpm-store" >> "$GITHUB_ENV"
+
+      - name: Cache the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/pnpm-store
+          key: pnpm-store-${{ runner.os }}-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            pnpm-store-${{ runner.os }}-
 
       - name: NODE-PKG-004 — pnpm install --frozen-lockfile dry run
         if: hashFiles('package.json') != ''

@@ -10,33 +10,10 @@
 name: Lint workflows self-test
 
 on:
-  pull_request:
-    paths:
-      - '.github/workflows/js-standards.yml'
-      - '.github/workflows/css-standards.yml'
-      - '.github/workflows/formatting.yml'
-      - '.github/workflows/markdownlint.yml'
-      - '.github/workflows/lint-workflows-self-test.yml'
-      - 'fixtures/lint-workflows/**'
-      - 'caller-templates/standards-lint.yml'
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/js-standards.yml'
-      - '.github/workflows/css-standards.yml'
-      - '.github/workflows/formatting.yml'
-      - '.github/workflows/markdownlint.yml'
-      - '.github/workflows/lint-workflows-self-test.yml'
-      - 'fixtures/lint-workflows/**'
-      - 'caller-templates/standards-lint.yml'
-  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   js:

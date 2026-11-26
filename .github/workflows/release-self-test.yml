@@ -10,36 +10,7 @@ permissions:
   contents: read
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - '.github/workflows/semver-release.yml'
-      - '.github/workflows/release-self-test.yml'
-      - 'caller-templates/release.yml'
-      - 'caller-templates/release-please-config.json'
-      - 'caller-templates/.release-please-manifest.json'
-      - 'fixtures/release/**'
-      - '.github/workflows/release.yml'
-      - 'release-please-config.json'
-      - '.release-please-manifest.json'
-      - 'caller-templates/standards-*.yml'
-  pull_request:
-    paths:
-      - '.github/workflows/semver-release.yml'
-      - '.github/workflows/release-self-test.yml'
-      - 'caller-templates/release.yml'
-      - 'caller-templates/release-please-config.json'
-      - 'caller-templates/.release-please-manifest.json'
-      - 'fixtures/release/**'
-      - '.github/workflows/release.yml'
-      - 'release-please-config.json'
-      - '.release-please-manifest.json'
-      - 'caller-templates/standards-*.yml'
-  workflow_dispatch:
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
 
 jobs:
   self-test:
