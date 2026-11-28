@@ -100,6 +100,9 @@ This matrix holds **organization-wide rules only**. Rules that only make sense w
 | COST-007 | same | No push to a PR just to re-run a check blocked outside the code; report and wait | Agents | SPECIFIED | `AGENTS.md`; not checkable |
 | DEP-001 | same | Shared `.github/dependabot.yml`: weekly; minor and patch updates in one PR per ecosystem, majors separate; security updates in one PR per ecosystem; open-pull-requests-limit 5; 3-day cooldown | All repositories | ENFORCED | `credential-policy.yml` (CI cost step); template self-test `dependabot-template-self-test.yml` |
 | DEP-002 | same (supersedes ADR-058's merge-before-CI here) | Dependabot PRs run CI like any PR and merge when green | All repositories | SPECIFIED | Merge procedure; the registry's ADR-058 still states merge-before-CI and needs amending there |
+| DATA-001 | README "Platform security and data protection checks"; The Gambia's Personal Data Protection and Privacy Act, 2025 | A service repository has `docs/data-inventory.md` with the headings Personal data held, Purpose, Lawful basis, Retention, Storage location, Recipients | Service repositories | ENFORCED (warn-only until `SECURITY_ENFORCE_FROM`) | `credential-policy.yml` (security step); fixtures `fixtures/security-policy/` |
+| TLS-001 | same; Platform Security Standard | Database TLS verifies the certificate: `sslmode` is `verify-full`; no `rejectUnauthorized` set to `false` | All repositories | ENFORCED (warn-only until `SECURITY_ENFORCE_FROM`) | `credential-policy.yml` (security step) |
+| NEON-001 | same (Neon is being retired) | No Neon host names in configuration, code or docs | All repositories | ENFORCED (warn-only until `SECURITY_ENFORCE_FROM`) | `credential-policy.yml` (security step) |
 | REF-001 | docs/enforcement-matrix.md | Existing CI/CD matrix remains reference mapping for stage execution | All | REFERENCE | Documentation cross-reference |
 
 ## Notes for CI Implementers

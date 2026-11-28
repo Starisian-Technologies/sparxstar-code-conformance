@@ -571,6 +571,14 @@ App to use instead. The rules and the declaration format are in
 without being echoed, checks that every caller template passes, and runs the
 real check on this repository.
 
+The same job also runs the platform security and data protection checks
+(DATA-001 data inventory, TLS-001 verified database TLS, NEON-001 no Neon
+hosts). They are warn-only until the date in `SECURITY_ENFORCE_FROM`, then
+failing; the `security_policy` input overrides that (`advisory` or `gate`).
+A service repository declares `service: true` in `.github/credential-policy.yml`.
+What each check flags, and why, is in the
+[README](README.md#platform-security-and-data-protection-checks).
+
 ## Mode input
 
 The `mode` input on workflows that support it maps to the enforcement

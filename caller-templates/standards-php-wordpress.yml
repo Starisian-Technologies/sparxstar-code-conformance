@@ -104,7 +104,8 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     # ADR-056: fails on any credential other than GITHUB_TOKEN, the two Apps and
     # the deploy secrets declared in .github/credential-policy.yml, and names
-    # the App to use instead. Reads workflow files only; no secrets.
+    # the App to use instead. Also runs the platform security checks
+    # (DATA-001, TLS-001, NEON-001; README.md). Reads files only; no secrets.
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/credential-policy.yml@RELEASE_TAG
     permissions:
       contents: read

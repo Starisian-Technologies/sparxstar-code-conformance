@@ -1,0 +1,5 @@
+services:
+  app:
+    environment:
+      PGSSLMODE: disable
+      DATABASE_URL: postgres://app@db/app?sslmode=disable

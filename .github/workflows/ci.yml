@@ -65,6 +65,7 @@ jobs:
               ".github/credential-policy.yml",
               "fixtures/credential-policy/**",
               "fixtures/cost-policy/**",
+              "fixtures/security-policy/**",
               "caller-templates/**",
               ".github/workflows/ci.yml"
             ],

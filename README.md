@@ -29,6 +29,53 @@ Pin strategy: pin the latest exact release tag (`@vX.Y.Z`), looked up as describ
 
 ---
 
+## Platform security and data protection checks
+
+Three checks run in the shared `credential-policy.yml` workflow, in the same job
+as the credential and CI cost checks, so every repository that runs that job
+gets them with no extra runner. They are **warn-only for 30 days, then
+failing**: with the default `security_policy: auto` they report warnings until
+the date in `SECURITY_ENFORCE_FROM` in
+[`.github/workflows/credential-policy.yml`](.github/workflows/credential-policy.yml)
+and fail the job from that date. `advisory` always warns; `gate` always fails.
+`credential-policy-self-test.yml` proves each check against
+[`fixtures/security-policy/`](fixtures/security-policy/).
+
+The checks read the repository's text files (config, code and docs). They skip
+`.git`, `node_modules`, `vendor`, `dist`, `build`, `coverage`, test and fixture
+directories, lockfiles and `CHANGELOG.md`.
+
+| ID | Check | Why |
+|----|-------|-----|
+| DATA-001 | Every service repository has `docs/data-inventory.md` with these headings, at any level: **Personal data held**, **Purpose**, **Lawful basis**, **Retention**, **Storage location**, **Recipients**. | The Gambia's Personal Data Protection and Privacy Act, 2025: a service that holds personal data must be able to say what it holds, why, on what lawful basis, for how long, where, and who receives it. The inventory is that record, kept next to the code that changes it. |
+| TLS-001 | No database connection setting allows TLS without certificate verification. `sslmode` (including `PGSSLMODE`) must be `verify-full`; any other value is flagged (`disable`, `allow`, `prefer`, `require`, `verify-ca`), and so is `rejectUnauthorized` set to `false`. | Platform Security Standard: database traffic is encrypted *and* the server is verified. Without verification, TLS can be intercepted by anyone on the path, and personal data in transit is not protected as the Act requires. |
+| NEON-001 | No Neon host names (any host under the `neon.tech` domain) in configuration, code or docs, deploy docs included. | Neon is being retired. A remaining host name is a deployment that still depends on it, or a doc that would send someone to it. |
+
+**Service repository.** A repository declares it in
+`.github/credential-policy.yml` (the same file as its deploy secrets):
+
+```yaml
+service: true   # or false
+```
+
+Without that key, a repository with a root `Dockerfile`, `compose.yml`,
+`compose.yaml`, `docker-compose.yml` or `docker-compose.yaml` counts as a
+service. Declare `service: false` for one that ships an image but holds no
+personal data.
+
+**Not production.** TLS-001 skips files whose name marks them as local,
+development or test settings (`local`, `dev`, `development`, `test`,
+`testing` or `override` as a name part, for example `.env.local` or
+`docker-compose.override.yml`). NEON-001 has no such exception: Neon is
+leaving every environment.
+
+**Docs-only changes.** Like every job in the templates, the check is skipped on
+a pull request that changes only docs (CI cost rules). It reads the whole
+repository each time it runs, so a finding in a doc is reported on the next
+pull request that changes code.
+
+---
+
 ## Documentation Structure
 
 The standards are split into a language-agnostic handbook and per-language implementation rulebooks. Each document is independently enforceable.
