@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.3.0](https://github.com/Starisian-Technologies/sparxstar-code-conformance/compare/v1.2.0...v1.3.0) (2026-11-28)
+
+
+### Features
+
+* **ci:** CI cost rules — job-level path gating, PR-only cancellation, caching, enforced ([#76](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/76)) ([979ba15](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/979ba15925bab1687a8d77598566a024ba6f1888))
+* **ci:** Dependabot minor+patch grouped with a limit of 5; default-branch triggers and cancellation ([#79](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/79)) ([e8885e7](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/e8885e71bb1efaedfe3b310dc576ceb81f7ead87))
+* **dependabot:** shared Dependabot template and this repo adopts it (ADR-058) ([#67](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/67)) ([48a02c6](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/48a02c666bbb20bf2bb91aa4c73c66060f8205cf))
+* release process, pin rule, data-protection/TLS/Neon checks, stale-branch cleanup ([#81](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/81)) ([e8c07b4](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/e8c07b486f3eb463c44022028e8438144faf0222))
+* **workflows:** retire unused workflows; templates and self-tests for the rest ([#65](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/65)) ([ce014c4](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/ce014c462ce27c21c5d858591916873fe73404d0))
+
 ## [1.2.0](https://github.com/Starisian-Technologies/sparxstar-code-conformance/compare/v1.1.0...v1.2.0) (2026-11-25)
 
 
