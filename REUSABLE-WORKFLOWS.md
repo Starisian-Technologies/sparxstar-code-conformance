@@ -512,8 +512,7 @@ through its findings can pass `cost_policy: advisory` for a while.
    `schedule`, never on every push.** Use `caller-templates/codeql.yml`.
    GitHub's CodeQL *default setup* runs on every push to the default branch,
    so a repository using it switches to advanced setup (Settings → Code
-   security) before adopting the template. This repository runs the same
-   workflow as `.github/workflows/codeql.yml`. *Checked for workflow-based scans
+   security) before adopting the template. *Checked for workflow-based scans
    (COST-004); default setup is a repository setting, not a file, and is not
    checked.*
 5. **Cache dependencies.** Every job that runs `pnpm install`, `npm ci`,
