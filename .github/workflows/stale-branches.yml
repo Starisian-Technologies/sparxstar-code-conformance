@@ -67,6 +67,13 @@ jobs:
         shell: bash
         run: |
           set -uo pipefail
+          # also_delete: branch names only (space-separated). Anything else is
+          # refused before any deletion.
+          if [[ "$ALSO_DELETE" =~ [^A-Za-z0-9._/\ -] ]]; then
+            echo "::error::also_delete accepts branch names separated by spaces (letters, digits, . _ / -)."
+            exit 1
+          fi
+          read -r -a also_delete <<<"$ALSO_DELETE"
           cutoff=$(date -u -d '90 days ago' +%s)
           open_heads=$(gh api --paginate "repos/$REPO/pulls?state=open&per_page=100" --jq '.[].head.ref' | sort -u)
           {
@@ -82,7 +89,11 @@ jobs:
             grep -qxF -- "$branch" <<<"$open_heads" && continue
             enc=$(jq -rn --arg b "$branch" '$b|@uri')
             reason=""
-            if [[ " $ALSO_DELETE " == *" $branch "* ]]; then
+            named=false
+            for want in "${also_delete[@]}"; do
+              [ "$want" = "$branch" ] && named=true
+            done
+            if [ "$named" = true ]; then
               reason="owner ruling (also_delete)"
             else
               ahead=$(gh api "repos/$REPO/compare/$DEFAULT_BRANCH...$enc" --jq '.ahead_by' 2>/dev/null || echo "")
