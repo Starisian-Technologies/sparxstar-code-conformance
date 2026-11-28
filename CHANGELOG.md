@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/Starisian-Technologies/sparxstar-code-conformance/compare/v1.3.0...v1.4.0) (2026-11-28)
+
+
+### Features
+
+* **branches:** stale-branches deletes owner-ruled branches named in also_delete ([#82](https://github.com/Starisian-Technologies/sparxstar-code-conformance/issues/82)) ([15743ba](https://github.com/Starisian-Technologies/sparxstar-code-conformance/commit/15743ba91df1d8aa0c7e80a76423517c05677620))
+
 ## [1.3.0](https://github.com/Starisian-Technologies/sparxstar-code-conformance/compare/v1.2.0...v1.3.0) (2026-11-28)
 
 
