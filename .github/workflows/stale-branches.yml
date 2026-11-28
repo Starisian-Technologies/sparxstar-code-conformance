@@ -10,6 +10,10 @@
 # Manual only. `dry_run` (the default) lists what would be deleted. If a
 # ruleset blocks a deletion, the branch is left and listed; the run does not
 # work around the ruleset.
+#
+# `also_delete` names branches the owner has ruled obsolete although they meet
+# neither rule (space-separated). The same exclusions still apply: never the
+# default branch, `release-please--*` or a branch with an open pull request.
 # ============================================================
 
 name: Stale branches
@@ -21,6 +25,13 @@ on:
         description: List the stale branches without deleting them.
         type: boolean
         default: true
+      also_delete:
+        description: >
+          Space-separated branches the owner has ruled obsolete, deleted even
+          though they are not merged or 90 days old. Exclusions still apply.
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -52,9 +63,17 @@ jobs:
           REPO: ${{ github.repository }}
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           DRY_RUN: ${{ inputs.dry_run }}
+          ALSO_DELETE: ${{ inputs.also_delete }}
         shell: bash
         run: |
           set -uo pipefail
+          # also_delete: branch names only (space-separated). Anything else is
+          # refused before any deletion.
+          if [[ "$ALSO_DELETE" =~ [^A-Za-z0-9._/\ -] ]]; then
+            echo "::error::also_delete accepts branch names separated by spaces (letters, digits, . _ / -)."
+            exit 1
+          fi
+          read -r -a also_delete <<<"$ALSO_DELETE"
           cutoff=$(date -u -d '90 days ago' +%s)
           open_heads=$(gh api --paginate "repos/$REPO/pulls?state=open&per_page=100" --jq '.[].head.ref' | sort -u)
           {
@@ -70,15 +89,23 @@ jobs:
             grep -qxF -- "$branch" <<<"$open_heads" && continue
             enc=$(jq -rn --arg b "$branch" '$b|@uri')
             reason=""
-            ahead=$(gh api "repos/$REPO/compare/$DEFAULT_BRANCH...$enc" --jq '.ahead_by' 2>/dev/null || echo "")
-            if [ "$ahead" = 0 ]; then
-              reason="no commits ahead of $DEFAULT_BRANCH"
-            elif [ -n "$(gh api "repos/$REPO/pulls?state=closed&head=${REPO%%/*}:$enc&per_page=100" --jq '[.[] | select(.merged_at != null)] | .[0].number // empty')" ]; then
-              reason="pull request merged"
+            named=false
+            for want in "${also_delete[@]}"; do
+              [ "$want" = "$branch" ] && named=true
+            done
+            if [ "$named" = true ]; then
+              reason="owner ruling (also_delete)"
             else
-              last=$(gh api "repos/$REPO/commits/$enc" --jq '.commit.committer.date')
-              if [ -n "$last" ] && [ "$(date -u -d "$last" +%s)" -le "$cutoff" ]; then
-                reason="last commit $last (90+ days)"
+              ahead=$(gh api "repos/$REPO/compare/$DEFAULT_BRANCH...$enc" --jq '.ahead_by' 2>/dev/null || echo "")
+              if [ "$ahead" = 0 ]; then
+                reason="no commits ahead of $DEFAULT_BRANCH"
+              elif [ -n "$(gh api "repos/$REPO/pulls?state=closed&head=${REPO%%/*}:$enc&per_page=100" --jq '[.[] | select(.merged_at != null)] | .[0].number // empty')" ]; then
+                reason="pull request merged"
+              else
+                last=$(gh api "repos/$REPO/commits/$enc" --jq '.commit.committer.date')
+                if [ -n "$last" ] && [ "$(date -u -d "$last" +%s)" -le "$cutoff" ]; then
+                  reason="last commit $last (90+ days)"
+                fi
               fi
             fi
             [ -z "$reason" ] && continue
