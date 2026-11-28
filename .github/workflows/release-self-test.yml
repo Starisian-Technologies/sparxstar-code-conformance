@@ -1,7 +1,8 @@
 # ============================================================
 # release-self-test — proves semver-release.yml's ADR-053 config check
 # passes the shipped template and fails each bad fixture, and that every
-# third-party action in semver-release.yml is pinned by full commit SHA.
+# uses: line in this repository follows the pin rule (our own workflows at
+# @vX.Y.Z, third-party actions by full commit SHA with a version comment).
 # ============================================================
 
 name: Release workflow self-test (ADR-053)
@@ -97,17 +98,71 @@ jobs:
           done
           echo "OK: unsafe config paths rejected"
 
-      - name: Every action in semver-release.yml is pinned by full commit SHA
+      # REUSABLE-WORKFLOWS.md "Pin an exact release tag" (owner instruction
+      # 2026-11-28): our own workflows at a release version @vX.Y.Z (the
+      # RELEASE_TAG / REVIEWER_TAG placeholder in caller templates) or by local
+      # path; third-party actions by full commit SHA with a "# vX" version
+      # comment, maintained by Dependabot only (ADR-053 decision 5).
+      - name: Every uses line follows the pin rule (and the rule rejects bad pins)
         shell: bash
+        env:
+          PIN_PY: |
+            import glob, os, re, sys
+            root = sys.argv[1]
+            OWN = re.compile(r"^Starisian-Technologies/(sparxstar-code-conformance|sparxstar-pr-review)/")
+            USES = re.compile(r"^\s*(?:-\s*)?uses:\s*(\S+)(.*)$")
+            bad = []
+            files = sorted(glob.glob(f"{root}/.github/workflows/*.yml") + glob.glob(f"{root}/caller-templates/*.yml"))
+            for path in files:
+                template = "/caller-templates/" in path
+                for no, line in enumerate(open(path, encoding="utf-8"), 1):
+                    m = USES.match(line)
+                    if not m:
+                        continue
+                    ref, rest = m.group(1).strip("'\""), m.group(2)
+                    where = f"{os.path.relpath(path, root)}:{no}: {ref}"
+                    if ref.startswith("./"):
+                        continue
+                    if "@" not in ref:
+                        bad.append(f"{where}: no pin")
+                        continue
+                    pin = ref.rsplit("@", 1)[1]
+                    if OWN.match(ref):
+                        if re.fullmatch(r"v\d+\.\d+\.\d+", pin) or (template and pin in ("RELEASE_TAG", "REVIEWER_TAG")):
+                            continue
+                        bad.append(f"{where}: our own workflows pin a release version @vX.Y.Z")
+                    elif not re.fullmatch(r"[0-9a-f]{40}", pin):
+                        bad.append(f"{where}: third-party actions pin a full commit SHA")
+                    elif not re.search(r"#\s*v\d+(\.\d+)*\b", rest):
+                        bad.append(f"{where}: third-party pin lacks its version comment (# vX.Y.Z)")
+            for item in bad:
+                print("PIN: " + item)
+            print(f"{len(bad)} pin violation(s) in {len(files)} file(s)")
+            sys.exit(1 if bad else 0)
         run: |
           set -euo pipefail
-          bad=$(grep -nE '^\s*(-\s*)?uses:' .github/workflows/semver-release.yml \
-                | grep -vE 'uses:\s*[^@[:space:]]+@[0-9a-f]{40}(\s|$)' || true)
-          if [ -n "$bad" ]; then
-            echo "SELF-TEST FAIL: action not pinned by full commit SHA (ADR-053 decision 5):"$'\n'"$bad"
-            exit 1
-          fi
-          echo "OK: all actions SHA-pinned"
+          python3 -c "$PIN_PY" .
+
+          # The rule itself, on a scratch repo of good and bad pins. Built with
+          # printf so this file's own lines are not read as pins.
+          t=$(mktemp -d); mkdir -p "$t/.github/workflows" "$t/caller-templates"
+          k=uses
+          sha=0000000000000000000000000000000000000000
+          own=Starisian-Technologies/sparxstar-code-conformance/.github/workflows/x.yml
+          printf 'jobs:\n  a: { %s: %s }\n  b: { %s: %s }\n' \
+            "$k" "$own@RELEASE_TAG" \
+            "$k" "Starisian-Technologies/sparxstar-pr-review/.github/workflows/r.yml@REVIEWER_TAG" \
+            > "$t/caller-templates/good.yml"
+          printf 'jobs:\n  a:\n    %s: %s\n  b:\n    steps:\n      - %s: %s\n      - %s: %s\n' \
+            "$k" "$own@v1.2.3" "$k" "actions/checkout@$sha # v5.0.0" "$k" "./.github/actions/local" \
+            > "$t/.github/workflows/good.yml"
+          python3 -c "$PIN_PY" "$t"
+          for bad in "$own@RELEASE_TAG" "$own@v1" "$own@main" "$own@$sha # v1.2.3" "actions/checkout@v5" "actions/checkout@$sha"; do
+            printf 'jobs:\n  a:\n    steps:\n      - %s: %s\n' "$k" "$bad" > "$t/.github/workflows/bad.yml"
+            result=0; python3 -c "$PIN_PY" "$t" >/dev/null || result=$?
+            [ "$result" -eq 1 ] || { echo "SELF-TEST FAIL: pin rule accepted: $bad"; exit 1; }
+            echo "OK: rejected $bad"
+          done
 
       - name: Caller template pins no hand-written release version
         shell: bash

@@ -221,20 +221,25 @@ advisory mode for onboarding, blocking gate once clean.
 
 ### Pin an exact release tag
 
-A `vX.Y.Z` release tag is immutable: it resolves to the same commit forever,
-so your enforcement only changes when you deliberately update the pin. Releases
-are cut by release-please (ADR-053); a released tag is never moved.
+**Our own reusable workflows** (this repository and the central review
+repository, `sparxstar-pr-review`) are pinned to a published release version,
+`@vX.Y.Z`. Immutable releases are enabled across the organisation, so the tag
+of an immutable release cannot be moved or deleted and resolves to the same
+commit forever. Your enforcement changes only when you update the pin.
 
-Use the **latest release tag**. Look it up each time; a version written into a
-document goes stale:
+**Only an immutable release qualifies:** one published after immutable
+releases were enabled. Its GitHub Release is marked immutable. A bare tag
+with no release, or a release published before then, does not qualify. Look
+up the latest qualifying release each time; a version written into a document
+goes stale:
 
 ```bash
-git ls-remote --tags --refs https://github.com/Starisian-Technologies/sparxstar-code-conformance \
-  | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+gh api repos/Starisian-Technologies/sparxstar-code-conformance/releases \
+  --jq '[.[] | select(.immutable and (.draft | not) and (.prerelease | not))][0].tag_name'
 ```
 
-The latest GitHub Release and the top entry of `CHANGELOG.md` give the same
-answer.
+For the central review repository, use the same command with its name. Empty
+output means no release qualifies yet: keep your current pin until one does.
 
 - **`@main`** is never permitted. It is the integration branch, and breaking
   changes land there first.
@@ -243,6 +248,24 @@ answer.
   at its last position and never receives a fix. A caller still on `@v1` should
   move to an exact release tag. `version-drift-enforcement` rejects a bare `v1`
   as `contract_ref`.
+- **No commit SHAs for our own workflows.** The release version is the pin.
+
+**Third-party actions** (everything not published by this organisation) stay
+pinned by full commit SHA, with the version as a comment:
+
+```yaml
+- uses: owner/action@<40-character commit SHA> # vX.Y.Z
+```
+
+Only Dependabot's `github-actions` updates change these pins and their
+comments (`caller-templates/dependabot.yml`). Agents never look up, resolve or
+edit a third-party SHA by hand. A pin whose comment is only a major version
+(`# vN`) is updated to the exact version by Dependabot's next bump.
+
+`release-self-test.yml` checks every `uses:` line in this repository's
+workflows and caller templates: our own workflows at `@vX.Y.Z` (or the
+template placeholder) or by local path, third-party actions by full SHA with a
+version comment.
 
 ---
 
@@ -608,7 +631,8 @@ copies. The names, where each is set, and the auth block itself live in
 
 | Pin | When to use |
 |-----|-------------|
-| `@vX.Y.Z` (latest release tag) | **Always.** Immutable. Update deliberately, or merge the Dependabot bump PR. |
+| `@vX.Y.Z` (latest immutable release) | **Always**, for this repository's and the central review repository's workflows. Update deliberately, or merge the Dependabot bump PR. |
+| `@<full SHA> # vX.Y.Z` | **Always**, for third-party actions. Changed only by Dependabot. |
 | `@v1` | Never for new pins. Frozen at its last position; it receives no further releases. |
 | `@main` | Never. Breaking changes land here first; not for consumers. |
 
@@ -616,8 +640,9 @@ copies. The names, where each is set, and the auth block itself live in
 
 - **One `standards.yml` file per repo.** Don't create separate workflow
   files per check.
-- **Always pin an exact release tag (`@vX.Y.Z`), looked up, never copied
-  from a document.** Never pin to `@main` (breaking changes land there first)
+- **Always pin our own workflows to an immutable release (`@vX.Y.Z`), looked
+  up, never copied from a document;** third-party actions by full SHA,
+  maintained by Dependabot only. Never pin to `@main` (breaking changes land there first)
   or to the frozen `@v1`. See STD-TOOLCHAIN-001 §3 for the three-axis versioning
   model.
 - **Don't duplicate checks.** If the reusable workflow checks phpcs,

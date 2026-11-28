@@ -22,9 +22,9 @@
 #
 #   jobs:
 #     version-check:
-#       uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@v1.0.2
+#       uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/version-drift-enforcement.yml@RELEASE_TAG
 #       with:
-#         contract_ref: v1.0.2       # the SAME immutable patch tag the caller pins its
+#         contract_ref: RELEASE_TAG  # the SAME immutable patch tag the caller pins its
 #                                    # enforcement jobs to -- must match exactly, see D1 below
 #       secrets:
 #         COMPOSER_RESOLVER_PRIVATE_KEY: ${{ secrets.COMPOSER_RESOLVER_PRIVATE_KEY }}

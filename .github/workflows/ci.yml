@@ -47,17 +47,11 @@ jobs:
               ".github/workflows/ci.yml"
             ],
             "release": [
-              ".github/workflows/semver-release.yml",
-              ".github/workflows/release-self-test.yml",
-              "caller-templates/release.yml",
-              "caller-templates/release-please-config.json",
-              "caller-templates/.release-please-manifest.json",
+              ".github/workflows/**",
+              "caller-templates/**",
               "fixtures/release/**",
-              ".github/workflows/release.yml",
               "release-please-config.json",
-              ".release-please-manifest.json",
-              "caller-templates/standards-*.yml",
-              ".github/workflows/ci.yml"
+              ".release-please-manifest.json"
             ],
             "credentials": [
               ".github/workflows/**",

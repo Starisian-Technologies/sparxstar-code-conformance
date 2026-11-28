@@ -17,8 +17,10 @@
 # Pin: replace RELEASE_TAG with the latest release tag of
 # sparxstar-code-conformance. Look it up; do not copy a number from any
 # document (ADR-053 decision 3):
-#   git ls-remote --tags --refs https://github.com/Starisian-Technologies/sparxstar-code-conformance \
-#     | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+#   gh api repos/Starisian-Technologies/sparxstar-code-conformance/releases \
+#     --jq '[.[] | select(.immutable and (.draft | not) and (.prerelease | not))][0].tag_name'
+# Only an immutable GitHub Release qualifies (one published after immutable
+# releases were enabled); a bare tag or an older release does not.
 
 name: CodeQL
 

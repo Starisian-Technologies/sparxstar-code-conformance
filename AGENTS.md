@@ -17,6 +17,12 @@ something outside the code (budget, permissions, a missing review). Report
 what blocks it and wait. (CI cost rules, owner instruction 2026-11-26; see
 `REUSABLE-WORKFLOWS.md`.)
 
+Pins (owner instruction 2026-11-28; `REUSABLE-WORKFLOWS.md` "Pin an exact
+release tag"): our own reusable workflows are pinned to an immutable release
+`@vX.Y.Z`, looked up, never written from memory. Third-party action SHAs and
+their `# vX.Y.Z` comments change only through Dependabot's `github-actions`
+updates; never look up, resolve or edit a SHA by hand.
+
 Repository role
 ---------------
 
