@@ -221,20 +221,25 @@ advisory mode for onboarding, blocking gate once clean.
 
 ### Pin an exact release tag
 
-A `vX.Y.Z` release tag is immutable: it resolves to the same commit forever,
-so your enforcement only changes when you deliberately update the pin. Releases
-are cut by release-please (ADR-053); a released tag is never moved.
+**Our own reusable workflows** (this repository and the central review
+repository, `sparxstar-pr-review`) are pinned to a published release version,
+`@vX.Y.Z`. Immutable releases are enabled across the organisation, so the tag
+of an immutable release cannot be moved or deleted and resolves to the same
+commit forever. Your enforcement changes only when you update the pin.
 
-Use the **latest release tag**. Look it up each time; a version written into a
-document goes stale:
+**Only an immutable release qualifies:** one published after immutable
+releases were enabled. Its GitHub Release is marked immutable. A bare tag
+with no release, or a release published before then, does not qualify. Look
+up the latest qualifying release each time; a version written into a document
+goes stale:
 
 ```bash
-git ls-remote --tags --refs https://github.com/Starisian-Technologies/sparxstar-code-conformance \
-  | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+gh api repos/Starisian-Technologies/sparxstar-code-conformance/releases \
+  --jq '[.[] | select(.immutable and (.draft | not) and (.prerelease | not))][0].tag_name'
 ```
 
-The latest GitHub Release and the top entry of `CHANGELOG.md` give the same
-answer.
+For the central review repository, use the same command with its name. Empty
+output means no release qualifies yet: keep your current pin until one does.
 
 - **`@main`** is never permitted. It is the integration branch, and breaking
   changes land there first.
@@ -243,6 +248,24 @@ answer.
   at its last position and never receives a fix. A caller still on `@v1` should
   move to an exact release tag. `version-drift-enforcement` rejects a bare `v1`
   as `contract_ref`.
+- **No commit SHAs for our own workflows.** The release version is the pin.
+
+**Third-party actions** (everything not published by this organisation) stay
+pinned by full commit SHA, with the version as a comment:
+
+```yaml
+- uses: owner/action@<40-character commit SHA> # vX.Y.Z
+```
+
+Only Dependabot's `github-actions` updates change these pins and their
+comments (`caller-templates/dependabot.yml`). Agents never look up, resolve or
+edit a third-party SHA by hand. A pin whose comment is only a major version
+(`# vN`) is updated to the exact version by Dependabot's next bump.
+
+`release-self-test.yml` checks every `uses:` line in this repository's
+workflows and caller templates: our own workflows at `@vX.Y.Z` (or the
+template placeholder) or by local path, third-party actions by full SHA with a
+version comment.
 
 ---
 
@@ -398,12 +421,21 @@ Adopting it:
    or requires code-scanning results, it must exclude `release-please--*`.
    release-please force-updates that branch to a commit with no scan result
    yet, so without the exclusion the first run fails with `Error updating ref
-   heads/release-please--branches--main`. Changing a ruleset is a repository
-   admin action (owner ruling, 2026-11-25). The release pull request's own
-   checks still gate the merge to the default branch (ADR-037).
+   heads/release-please--branches--main`. If the exclusion is missing, tell
+   the owner in one line to exclude `release-please--*`, and wait. Do not
+   work around it: changing a ruleset is a repository admin action (owner
+   ruling, 2026-11-25). The release pull request's own checks still gate the
+   merge to the default branch (ADR-037).
 7. Remove any repository-local release or tagging workflow, and replace
    hand-written version numbers in docs with instructions to look the version
    up (latest GitHub Release, latest tag, or the top of `CHANGELOG.md`).
+
+Versioning:
+
+- Commits follow Conventional Commits; release-please derives the next
+  version and the `CHANGELOG.md` entry from them.
+- A new repository starts at 0.x and stays there until it is publicly live.
+- A repository that already has `vX.Y.Z` tags continues its line (step 4).
 
 Release pull requests opened with `GITHUB_TOKEN` do not run CI, so the merge
 gate (ADR-037) cannot pass on them. The contract-sync GitHub App opens them
@@ -426,6 +458,37 @@ floating `v1` alias is retired, and `v1` is frozen.
 fails each fixture in `fixtures/release/`, that this repository's own config
 conforms, that every action in `semver-release.yml` is pinned by full commit
 SHA, and that no caller template hand-writes a release of this repository.
+
+### When to release
+
+Ordinary pull requests merge as usual. A release is separate, and it is a
+production update.
+
+1. **The agent decides when merged work warrants a release:** a user-facing
+   change, a fix that should reach production, or a database migration.
+2. **The agent tells the owner, and posts the same message on the release
+   pull request:**
+
+   ```text
+   Ready to release vX.Y.Z
+   - <what changes for users, one line each>
+   Database changes: yes | no
+   This goes to production when you reply release.
+   ```
+
+   For a library or tooling repository, the last line is instead: "This
+   publishes a new version; nothing in production changes." Take `vX.Y.Z`
+   from the release pull request's title; never write it from memory.
+3. **Only the owner's reply "release" merges the release pull request.** No
+   agent merges one on its own judgement.
+4. **What a release does depends on the repository:**
+   - A repository that deploys on every merge to `main` switches to deploying
+     on release (the `vX.Y.Z` tag or GitHub Release), not on merge.
+   - A repository that deploys through the droplet process runs it right after
+     the release.
+   - Libraries and tooling only publish the version.
+
+WordPad is outside this process.
 
 ## CI cost rules
 
@@ -499,13 +562,12 @@ through its findings can pass `cost_policy: advisory` for a while.
    requests run CI like any other pull request; merge them when green.
    *Checked (DEP-001): the file exists, is weekly, groups minor and patch
    updates and all security updates, and sets the limit to 5 or less.*
-   (Owner instruction 2026-11-27, replacing 2026-11-26's "all updates in one
-   group".)
+   (A later owner instruction on 2026-11-26 replaced the earlier "all updates
+   in one group".)
 
    This supersedes, for this repository and its templates, ADR-058's
-   "merge before CI" and "majors as separate pull requests". The governance
-   registry's ADR-058 and its review rules still state the older rule and need
-   amending there.
+   "merge before CI". The governance registry's ADR-058 and its review rules
+   still state the older rule and need amending there.
 
 `changed-paths.yml` reads the changed files from the GitHub compare API with
 the caller's token. Anything it cannot classify safely (a new branch, a manual
@@ -530,6 +592,14 @@ App to use instead. The rules and the declaration format are in
 `fixtures/credential-policy/`, checks that a committed token is rejected
 without being echoed, checks that every caller template passes, and runs the
 real check on this repository.
+
+The same job also runs the platform security and data protection checks
+(DATA-001 data inventory, TLS-001 verified database TLS, NEON-001 no Neon
+hosts). They are warn-only until the date in `SECURITY_ENFORCE_FROM`, then
+failing; the `security_policy` input overrides that (`advisory` or `gate`).
+A service repository declares `service: true` in `.github/credential-policy.yml`.
+What each check flags, and why, is in the
+[README](README.md#platform-security-and-data-protection-checks).
 
 ## Mode input
 
@@ -561,7 +631,8 @@ copies. The names, where each is set, and the auth block itself live in
 
 | Pin | When to use |
 |-----|-------------|
-| `@vX.Y.Z` (latest release tag) | **Always.** Immutable. Update deliberately, or merge the Dependabot bump PR. |
+| `@vX.Y.Z` (latest immutable release) | **Always**, for this repository's and the central review repository's workflows. Update deliberately, or merge the Dependabot bump PR. |
+| `@<full SHA> # vX.Y.Z` | **Always**, for third-party actions. Changed only by Dependabot. |
 | `@v1` | Never for new pins. Frozen at its last position; it receives no further releases. |
 | `@main` | Never. Breaking changes land here first; not for consumers. |
 
@@ -569,8 +640,9 @@ copies. The names, where each is set, and the auth block itself live in
 
 - **One `standards.yml` file per repo.** Don't create separate workflow
   files per check.
-- **Always pin an exact release tag (`@vX.Y.Z`), looked up, never copied
-  from a document.** Never pin to `@main` (breaking changes land there first)
+- **Always pin our own workflows to an immutable release (`@vX.Y.Z`), looked
+  up, never copied from a document;** third-party actions by full SHA,
+  maintained by Dependabot only. Never pin to `@main` (breaking changes land there first)
   or to the frozen `@v1`. See STD-TOOLCHAIN-001 §3 for the three-axis versioning
   model.
 - **Don't duplicate checks.** If the reusable workflow checks phpcs,

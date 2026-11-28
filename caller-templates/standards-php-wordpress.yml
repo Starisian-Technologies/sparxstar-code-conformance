@@ -4,8 +4,10 @@
 # Pin: replace every RELEASE_TAG below (each `uses:` line and `contract_ref`)
 # with the latest release tag of sparxstar-code-conformance. Look it up; do not
 # copy a number from any document (ADR-053 decision 3):
-#   git ls-remote --tags --refs https://github.com/Starisian-Technologies/sparxstar-code-conformance \
-#     | sed 's#.*refs/tags/##' | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n1
+#   gh api repos/Starisian-Technologies/sparxstar-code-conformance/releases \
+#     --jq '[.[] | select(.immutable and (.draft | not) and (.prerelease | not))][0].tag_name'
+# Only an immutable GitHub Release qualifies (one published after immutable
+# releases were enabled); a bare tag or an older release does not.
 # Never @main, and never the frozen `v1` alias (REUSABLE-WORKFLOWS.md "Pin an exact
 # release tag"). After that, caller-templates/dependabot.yml keeps the pin current by PR.
 # Three independent axes — move them independently:
@@ -104,7 +106,8 @@ jobs:
     if: needs.changes.outputs.code == 'true'
     # ADR-056: fails on any credential other than GITHUB_TOKEN, the two Apps and
     # the deploy secrets declared in .github/credential-policy.yml, and names
-    # the App to use instead. Reads workflow files only; no secrets.
+    # the App to use instead. Also runs the platform security checks
+    # (DATA-001, TLS-001, NEON-001; README.md). Reads files only; no secrets.
     uses: Starisian-Technologies/sparxstar-code-conformance/.github/workflows/credential-policy.yml@RELEASE_TAG
     permissions:
       contents: read

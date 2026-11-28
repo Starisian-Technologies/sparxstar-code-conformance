@@ -1,0 +1,2 @@
+database:
+  url: postgres://app@localhost/app?sslmode=disable

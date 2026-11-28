@@ -1,0 +1,2 @@
+database:
+  url: postgres://app@ep-example.eu-central-1.aws.neon.tech/app?sslmode=verify-full
